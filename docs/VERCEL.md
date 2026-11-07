@@ -1,5 +1,5 @@
-# Driftsätta på Vercel (webbappen) med Render PostgreSQL (databasen)
-Webbappen körs på Vercel. Databasen är Render PostgreSQL (projektregel: Render är första valet för databas).
+# Driftsätta på Vercel (webbappen)
+Webbappen körs på Vercel. Databasen är antingen Render PostgreSQL (steg 1) eller Neon via Vercel Storage (se "Alternativ: databas via Vercel" längst ner).
 
 ## 1. Databas på Render
 1. render.com → **New → PostgreSQL**. Region **Frankfurt**. Namn t.ex. `hemskarm-db`.
@@ -40,3 +40,14 @@ Webbappen körs på Vercel. Databasen är Render PostgreSQL (projektregel: Rende
 - **Säkerhetskopia:** `pg_dump "$DATABASE_URL" > hemskarm.sql` regelbundet (med den externa adressen).
 - **Felsökning:** Vercel → projektet → **Logs**. "Ogiltig miljökonfiguration" betyder att en miljövariabel saknas eller är för kort.
   Ändrade miljövariabler gäller först efter en ny driftsättning (**Redeploy**).
+
+## Alternativ: databas via Vercel (Neon)
+Vercel har ingen egen Postgres, men **Storage → Create Database → Neon** i projektet ger en Postgres som kopplas in med några klick. Det ersätter steg 1 (Render).
+Gratisplanens villkor och gränser ändras: kontrollera aktuella villkor hos Neon och ta ändå regelbundna säkerhetskopior med `pg_dump`.
+1. Skapa projektet i Vercel (steg 2) och lägg in `BETTER_AUTH_SECRET` och `BETTER_AUTH_URL`. Låt `DATABASE_URL` vara tom för tillfället.
+2. Projektet → **Storage → Create Database → Neon** → region Frankfurt → koppla till projektet för **Production** (och gärna Preview/Development).
+   Vercel lägger då själv in `DATABASE_URL` (via pooler) och `DATABASE_URL_UNPOOLED` (direkt).
+3. Lägg till en egen miljövariabel i Production: **`MIGRATE_DATABASE_URL`** = samma värde som `DATABASE_URL_UNPOOLED`.
+   Migreringarna kräver den direkta adressen. Bygget stoppar med ett tydligt fel om bara poolerns adress finns.
+4. Gör **Redeploy**. Bygget ska skriva `[migrate] Kör prisma migrate deploy (MIGRATE_DATABASE_URL)…`.
+5. Resten (skapa kontot, anslut Spotify och Sonos, plattan) är som ovan.
