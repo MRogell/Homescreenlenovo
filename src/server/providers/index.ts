@@ -1,5 +1,4 @@
 import { getAccessToken, getConnectionStatus } from "../connections";
-import { demoProviders } from "./demo";
 import { getEnv } from "@/lib/env";
 import { createSkodaProvider } from "./skoda";
 import { skodaConfigFromEnv } from "./skoda-config";
@@ -61,6 +60,5 @@ const aeg = createAegProvider({
   saveCache: (appliance) => updateSettings("aeg", { appliance }),
 });
 
-const ALL: Record<ProviderId, Provider<unknown>> = { ...demoProviders, skoda: skoda as Provider<unknown>, sonos: sonos as Provider<unknown>, spotify: spotify as Provider<unknown>, weather: weather as Provider<unknown>, tado: tado as Provider<unknown>, aeg: aeg as Provider<unknown> };
-export const PROVIDERS: Provider<unknown>[] = (["skoda", "sonos", "spotify", "aeg", "arlo", "weather", "tado"] as const).map((id) => ALL[id]);
-export { demoProviders };
+const ALL: Record<ProviderId, Provider<unknown>> = { skoda: skoda as Provider<unknown>, sonos: sonos as Provider<unknown>, spotify: spotify as Provider<unknown>, weather: weather as Provider<unknown>, tado: tado as Provider<unknown>, aeg: aeg as Provider<unknown> };
+export const PROVIDERS: Provider<unknown>[] = (["skoda", "sonos", "spotify", "aeg", "weather", "tado"] as const).map((id) => ALL[id]);

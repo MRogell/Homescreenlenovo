@@ -21,14 +21,14 @@ export const aegSchema = z.object({
   minutesLeft: z.number().nullable(),
   doneAt: z.string().nullable(),
   connected: z.boolean(),
+  /** Electrolux `remoteControl`, t.ex. "ENABLED" (fjärrstart tillåten). Null om okänt. */
+  remoteControl: z.string().nullable(),
 });
-export const arloSchema = z.object({ cameras: z.number(), lastMotionAt: z.string(), lastMotionPlace: z.string() });
 
 export type SkodaData = z.infer<typeof skodaSchema>;
 export type SonosData = z.infer<typeof sonosSchema>;
 export type SpotifyData = z.infer<typeof spotifySchema>;
 export type AegData = z.infer<typeof aegSchema>;
-export type ArloData = z.infer<typeof arloSchema>;
 
 export const weatherSchema = z.object({
   place: z.string(),

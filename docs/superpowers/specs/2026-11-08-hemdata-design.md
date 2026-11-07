@@ -41,3 +41,16 @@ Huvuden: `Authorization: Bearer <access>` och `x-api-key`. Förnyelse: `POST /ap
 - **Data:** apparatlistan cachas ett dygn; diskmaskinen väljs på `applianceType = "DW"` (annars första apparaten). TTL 60 s (SDK:t räknar med 10 anrop/s).
 - **Kort:** apparatens namn, läge på svenska (Av, Väntar, Pågår, Pausad, Redo att starta, Startar senare, Klar), program, fas, tid kvar och ungefärlig sluttid.
 - **Overifierat:** inget riktigt konto; fältnamn och sökvägar från SDK:t, svar testade med påhittade data.
+
+## 3b. Fjärrstyrning av diskmaskinen (ägarens önskemål)
+- `POST /api/control/aeg` med `{"action": "start" | "pause" | "resume" | "stop"}` → Electrolux `PUT /appliances/{id}/command` med
+  `{"executeCommand": "START" | "PAUSE" | "RESUME" | "STOPRESET"}` (DAM-apparater, id `1:…`: `{"commands": [...]}`), enligt officiella SDK:t.
+- Apparaten tas från servern (sparad vid senaste hämtning), aldrig från anroparen. Samma skydd som övriga kommandon. Cachen rensas efteråt.
+- Knappar efter läge: Redo/Väntar → Starta; Pågår → Pausa, Stoppa; Pausad → Återuppta, Stoppa; Startar senare → Stoppa.
+  **Starta och Stoppa kräver ett extra tryck** ("Ja, starta"). Starta visas bara om `remoteControl` är `ENABLED` (eller okänt); annars en hint
+  om att slå på fjärrstart på maskinen. Fel (403/406/409/412/422) → "Slå på fjärrstart på maskinen, stäng luckan …".
+
+## 4. Arlo
+Stöds inte (ägarens val, alternativ 2): kortet säger "Stöds inte" i stället för påhittad data. Inofficiell inloggning kräver att man utger sig för att
+vara en webbläsare för att komma förbi Arlos Cloudflare-skydd (så gör pyaarlo 0.8.0.27), vilket inte går i Vercel-appen, och kontolås har rapporterats.
+Alla demomoduler är borttagna: hemskärmen visar bara riktig data.

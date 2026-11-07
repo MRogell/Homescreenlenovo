@@ -22,7 +22,7 @@ function setup(routes: Record<string, { status: number; body?: unknown }>, cache
 describe("aeg provider", () => {
   it("finds the dishwasher, caches it and maps a running cycle", async () => {
     const t = setup({ "/appliances": { status: 200, body: APPLIANCES }, "/appliances/DW1/state": { status: 200, body: state({ applianceState: "RUNNING", timeToEnd: 2520, cyclePhase: "MAINWASH", userSelections: { programUID: "ECO" } }) } });
-    expect(await t.p.getSummary()).toEqual({ appliance: "Diskmaskin", state: "RUNNING", stateText: "Pågår", program: "Eco", phase: "Mainwash", minutesLeft: 42, doneAt: new Date(NOW + 2_520_000).toISOString(), connected: true });
+    expect(await t.p.getSummary()).toEqual({ appliance: "Diskmaskin", state: "RUNNING", stateText: "Pågår", program: "Eco", phase: "Mainwash", minutesLeft: 42, doneAt: new Date(NOW + 2_520_000).toISOString(), connected: true, remoteControl: null });
     expect(t.calls).toEqual(["/appliances Bearer TOK KEY", "/appliances/DW1/state Bearer TOK KEY"]);
     expect(t.saved()).toEqual({ id: "DW1", name: "Diskmaskin", fetchedAt: NOW });
   });
@@ -43,6 +43,12 @@ describe("aeg provider", () => {
   it("401 and 429 give clear errors", async () => {
     await expect(setup({ "/appliances": { status: 401 } }).p.getSummary()).rejects.toThrow(/anslut igen/);
     await expect(setup({ "/appliances": { status: 429 } }).p.getSummary()).rejects.toThrow(/begränsar/);
+  });
+  it("reports whether remote control is enabled", async () => {
+    const t = setup({ "/appliances": { status: 200, body: APPLIANCES }, "/appliances/DW1/state": { status: 200, body: state({ applianceState: "READY_TO_START", remoteControl: "ENABLED" }) } });
+    expect((await t.p.getSummary()).remoteControl).toBe("ENABLED");
+    const u = setup({ "/appliances": { status: 200, body: APPLIANCES }, "/appliances/DW1/state": { status: 200, body: state({ applianceState: "READY_TO_START" }) } });
+    expect((await u.p.getSummary()).remoteControl).toBeNull();
   });
   it("passes the schema; ttl 60 s", async () => {
     const t = setup({ "/appliances": { status: 200, body: APPLIANCES }, "/appliances/DW1/state": { status: 200, body: state({ applianceState: "OFF" }) } });

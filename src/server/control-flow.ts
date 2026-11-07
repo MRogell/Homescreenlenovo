@@ -6,6 +6,8 @@ import { getAccessToken, ReauthRequired } from "./connections";
 import { db as defaultDb } from "./db";
 import { getSpotifyDefaultDevice, type DefaultDevice } from "./spotify-prefs";
 import { controlSonos, SONOS_ACTIONS, SonosControlError, type SonosAction, type SonosErrorCode } from "./providers/sonos-control";
+import { AEG_ACTIONS, AegControlError, controlAeg, type AegAction, type AegErrorCode } from "./providers/aeg-control";
+import { getAegApiKey } from "./aeg-connect";
 import { ControlError, SPOTIFY_ACTIONS, controlSpotify, listSpotifyDevices, transferSpotify, type ControlErrorCode, type SpotifyAction, type SpotifyDevice } from "./providers/spotify-control";
 
 export interface ControlRequest {
@@ -27,6 +29,9 @@ export interface ControlFlowDeps {
   fetchFn?: typeof fetch;
   db?: PrismaClient;
   getPreferred?: () => Promise<DefaultDevice | null>;
+  getApiKey?: () => Promise<string | null>;
+  /** AEG: apparaten tas från servern (sparad vid senaste hämtning), aldrig från anroparen. */
+  getAegApplianceId?: () => Promise<string | null>;
 }
 
 // Spotifys enhets-id: bara bokstäver och siffror.
@@ -60,6 +65,33 @@ async function handleSonos(body: unknown, deps: ControlFlowDeps): Promise<Contro
   return { status: 204 };
 }
 
+const aegBody = z.object({ action: z.enum(AEG_ACTIONS as unknown as [AegAction, ...AegAction[]]) }).strict();
+const AEG_STATUS: Record<AegErrorCode, number> = { reauth: 409, not_allowed: 409, rate_limit: 429, failed: 502 };
+
+async function storedAegApplianceId(db: PrismaClient): Promise<string | null> {
+  const row = await db.connection.findFirst({ where: { provider: "aeg", status: "ok" }, select: { settings: true } });
+  const id = (row?.settings as { appliance?: { id?: unknown } } | null)?.appliance?.id;
+  return typeof id === "string" && id ? id : null;
+}
+
+/** AEG: starta, pausa, återuppta eller stoppa diskmaskinen. */
+async function handleAeg(body: unknown, deps: ControlFlowDeps): Promise<ControlResult> {
+  const parsed = aegBody.safeParse(body);
+  if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
+  const db = deps.db ?? defaultDb;
+  const applianceId = await (deps.getAegApplianceId ?? (() => storedAegApplianceId(db)))();
+  if (!applianceId) return { status: 409, json: { error: "Diskmaskinen är inte hämtad än. Vänta på nästa uppdatering.", code: "no_appliance" } };
+  try {
+    await controlAeg(parsed.data.action, applianceId, { getToken: deps.getToken ?? (() => getAccessToken("aeg")), getApiKey: deps.getApiKey ?? (() => getAegApiKey(db)), fetchFn: deps.fetchFn });
+  } catch (e) {
+    const err = e instanceof ReauthRequired ? new AegControlError("reauth") : e instanceof AegControlError ? e : new AegControlError("failed");
+    return { status: AEG_STATUS[err.code], json: { error: err.message, code: err.code } };
+  }
+  await db.snapshot.deleteMany({ where: { provider: "aeg" } });
+  await db.providerBackoff.deleteMany({ where: { provider: "aeg" } });
+  return { status: 204 };
+}
+
 const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, choose_device: 409, premium: 403, rate_limit: 429, failed: 502 };
 const GENERIC = new ControlError("failed");
 
@@ -68,10 +100,11 @@ const GENERIC = new ControlError("failed");
  * Etapp: bara Spotify. Efter ett lyckat kommando rensas tjänstens cache så att nästa hämtning ger färsk status.
  */
 export async function handleControl(req: ControlRequest, deps: ControlFlowDeps = {}): Promise<ControlResult> {
-  if (req.provider !== "spotify" && req.provider !== "sonos") return { status: 404, json: { error: "Okänd tjänst", code: "unknown" } };
+  if (req.provider !== "spotify" && req.provider !== "sonos" && req.provider !== "aeg") return { status: 404, json: { error: "Okänd tjänst", code: "unknown" } };
   if (!req.userId) return { status: 401, json: { error: "Inte inloggad", code: "unauthenticated" } };
   if (!sameOrigin(req.origin, req.host)) return { status: 403, json: { error: "Ogiltigt ursprung", code: "origin" } };
   if (req.provider === "sonos") return handleSonos(req.body, deps);
+  if (req.provider === "aeg") return handleAeg(req.body, deps);
   const parsed = bodySchema.safeParse(req.body);
   if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
 

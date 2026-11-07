@@ -13,7 +13,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Inställningar" };
 
-const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", arlo: "Arlo", weather: "Väder", tado: "Tado (inomhus)" };
+const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", weather: "Väder", tado: "Tado (inomhus)" };
 const ERRORS: Record<string, string> = {
   "ogiltig-state": "Anslutningen avbröts av säkerhetsskäl. Försök igen från början.",
   avbrutet: "Du avbröt anslutningen.",
@@ -81,6 +81,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
               </div>
             );
           }))}
+          <div className="row"><span>Arlo</span><span>Stöds inte</span></div>
         </div>
       </section>
       {oauth.get("spotify")?.status === "ok" && (

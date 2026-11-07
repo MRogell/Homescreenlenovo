@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-export const PROVIDER_IDS = ["skoda", "sonos", "spotify", "aeg", "arlo", "weather", "tado"] as const;
+export const PROVIDER_IDS = ["skoda", "sonos", "spotify", "aeg", "weather", "tado"] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 export type CardState<T> =

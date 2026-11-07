@@ -1,8 +1,10 @@
 import { formatClock, formatMinutes, formatTemp, formatTempShort } from "@/lib/format";
 import type { CardState } from "@/server/providers/types";
-import type { AegData, ArloData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData } from "@/server/providers/schemas";
+import type { AegData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
+import { Icon } from "./icons";
 import { SonosRooms } from "./sonos-rooms";
+import { AegControls } from "./aeg-controls";
 import { SpotifyControls } from "./spotify-controls";
 
 type S<T> = CardState<unknown> | undefined;
@@ -48,18 +50,22 @@ export const AegCard = ({ state, now }: P) => (
       // Stor text visar läget; pillret visar uppkoppling, eller läget när maskinen kör (då är stora texten tiden kvar).
       pill: !d.connected ? { text: "Offline", tone: "bad" } : active ? { text: d.stateText, tone: "warn" } : { text: "Online", tone: "ok" },
       body: <>
-        <div className="big">{active && d.minutesLeft !== null ? formatMinutes(d.minutesLeft) : d.stateText}<small>{active && d.minutesLeft !== null ? "kvar" : ""}</small></div>
+        {active && d.minutesLeft !== null
+          ? <div className="big">{formatMinutes(d.minutesLeft)}<small>kvar</small></div>
+          : <div className="big text">{d.stateText}</div>}
         <div className="mid">{d.appliance}{d.program && <> · <strong>{d.program}</strong></>}{d.phase && active && ` · ${d.phase}`}{d.doneAt && ` · klar ca ${formatClock(d.doneAt)}`}</div>
+        {d.connected && <AegControls state={d.state} remoteControl={d.remoteControl} />}
       </>,
     };
   }} />
 );
 
-export const ArloCard = ({ state, now }: P) => (
-  <CardShell<ArloData> title="Arlo" icon="cam" state={as(state)} now={now} render={(d) => ({
-    pill: { text: "Online", tone: "ok" },
-    body: <><div className="big">{d.cameras}<small>kameror</small></div><div className="rows"><div className="row"><span>Senaste rörelse</span><span>{formatClock(d.lastMotionAt)} {d.lastMotionPlace}</span></div></div></>,
-  })} />
+/** Arlo stöds inte (inget öppet API; inofficiell inloggning blockeras av Arlos Cloudflare-skydd). Ingen påhittad data visas. */
+export const ArloUnsupportedCard = () => (
+  <section className="card off unsupported" aria-label="Arlo">
+    <div className="card-head"><Icon name="cam" /><span className="name">Arlo</span><span className="pill">Stöds inte</span></div>
+    <p className="mid">Arlo har inget öppet gränssnitt, och den inofficiella vägen blockeras av Arlo. Använd Arlo-appen för kamerorna.</p>
+  </section>
 );
 
 export const WeatherCard = ({ state, now }: P) => (

@@ -201,3 +201,44 @@ describe("handleControl sonos", () => {
     expect((await handleControl(sonosReq, { getToken: async () => "TOK", fetchFn: rec(429).fetchFn, db })).status).toBe(429);
   });
 });
+
+describe("handleControl aeg", () => {
+  const aegReq = { ...ok, provider: "aeg", body: { action: "pause" } };
+  function rec(status: number) {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => { calls.push(`${init.method} ${url} ${init.body}`); return new Response("{}", { status }); }) as unknown as typeof fetch;
+    return { calls, fetchFn };
+  }
+  const d = (f: { fetchFn: typeof fetch }, appliance: string | null = "DW1") => ({ getToken: async () => "TOK", getApiKey: async () => "KEY", getAegApplianceId: async () => appliance, fetchFn: f.fetchFn, db });
+
+  it("pause sends the command to the stored appliance and clears only the aeg snapshot", async () => {
+    await db.snapshot.create({ data: { provider: "aeg", payload: {}, fetchedAt: new Date() } });
+    const f = rec(200);
+    expect((await handleControl(aegReq, d(f))).status).toBe(204);
+    expect(f.calls).toEqual(['PUT https://api.developer.electrolux.one/api/v1/appliances/DW1/command {"executeCommand":"PAUSE"}']);
+    expect((await db.snapshot.findMany()).map((x) => x.provider).sort()).toEqual(["spotify", "tado"]);
+  });
+  it("the client cannot choose the appliance; extra fields are 400", async () => {
+    const f = rec(200);
+    for (const body of [{ action: "pause", applianceId: "ANNAN" }, { action: "tvätta" }, {}, { action: "start", extra: 1 }]) {
+      expect((await handleControl({ ...aegReq, body }, d(f))).status, JSON.stringify(body)).toBe(400);
+    }
+    expect(f.calls).toHaveLength(0);
+  });
+  it("no known appliance yet gives 409", async () => {
+    const r = await handleControl(aegReq, d(rec(200), null));
+    expect(r.status).toBe(409);
+    expect(r.json?.code).toBe("no_appliance");
+  });
+  it("not allowed remotely gives 409 with a hint about remote start on the machine", async () => {
+    const r = await handleControl({ ...aegReq, body: { action: "start" } }, d(rec(403)));
+    expect(r.status).toBe(409);
+    expect(r.json?.error).toMatch(/fjärrstart/i);
+  });
+  it("session and origin first", async () => {
+    const f = rec(200);
+    expect((await handleControl({ ...aegReq, userId: null }, d(f))).status).toBe(401);
+    expect((await handleControl({ ...aegReq, origin: null }, d(f))).status).toBe(403);
+    expect(f.calls).toHaveLength(0);
+  });
+});

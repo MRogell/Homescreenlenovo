@@ -63,11 +63,11 @@ describe("getHomeStates", () => {
     expect(s.aeg).toMatchObject({ status: "ok", data: { n: 9 } });
   });
   it("not_connected provider is not called and writes nothing", async () => {
-    const a = prov("arlo", async () => ({ n: 1 }));
+    const a = prov("weather", async () => ({ n: 1 }));
     a.p.connected = false;
     const s = await getHomeStates(T0, [a.p], db);
     expect(a.calls()).toBe(0);
-    expect(s.arlo).toEqual({ status: "not_connected" });
+    expect(s.weather).toEqual({ status: "not_connected" });
     expect(await db.snapshot.count()).toBe(0);
   });
 });
@@ -107,7 +107,7 @@ describe("backoff after failure", () => {
     expect(good.calls()).toBe(2);
   });
   it("not connected providers never get a backoff row", async () => {
-    const a = prov("arlo", async () => ({ n: 1 }));
+    const a = prov("weather", async () => ({ n: 1 }));
     a.p.connected = false;
     await getHomeStates(T0, [a.p], db);
     expect(await db.providerBackoff.count()).toBe(0);

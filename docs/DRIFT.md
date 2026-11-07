@@ -45,3 +45,5 @@ vid fel eller slut kvot väntar appen 10 minuter. Gäller den äldre generatione
 3. Hemskärmen → Inställningar → AEG → **Anslut**, klistra in de tre värdena och tryck **Spara**. De provas mot Electrolux innan de sparas
    (krypterade). Tokens förnyas automatiskt; om Electrolux återkallar dem visas "Anslut igen", och då skapar du nya i portalen.
 Kortet uppdateras varje minut: läge (Av, Pågår, Klar …), program och tid kvar.
+**Fjärrstyrning:** Starta, Pausa, Återuppta och Stoppa på kortet (Starta och Stoppa kräver ett extra tryck). För att kunna starta härifrån måste
+fjärrstart vara påslaget på diskmaskinen (knapp/inställning på maskinen) och luckan stängd.

@@ -77,6 +77,7 @@ export function createAegProvider(deps: AegDeps): Provider<AegData> {
         minutesLeft: active && seconds !== null ? Math.round(seconds / 60) : null,
         doneAt: active && seconds !== null ? new Date(now() + seconds * 1000).toISOString() : null,
         connected: typeof st?.connectionState === "string" ? st.connectionState.toLowerCase() === "connected" : false,
+        remoteControl: str(reported.remoteControl) ?? null,
       };
     },
   };
