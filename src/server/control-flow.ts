@@ -4,6 +4,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { sameOrigin } from "./connect-flow";
 import { getAccessToken, ReauthRequired } from "./connections";
 import { db as defaultDb } from "./db";
+import { getSpotifyDefaultDevice, type DefaultDevice } from "./spotify-prefs";
 import { ControlError, SPOTIFY_ACTIONS, controlSpotify, listSpotifyDevices, transferSpotify, type ControlErrorCode, type SpotifyAction, type SpotifyDevice } from "./providers/spotify-control";
 
 export interface ControlRequest {
@@ -24,6 +25,7 @@ export interface ControlFlowDeps {
   getToken?: () => Promise<string>;
   fetchFn?: typeof fetch;
   db?: PrismaClient;
+  getPreferred?: () => Promise<DefaultDevice | null>;
 }
 
 // Spotifys enhets-id: bara bokstäver och siffror.
@@ -57,11 +59,16 @@ export async function handleControl(req: ControlRequest, deps: ControlFlowDeps =
   try {
     if (body.action === "devices") return { status: 200, json: { devices: await listSpotifyDevices(spotify) } };
     if (body.action === "transfer") await transferSpotify(body.deviceId, body.play, spotify);
-    else await controlSpotify(body.action, spotify, body.deviceId);
+    else {
+      const preferred = body.action === "play" && !body.deviceId ? await (deps.getPreferred ?? (() => getSpotifyDefaultDevice(deps.db ?? defaultDb)))() : null;
+      await controlSpotify(body.action, spotify, body.deviceId, preferred);
+    }
   } catch (e) {
     const err = e instanceof ReauthRequired ? new ControlError("reauth") : e instanceof ControlError ? e : GENERIC;
     return { status: STATUS[err.code], json: { error: err.message, code: err.code, ...(err.devices ? { devices: err.devices } : {}) } };
   }
-  await (deps.db ?? defaultDb).snapshot.deleteMany({ where: { provider: "spotify" } });
+  const db = deps.db ?? defaultDb;
+  await db.snapshot.deleteMany({ where: { provider: "spotify" } });
+  await db.providerBackoff.deleteMany({ where: { provider: "spotify" } });
   return { status: 204 };
 }

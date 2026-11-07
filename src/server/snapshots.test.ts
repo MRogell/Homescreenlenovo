@@ -15,7 +15,7 @@ function prov(id: Provider<unknown>["id"], fn: () => Promise<unknown>, ttl = 60)
 }
 const seed = (provider: string, payload: unknown, fetchedAt: Date) => db.snapshot.create({ data: { provider, payload: payload as never, fetchedAt } });
 
-beforeEach(async () => { await db.snapshot.deleteMany(); });
+beforeEach(async () => { await db.snapshot.deleteMany(); await db.providerBackoff.deleteMany(); });
 
 describe("getHomeStates", () => {
   it("fresh snapshot is served without calling provider", async () => {
@@ -69,5 +69,47 @@ describe("getHomeStates", () => {
     expect(a.calls()).toBe(0);
     expect(s.arlo).toEqual({ status: "not_connected" });
     expect(await db.snapshot.count()).toBe(0);
+  });
+});
+
+describe("backoff after failure", () => {
+  it("a failing provider is not called again within 60 s", async () => {
+    const bad = prov("sonos", async () => { throw new Error("nere"); });
+    expect((await getHomeStates(T0, [bad.p], db)).sonos).toMatchObject({ status: "unavailable", reason: "nere" });
+    const again = await getHomeStates(new Date(T0.getTime() + 30_000), [bad.p], db);
+    expect(bad.calls()).toBe(1);
+    expect(again.sonos).toMatchObject({ status: "unavailable", reason: "nere" });
+  });
+  it("during backoff stale data is still shown", async () => {
+    await seed("sonos", { n: 1 }, new Date(T0.getTime() - 120_000));
+    const bad = prov("sonos", async () => { throw new Error("nere"); });
+    await getHomeStates(T0, [bad.p], db);
+    const again = await getHomeStates(new Date(T0.getTime() + 10_000), [bad.p], db);
+    expect(again.sonos).toMatchObject({ status: "stale", data: { n: 1 }, reason: "nere" });
+    expect(bad.calls()).toBe(1);
+  });
+  it("after 60 s the provider is tried again, and success clears the backoff", async () => {
+    let fail = true;
+    const p = prov("sonos", async () => { if (fail) throw new Error("nere"); return { n: 5 }; });
+    await getHomeStates(T0, [p.p], db);
+    fail = false;
+    const later = await getHomeStates(new Date(T0.getTime() + 60_000), [p.p], db);
+    expect(p.calls()).toBe(2);
+    expect(later.sonos).toMatchObject({ status: "ok", data: { n: 5 } });
+    expect(await db.providerBackoff.count()).toBe(0);
+  });
+  it("one provider in backoff does not stop others", async () => {
+    const bad = prov("sonos", async () => { throw new Error("nere"); });
+    const good = prov("aeg", async () => ({ n: 2 }), 1);
+    await getHomeStates(T0, [bad.p, good.p], db);
+    const s = await getHomeStates(new Date(T0.getTime() + 5_000), [bad.p, good.p], db);
+    expect(s.aeg).toMatchObject({ status: "ok" });
+    expect(good.calls()).toBe(2);
+  });
+  it("not connected providers never get a backoff row", async () => {
+    const a = prov("arlo", async () => ({ n: 1 }));
+    a.p.connected = false;
+    await getHomeStates(T0, [a.p], db);
+    expect(await db.providerBackoff.count()).toBe(0);
   });
 });

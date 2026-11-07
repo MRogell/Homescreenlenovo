@@ -165,3 +165,35 @@ describe("device switching", () => {
     expect(((await transferSpotify("B", true, deps(one(404, { error: { reason: "NO_ACTIVE_DEVICE" } }))).catch((e) => e)) as ControlError).code).toBe("no_device");
   });
 });
+
+describe("default device when nothing is active", () => {
+  function routed(devicesBody: unknown) {
+    const calls: { key: string; body?: string }[] = [];
+    const fn = (async (url: string, init: RequestInit) => {
+      const key = `${init.method ?? "GET"} ${url.replace("https://api.spotify.com/v1", "")}`;
+      calls.push({ key, body: init.body ? String(init.body) : undefined });
+      if (key === "PUT /me/player/play") return new Response(JSON.stringify({ error: { reason: "NO_ACTIVE_DEVICE" } }), { status: 404 });
+      if (key === "GET /me/player/devices") return new Response(JSON.stringify(devicesBody), { status: 200 });
+      return new Response(null, { status: 204 });
+    }) as unknown as typeof fetch;
+    return { fn, calls };
+  }
+  const TWO = { devices: [{ id: "PC", name: "WWMIRO", type: "Computer", is_restricted: false }, { id: "PHONE1", name: "iPhone", type: "Smartphone", is_restricted: false }] };
+  const deps = (f: { fn: typeof fetch }) => ({ getToken: async () => "TOK", fetchFn: f.fn });
+
+  it("plays on the default device even when several are available", async () => {
+    const f = routed(TWO);
+    await controlSpotify("play", deps(f), undefined, { id: "PHONE1", name: "iPhone" });
+    expect(JSON.parse(f.calls.at(-1)!.body!)).toEqual({ device_ids: ["PHONE1"], play: true });
+  });
+  it("finds the default by name when Spotify gave the device a new id", async () => {
+    const f = routed(TWO);
+    await controlSpotify("play", deps(f), undefined, { id: "GAMMALT-ID", name: "IPHONE " });
+    expect(JSON.parse(f.calls.at(-1)!.body!).device_ids).toEqual(["PHONE1"]);
+  });
+  it("default not available: falls back to asking", async () => {
+    const f = routed(TWO);
+    const e = (await controlSpotify("play", deps(f), undefined, { id: "X", name: "Okänd" }).catch((x) => x)) as ControlError;
+    expect(e.code).toBe("choose_device");
+  });
+});

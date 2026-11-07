@@ -4,6 +4,8 @@ import { getConnectionStatus } from "@/server/connections";
 import { getOAuthConfig, isOAuthProvider, type OAuthProviderId } from "@/server/oauth-providers";
 import { PROVIDERS } from "@/server/providers";
 import { DisconnectButton } from "@/components/disconnect-button";
+import { SpotifyDefaultDevice } from "@/components/spotify-default-device";
+import { getSpotifyDefaultDevice } from "@/server/spotify-prefs";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +59,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           }))}
         </div>
       </section>
+      {oauth.get("spotify")?.status === "ok" && (
+        <section className="card" aria-label="Spotify">
+          <div className="card-head"><span className="name">Spotify</span></div>
+          <SpotifyDefaultDevice current={await getSpotifyDefaultDevice()} />
+        </section>
+      )}
       <section className="card" aria-label="Konto">
         <div className="card-head"><span className="name">Konto</span></div>
         <SignOutButton />

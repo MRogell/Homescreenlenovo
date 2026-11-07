@@ -32,3 +32,12 @@ Enhet: rätt metod och sökväg per kommando, 200/202/204 som lyckat, felmappnin
   Spotifys cache rensas efteråt.
 - Samma skydd som övriga kommandon. Strikt indata: `devices` tar inga fler fält, `transfer` kräver `deviceId` (bokstäver och siffror) och `play` (boolean).
 - Fel vid hämtning av listan visas (till skillnad från reservvägen vid "spela", som tyst ger en tom lista).
+
+## Snabbare och standardenhet (tillägg, ägarens önskemål)
+- **Väntetid efter fel (alla tjänster):** en tjänst som misslyckas frågas inte igen på 60 s (`provider_backoff`). Under tiden visas senast kända data
+  ("Ej tillgänglig") eller felet. Lyckat svar och lyckat Spotify-kommando rensar väntetiden. Hindrar att en trasig tjänst bromsar varje uppdatering.
+- **Snabbare knappar:** spela/pausa visas direkt (tillfälligt läge tills servern svarat), knapparna släpps när kommandot är klart och kortet uppdateras i bakgrunden.
+  En öppen bytlista stängs när enheten ändras.
+- **Standardenhet:** sparas på Spotify-anslutningen (`connection.settings.defaultDevice = {id, name}`), väljs i Inställningar bland enheterna Spotify ser.
+  Vid "spela" utan aktiv enhet används den (matchas på id, annars namn) i stället för listan. Syns den inte för Spotify visas listan som tidigare.
+- **Sonos-rum i Spotify Connect:** Spotify-appen hittar dem lokalt på wifi; Spotifys moln-API visar dem bara om de nyligen spelat. Vägen dit är Sonos-anslutningen.

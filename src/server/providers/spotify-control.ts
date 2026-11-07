@@ -116,7 +116,7 @@ export async function transferSpotify(deviceId: string, play: boolean, deps: Con
   return transferWith(await caller(deps), deviceId, play);
 }
 
-export async function controlSpotify(action: SpotifyAction, deps: ControlDeps, deviceId?: string): Promise<void> {
+export async function controlSpotify(action: SpotifyAction, deps: ControlDeps, deviceId?: string, preferred?: { id: string; name: string } | null): Promise<void> {
   const call = await caller(deps);
 
   async function availableDevices(): Promise<SpotifyDevice[]> {
@@ -139,6 +139,12 @@ export async function controlSpotify(action: SpotifyAction, deps: ControlDeps, d
   // Ingen aktiv enhet (t.ex. Spotify pausad i bakgrunden på telefonen): väck en tillgänglig enhet i stället.
   if (action === "play" && err.code === "no_device") {
     const devices = await availableDevices();
+    // Standardenheten först: på id, annars på namn (Spotify kan ge en enhet nytt id).
+    if (preferred) {
+      const wanted = preferred.name.trim().toLowerCase();
+      const match = devices.find((d) => d.id === preferred.id) ?? devices.find((d) => d.name.trim().toLowerCase() === wanted);
+      if (match) return transferWith(call, match.id, true);
+    }
     if (devices.length === 1) return transferWith(call, devices[0]!.id, true);
     if (devices.length > 1) throw new ControlError("choose_device", devices);
   }

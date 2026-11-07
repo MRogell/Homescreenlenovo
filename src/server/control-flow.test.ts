@@ -144,3 +144,24 @@ describe("handleControl device switching", () => {
     expect(f.calls).toHaveLength(0);
   });
 });
+
+describe("handleControl default device and backoff", () => {
+  it("uses the stored default device when nothing is active", async () => {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => {
+      calls.push(`${init.method ?? "GET"} ${url} ${init.body ?? ""}`.trim());
+      if (url.endsWith("/me/player/play")) return new Response(JSON.stringify({ error: { reason: "NO_ACTIVE_DEVICE" } }), { status: 404 });
+      if (url.endsWith("/me/player/devices")) return new Response(JSON.stringify({ devices: [{ id: "PC", name: "WWMIRO", type: "Computer" }, { id: "PHONE1", name: "iPhone", type: "Smartphone" }] }), { status: 200 });
+      return new Response(null, { status: 204 });
+    }) as unknown as typeof fetch;
+    const r = await handleControl({ ...ok, body: { action: "play" } }, { getToken: async () => "TOK", fetchFn, db, getPreferred: async () => ({ id: "PHONE1", name: "iPhone" }) });
+    expect(r.status).toBe(204);
+    expect(calls.at(-1)).toBe('PUT https://api.spotify.com/v1/me/player {"device_ids":["PHONE1"],"play":true}');
+  });
+  it("a successful command clears a Spotify backoff", async () => {
+    await db.providerBackoff.upsert({ where: { provider: "spotify" }, create: { provider: "spotify", reason: "x", until: new Date(Date.now() + 60_000) }, update: {} });
+    const fetchFn = (async () => new Response(null, { status: 204 })) as unknown as typeof fetch;
+    await handleControl(ok, { getToken: async () => "TOK", fetchFn, db, getPreferred: async () => null });
+    expect(await db.providerBackoff.count({ where: { provider: "spotify" } })).toBe(0);
+  });
+});

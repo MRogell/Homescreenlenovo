@@ -81,6 +81,8 @@ model Connection {
   status     String    @default("ok")
   lastSyncAt DateTime? @db.Timestamptz
   lastError  String?
+  /// Inställningar för anslutningen, t.ex. Spotifys standardenhet {defaultDevice: {id, name}}.
+  settings   Json      @default("{}")
   createdAt  DateTime  @default(now()) @db.Timestamptz
   updatedAt  DateTime  @updatedAt @db.Timestamptz
 
@@ -97,4 +99,13 @@ model Snapshot {
 
   @@index([provider, fetchedAt])
   @@map("snapshot")
+}
+
+/// En tjänst som nyss misslyckades får vänta till `until` innan nästa försök, så att den inte bromsar varje uppdatering.
+model ProviderBackoff {
+  provider String   @id
+  reason   String
+  until    DateTime @db.Timestamptz
+
+  @@map("provider_backoff")
 }

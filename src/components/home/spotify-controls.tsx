@@ -1,6 +1,6 @@
 "use client";
 import { Pause, Play, SkipBack, SkipForward, Speaker } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRefresh } from "./refresh-context";
 
 type Action = "play" | "pause" | "next" | "previous";
@@ -15,6 +15,19 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [picker, setPicker] = useState<Picker | null>(null);
+  // Visas direkt efter tryck (spela/pausa) tills ny status kommit från servern.
+  const [optimistic, setOptimistic] = useState<boolean | null>(null);
+  const shownPlaying = optimistic ?? playing;
+
+  // Ny status från servern: släpp den tillfälliga visningen. En öppen bytlista med gammalt läge stängs.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOptimistic(null);
+  }, [playing]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPicker((p) => (p?.mode === "switch" ? null : p));
+  }, [device]);
 
   async function post(body: Record<string, unknown>): Promise<{ ok: boolean; data: ApiBody | null }> {
     const res = await fetch("/api/control/spotify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -35,17 +48,18 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
     }
   }
 
-  async function done() {
+  function done() {
     setPicker(null);
-    // Spotify behöver en stund på sig innan den nya statusen syns.
-    await new Promise((r) => setTimeout(r, 700));
-    await refresh();
+    // Knapparna släpps direkt; kortet hämtar ny status i bakgrunden när Spotify hunnit uppdatera sig.
+    setTimeout(() => void refresh(), 700);
   }
 
   const send = (action: Action) =>
     run(async () => {
+      if (action === "play" || action === "pause") setOptimistic(action === "play");
       const { ok, data } = await post({ action });
       if (ok) return done();
+      setOptimistic(null);
       if (data?.code === "choose_device" && data.devices?.length) return setPicker({ mode: "choose", devices: data.devices });
       setPicker(null);
       setError(data?.error ?? "Det gick inte att styra Spotify.");
@@ -63,7 +77,7 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
   const moveTo = (d: Device) =>
     run(async () => {
       // Vid byte behålls läget (spelar/pausad). Vid "ingen aktiv enhet" ville användaren spela.
-      const { ok, data } = await post({ action: "transfer", deviceId: d.id, play: picker?.mode === "choose" ? true : playing });
+      const { ok, data } = await post({ action: "transfer", deviceId: d.id, play: picker?.mode === "choose" ? true : shownPlaying });
       if (ok) return done();
       setError(data?.error ?? "Det gick inte att byta enhet.");
     });
@@ -72,8 +86,8 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
     <div className="controls">
       <div className="controls-row">
         <button type="button" className="ctl" aria-label="Föregående låt" disabled={busy} onClick={() => send("previous")}><SkipBack aria-hidden="true" /></button>
-        <button type="button" className="ctl main" aria-label={playing ? "Pausa" : "Spela"} disabled={busy} onClick={() => send(playing ? "pause" : "play")}>
-          {playing ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+        <button type="button" className="ctl main" aria-label={shownPlaying ? "Pausa" : "Spela"} disabled={busy} onClick={() => send(shownPlaying ? "pause" : "play")}>
+          {shownPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
         </button>
         <button type="button" className="ctl" aria-label="Nästa låt" disabled={busy} onClick={() => send("next")}><SkipForward aria-hidden="true" /></button>
       </div>
