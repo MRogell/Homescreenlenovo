@@ -24,3 +24,11 @@ Spela/pausa, föregående och nästa från Spotify-kortet på plattan.
 
 ## Test
 Enhet: rätt metod och sökväg per kommando, 200/202/204 som lyckat, felmappning (401, 403 premium/scope/övrigt, 404, 429, 500, nätverksfel, icke-JSON). Flöde mot databasen: okänd tjänst (404), saknad session (401), fel Origin (403), ogiltig indata (400), lyckat (204 och bara Spotify-cachen raderas), felande kommando behåller cachen, `ReauthRequired` (409), oväntade fel läcker inga detaljer.
+
+## Byta enhet (tillägg, ägarens önskemål)
+- Knappen **"Byt enhet"** på kortet visar enheten som spelar nu. Ett tryck hämtar listan (`{"action": "devices"}` → `GET /me/player/devices`, begränsade enheter utesluts)
+  och markerar den aktiva som "Spelar här".
+- Val av annan enhet skickar `{"action": "transfer", "deviceId": "...", "play": <nuvarande läge>}` → `PUT /me/player`: spelade musiken fortsätter den där, annars förblir den pausad.
+  Spotifys cache rensas efteråt.
+- Samma skydd som övriga kommandon. Strikt indata: `devices` tar inga fler fält, `transfer` kräver `deviceId` (bokstäver och siffror) och `play` (boolean).
+- Fel vid hämtning av listan visas (till skillnad från reservvägen vid "spela", som tyst ger en tom lista).

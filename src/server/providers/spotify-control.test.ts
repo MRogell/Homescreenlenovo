@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ControlError, controlSpotify } from "./spotify-control";
+import { ControlError, controlSpotify, listSpotifyDevices, transferSpotify } from "./spotify-control";
 
 type Call = { url: string; method: string; auth: string };
 function make(status: number, body?: unknown, headers?: Record<string, string>) {
@@ -118,5 +118,50 @@ describe("controlSpotify without an active device", () => {
   it("a failed transfer maps like other errors", async () => {
     const f = routed({ "PUT /me/player/play": NO_DEVICE, "GET /me/player/devices": devices({ id: "X", name: "Dator" }), "PUT /me/player": { status: 403, body: { error: { reason: "PREMIUM_REQUIRED" } } } });
     expect(((await controlSpotify("play", { getToken: async () => "TOK", fetchFn: f.fn }).catch((x) => x)) as ControlError).code).toBe("premium");
+  });
+});
+
+describe("device switching", () => {
+  function one(status: number, body?: unknown) {
+    const calls: { key: string; body?: string }[] = [];
+    const fn = (async (url: string, init: RequestInit) => {
+      calls.push({ key: `${init.method ?? "GET"} ${url.replace("https://api.spotify.com/v1", "")}`, body: init.body ? String(init.body) : undefined });
+      return status === 204 ? new Response(null, { status }) : new Response(JSON.stringify(body ?? {}), { status });
+    }) as unknown as typeof fetch;
+    return { fn, calls };
+  }
+  const deps = (f: { fn: typeof fetch }) => ({ getToken: async () => "TOK", fetchFn: f.fn });
+
+  it("listSpotifyDevices returns devices with active flag and skips restricted ones", async () => {
+    const f = one(200, { devices: [
+      { id: "A", name: "WWMIRO", type: "Computer", is_active: true, is_restricted: false },
+      { id: "B", name: "Mickaels iPhone", type: "Smartphone", is_active: false, is_restricted: false },
+      { id: "C", name: "Låst högtalare", type: "Speaker", is_active: false, is_restricted: true },
+    ] });
+    expect(await listSpotifyDevices(deps(f))).toEqual([
+      { id: "A", name: "WWMIRO", type: "Computer", active: true },
+      { id: "B", name: "Mickaels iPhone", type: "Smartphone", active: false },
+    ]);
+    expect(f.calls[0]!.key).toBe("GET /me/player/devices");
+  });
+  it("listSpotifyDevices handles an empty or odd response", async () => {
+    expect(await listSpotifyDevices(deps(one(200, { devices: [] })))).toEqual([]);
+    expect(await listSpotifyDevices(deps(one(200, { devices: "nej" })))).toEqual([]);
+    expect(await listSpotifyDevices(deps(one(200, {})))).toEqual([]);
+  });
+  it("listSpotifyDevices surfaces errors instead of hiding them", async () => {
+    expect(((await listSpotifyDevices(deps(one(401))).catch((e) => e)) as ControlError).code).toBe("reauth");
+    expect(((await listSpotifyDevices(deps(one(500))).catch((e) => e)) as ControlError).code).toBe("failed");
+  });
+  it("transferSpotify keeps playing or stays paused as asked", async () => {
+    const a = one(204);
+    await transferSpotify("B", true, deps(a));
+    expect(a.calls).toEqual([{ key: "PUT /me/player", body: JSON.stringify({ device_ids: ["B"], play: true }) }]);
+    const b = one(204);
+    await transferSpotify("B", false, deps(b));
+    expect(JSON.parse(b.calls[0]!.body!)).toEqual({ device_ids: ["B"], play: false });
+  });
+  it("transferSpotify maps errors", async () => {
+    expect(((await transferSpotify("B", true, deps(one(404, { error: { reason: "NO_ACTIVE_DEVICE" } }))).catch((e) => e)) as ControlError).code).toBe("no_device");
   });
 });

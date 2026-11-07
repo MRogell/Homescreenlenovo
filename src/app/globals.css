@@ -79,3 +79,8 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .gh-actions { margin-top: auto; display: flex; flex-wrap: wrap; gap: 12px; }
 .gh-actions .btn { margin-top: 0; min-width: 200px; }
 .btn.secondary { background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); }
+.device.switch { background: transparent; }
+.switch-label { display: inline-flex; align-items: center; gap: 8px; color: var(--fg) !important; font-weight: 600 !important; font-size: 15px !important; }
+.switch-label svg { width: 18px; height: 18px; stroke: var(--accent); }
+.device[aria-current="true"] { border-color: var(--ok); opacity: 1; cursor: default; }
+.device[aria-current="true"] span { color: var(--ok); }

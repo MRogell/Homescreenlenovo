@@ -11,6 +11,8 @@ export interface SpotifyDevice {
   id: string;
   name: string;
   type: string;
+  /** Sätts av listSpotifyDevices: sant för enheten som spelar nu. */
+  active?: boolean;
 }
 
 const MESSAGES: Record<ControlErrorCode, string> = {
@@ -64,11 +66,12 @@ async function toError(res: Response): Promise<ControlError> {
   return new ControlError("failed");
 }
 
-export async function controlSpotify(action: SpotifyAction, deps: ControlDeps, deviceId?: string): Promise<void> {
+type Caller = (method: string, path: string, body?: unknown) => Promise<Response>;
+
+async function caller(deps: ControlDeps): Promise<Caller> {
   const token = await deps.getToken();
   const fetchFn = deps.fetchFn ?? fetch;
-
-  async function call(method: string, path: string, body?: unknown): Promise<Response> {
+  return async (method, path, body) => {
     try {
       return await fetchFn(`${API}${path}`, {
         method,
@@ -79,29 +82,55 @@ export async function controlSpotify(action: SpotifyAction, deps: ControlDeps, d
     } catch {
       throw new ControlError("failed");
     }
-  }
+  };
+}
 
-  // Flyttar uppspelningen till en enhet och startar den. Spotify fortsätter där den senast var.
-  async function transfer(id: string): Promise<void> {
-    const res = await call("PUT", "/me/player", { device_ids: [id], play: true });
-    if (!res.ok) throw await toError(res);
+/** Enheter som går att spela på. Begränsade enheter (is_restricted) utesluts. */
+function parseDevices(json: unknown): SpotifyDevice[] {
+  const list = (json as { devices?: unknown } | null)?.devices;
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((d): d is { id: string; name: string; type?: unknown; is_restricted?: unknown; is_active?: unknown } => !!d && typeof d.id === "string" && !!d.id && typeof d.name === "string" && d.is_restricted !== true)
+    .map((d) => ({ id: d.id, name: d.name, type: typeof d.type === "string" ? d.type : "Okänd", active: d.is_active === true }));
+}
+
+async function transferWith(call: Caller, id: string, play: boolean): Promise<void> {
+  const res = await call("PUT", "/me/player", { device_ids: [id], play });
+  if (!res.ok) throw await toError(res);
+}
+
+/** Alla tillgängliga enheter. Fel visas (till skillnad från reservvägen i controlSpotify, som tyst ger en tom lista). */
+export async function listSpotifyDevices(deps: ControlDeps): Promise<SpotifyDevice[]> {
+  const call = await caller(deps);
+  const res = await call("GET", "/me/player/devices");
+  if (!res.ok) throw await toError(res);
+  try {
+    return parseDevices(await res.json());
+  } catch {
+    return [];
   }
+}
+
+/** Flyttar uppspelningen till en annan enhet. `play` = fortsätt spela där (annars förblir den pausad). */
+export async function transferSpotify(deviceId: string, play: boolean, deps: ControlDeps): Promise<void> {
+  return transferWith(await caller(deps), deviceId, play);
+}
+
+export async function controlSpotify(action: SpotifyAction, deps: ControlDeps, deviceId?: string): Promise<void> {
+  const call = await caller(deps);
 
   async function availableDevices(): Promise<SpotifyDevice[]> {
     const res = await call("GET", "/me/player/devices");
     if (!res.ok) return [];
     try {
-      const list = ((await res.json()) as { devices?: unknown }).devices;
-      if (!Array.isArray(list)) return [];
-      return list
-        .filter((d): d is { id: string; name: string; type?: unknown; is_restricted?: unknown } => !!d && typeof d.id === "string" && !!d.id && typeof d.name === "string" && d.is_restricted !== true)
-        .map((d) => ({ id: d.id, name: d.name, type: typeof d.type === "string" ? d.type : "Okänd" }));
+      return parseDevices(await res.json()).map(({ id, name, type }) => ({ id, name, type }));
     } catch {
       return [];
     }
   }
 
-  if (action === "play" && deviceId) return transfer(deviceId);
+  // Flyttar uppspelningen till en enhet och startar den. Spotify fortsätter där den senast var.
+  if (action === "play" && deviceId) return transferWith(call, deviceId, true);
 
   const { method, path } = REQUESTS[action];
   const res = await call(method, path);
@@ -110,7 +139,7 @@ export async function controlSpotify(action: SpotifyAction, deps: ControlDeps, d
   // Ingen aktiv enhet (t.ex. Spotify pausad i bakgrunden på telefonen): väck en tillgänglig enhet i stället.
   if (action === "play" && err.code === "no_device") {
     const devices = await availableDevices();
-    if (devices.length === 1) return transfer(devices[0]!.id);
+    if (devices.length === 1) return transferWith(call, devices[0]!.id, true);
     if (devices.length > 1) throw new ControlError("choose_device", devices);
   }
   throw err;

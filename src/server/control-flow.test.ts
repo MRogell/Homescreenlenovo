@@ -99,3 +99,48 @@ describe("handleControl device choice", () => {
     expect(r.json).toMatchObject({ code: "choose_device", devices: [{ id: "A", name: "iPhone" }, { id: "B", name: "Vardagsrum" }] });
   });
 });
+
+describe("handleControl device switching", () => {
+  const LIST = { devices: [{ id: "A", name: "WWMIRO", type: "Computer", is_active: true, is_restricted: false }, { id: "B", name: "iPhone", type: "Smartphone", is_active: false, is_restricted: false }] };
+  function fetchRec(status: number, body?: unknown) {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => { calls.push(`${init.method ?? "GET"} ${url} ${init.body ?? ""}`.trim()); return status === 204 ? new Response(null, { status }) : new Response(JSON.stringify(body ?? {}), { status }); }) as unknown as typeof fetch;
+    return { calls, fetchFn };
+  }
+  it("devices returns 200 with the list and keeps the snapshot", async () => {
+    const f = fetchRec(200, LIST);
+    const r = await handleControl({ ...ok, body: { action: "devices" } }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db });
+    expect(r.status).toBe(200);
+    expect(r.json).toEqual({ devices: [{ id: "A", name: "WWMIRO", type: "Computer", active: true }, { id: "B", name: "iPhone", type: "Smartphone", active: false }] });
+    expect(await db.snapshot.count({ where: { provider: "spotify" } })).toBe(1);
+  });
+  it("transfer moves playback, keeps the play state and clears the spotify snapshot", async () => {
+    const f = fetchRec(204);
+    const r = await handleControl({ ...ok, body: { action: "transfer", deviceId: "B", play: false } }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db });
+    expect(r.status).toBe(204);
+    expect(f.calls).toEqual(['PUT https://api.spotify.com/v1/me/player {"device_ids":["B"],"play":false}']);
+    expect(await db.snapshot.count({ where: { provider: "spotify" } })).toBe(0);
+  });
+  it("invalid device-switching bodies are 400 and make no Spotify call", async () => {
+    const f = fetchRec(204);
+    const d = { getToken: async () => "TOK", fetchFn: f.fetchFn, db };
+    for (const body of [
+      { action: "transfer", play: true },
+      { action: "transfer", deviceId: "B" },
+      { action: "transfer", deviceId: "B", play: "ja" },
+      { action: "transfer", deviceId: "../x", play: true },
+      { action: "devices", deviceId: "B" },
+      { action: "devices", play: true },
+      { action: "pause", play: true },
+    ]) {
+      expect((await handleControl({ ...ok, body }, d)).status, JSON.stringify(body)).toBe(400);
+    }
+    expect(f.calls).toHaveLength(0);
+  });
+  it("devices without session or with wrong origin is refused", async () => {
+    const f = fetchRec(200, LIST);
+    expect((await handleControl({ ...ok, userId: null, body: { action: "devices" } }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db })).status).toBe(401);
+    expect((await handleControl({ ...ok, origin: "https://ond.example.com", body: { action: "devices" } }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db })).status).toBe(403);
+    expect(f.calls).toHaveLength(0);
+  });
+});
