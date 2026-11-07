@@ -15,8 +15,8 @@ export function GoogleHomeTile() {
   return (
     <section className="card gh" aria-label="Google Home">
       <div className="card-head"><House aria-hidden="true" className="gh-icon" /><span className="name">Google Home</span></div>
-      <div className="big text">Lampor, värme och uttag</div>
-      <p className="mid">Styr allt som är kopplat till Google Home, till exempel Plejd, Tado och Tapo.</p>
+      <div className="big text">Lampor och mer</div>
+      <p className="mid">Plejd-lamporna och allt annat i Google Home.</p>
       <div className="gh-actions">
         {links.app ? (
           <>

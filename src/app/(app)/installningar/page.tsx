@@ -9,7 +9,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Inställningar" };
 
-const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", arlo: "Arlo" };
+const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", arlo: "Arlo", weather: "Väder" };
 const ERRORS: Record<string, string> = {
   "ogiltig-state": "Anslutningen avbröts av säkerhetsskäl. Försök igen från början.",
   avbrutet: "Du avbröt anslutningen.",
@@ -41,7 +41,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
             const o = isOAuthProvider(p.id) ? oauth.get(p.id) : undefined;
             if (!o) {
               // Tjänster utan OAuth: visar bryggans status om de har en, annars demodata.
-              const label = p.isConnected ? ((await p.isConnected()) ? "Ansluten via brygga" : "Saknar konfiguration") : p.connected === false ? "Ej ansluten" : "Demodata";
+              const label = p.sourceLabel ? p.sourceLabel : p.isConnected ? ((await p.isConnected()) ? "Ansluten via brygga" : "Saknar konfiguration") : p.connected === false ? "Ej ansluten" : "Demodata";
               return <div className="row" key={p.id}><span>{name}</span><span>{label}</span></div>;
             }
             const label = !o.configured && o.status !== "ok" ? "Saknar konfiguration" : o.status === "ok" ? "Ansluten" : o.status === "reauth" ? "Anslut igen" : "Ej ansluten";

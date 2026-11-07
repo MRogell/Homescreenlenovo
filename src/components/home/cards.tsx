@@ -1,6 +1,6 @@
-import { formatClock, formatMinutes } from "@/lib/format";
+import { formatClock, formatMinutes, formatTemp } from "@/lib/format";
 import type { CardState } from "@/server/providers/types";
-import type { AegData, ArloData, SkodaData, SonosData, SpotifyData } from "@/server/providers/schemas";
+import type { AegData, ArloData, SkodaData, SonosData, SpotifyData, WeatherData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
 import { SpotifyControls } from "./spotify-controls";
 
@@ -48,5 +48,16 @@ export const ArloCard = ({ state, now }: P) => (
   <CardShell<ArloData> title="Arlo" icon="cam" state={as(state)} now={now} render={(d) => ({
     pill: { text: "Online", tone: "ok" },
     body: <><div className="big">{d.cameras}<small>kameror</small></div><div className="rows"><div className="row"><span>Senaste rörelse</span><span>{formatClock(d.lastMotionAt)} {d.lastMotionPlace}</span></div></div></>,
+  })} />
+);
+
+export const WeatherCard = ({ state, now }: P) => (
+  <CardShell<WeatherData> title="Väder" icon="cloud" state={as(state)} now={now} render={(d) => ({
+    pill: d.aqiLabel ? { text: `Luft: ${d.aqiLabel}`, tone: d.aqi !== null && d.aqi <= 40 ? "ok" : d.aqi !== null && d.aqi <= 60 ? undefined : "warn" } : undefined,
+    body: <>
+      <div className="big">{formatTemp(d.tempC)}<small>°C</small></div>
+      <div className="mid"><strong>{d.place}</strong> · {d.text}{d.windMs !== null && ` · vind ${Math.round(d.windMs)} m/s`}</div>
+      <div className="rows"><div className="row"><span>Luftkvalitet</span><span>{d.aqi !== null ? `${d.aqi} · ${d.aqiLabel}` : "–"}</span></div></div>
+    </>,
   })} />
 );

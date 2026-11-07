@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { HomeStates } from "@/server/snapshots";
 import { Clock } from "./clock";
 import { RefreshContext } from "./refresh-context";
-import { AegCard, ArloCard, SkodaCard, SonosCard, SpotifyCard } from "./cards";
+import { AegCard, ArloCard, SkodaCard, SonosCard, SpotifyCard, WeatherCard } from "./cards";
 import { GoogleHomeTile } from "./google-home-tile";
 
 const POLL_MS = 30_000;
@@ -47,6 +47,7 @@ export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initi
         <SpotifyCard state={states.spotify} now={now} />
         <AegCard state={states.aeg} now={now} />
         <ArloCard state={states.arlo} now={now} />
+        <WeatherCard state={states.weather} now={now} />
         <GoogleHomeTile />
       </main>
     </div>

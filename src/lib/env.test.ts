@@ -14,3 +14,15 @@ describe("parseEnv", () => {
     expect(parseEnv({ ...base, AUTH_TRUSTED_ORIGINS: "" }).AUTH_TRUSTED_ORIGINS).toBeUndefined();
   });
 });
+
+describe("weather place", () => {
+  it("defaults to Luleå", () => {
+    const e = parseEnv(base);
+    expect([e.WEATHER_PLACE, e.WEATHER_LAT, e.WEATHER_LON]).toEqual(["Luleå", 65.5848, 22.1547]);
+  });
+  it("accepts another place and rejects impossible coordinates", () => {
+    expect(parseEnv({ ...base, WEATHER_PLACE: "Kiruna", WEATHER_LAT: "67.85", WEATHER_LON: "20.22" }).WEATHER_LAT).toBe(67.85);
+    expect(() => parseEnv({ ...base, WEATHER_LAT: "123" })).toThrow();
+    expect(() => parseEnv({ ...base, WEATHER_LON: "abc" })).toThrow();
+  });
+});

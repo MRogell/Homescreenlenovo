@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-export const PROVIDER_IDS = ["skoda", "sonos", "spotify", "aeg", "arlo"] as const;
+export const PROVIDER_IDS = ["skoda", "sonos", "spotify", "aeg", "arlo", "weather"] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 export type CardState<T> =
@@ -19,6 +19,8 @@ export interface Provider<T> {
   connected?: boolean;
   /** För tjänster med OAuth: sant först när en fungerande anslutning finns. */
   isConnected?: () => Promise<boolean>;
+  /** Visas i Inställningar för tjänster som inte kräver anslutning (t.ex. öppna data). */
+  sourceLabel?: string;
   schema: z.ZodType<T>;
   getSummary(): Promise<T>;
 }

@@ -18,3 +18,14 @@ export type SonosData = z.infer<typeof sonosSchema>;
 export type SpotifyData = z.infer<typeof spotifySchema>;
 export type AegData = z.infer<typeof aegSchema>;
 export type ArloData = z.infer<typeof arloSchema>;
+
+export const weatherSchema = z.object({
+  place: z.string(),
+  tempC: z.number(),
+  code: z.number(),
+  text: z.string(),
+  windMs: z.number().nullable(),
+  aqi: z.number().nullable(),
+  aqiLabel: z.string().nullable(),
+});
+export type WeatherData = z.infer<typeof weatherSchema>;

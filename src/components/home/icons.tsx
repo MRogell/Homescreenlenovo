@@ -7,6 +7,7 @@ const P = {
   plug: "M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4",
   wash: "M6 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM12 9a4.2 4.2 0 1 0 0 8.4A4.2 4.2 0 0 0 12 9zM7 6.5h2",
   cam: "M3 8h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 12l5-3v8l-5-3",
+  cloud: "M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.1 4.5 4.5 0 0 0 7 18z",
 } as const;
 export type IconName = keyof typeof P;
 
