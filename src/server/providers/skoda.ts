@@ -1,8 +1,8 @@
 import { skodaSchema, type SkodaData } from "./schemas";
 import type { Provider } from "./types";
 
-// Škoda har inget öppet API. Appen läser från en egen liten brygga (skoda-bridge/) som använder det inofficiella
-// biblioteket myskoda. Se docs/superpowers/specs/2026-11-07-skoda-brygga-design.md.
+// Škoda har inget öppet API. Appen läser från en liten Python-brygga (api/skoda.py + skoda_bridge/, samma Vercel-projekt)
+// som använder det inofficiella biblioteket myskoda. Se docs/superpowers/specs/2026-11-07-skoda-brygga-design.md.
 
 export interface SkodaBridgeConfig {
   url: string;
@@ -31,7 +31,7 @@ export function createSkodaProvider(deps: SkodaDeps): Provider<SkodaData> {
       if (!config) throw new Error("Saknar konfiguration");
       let res: Response;
       try {
-        res = await fetchFn(`${config.url.replace(/\/+$/, "")}/api/status`, {
+        res = await fetchFn(`${config.url.replace(/\/+$/, "")}/api/skoda`, {
           headers: { Authorization: `Bearer ${config.token}` },
           cache: "no-store",
           signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -42,6 +42,8 @@ export function createSkodaProvider(deps: SkodaDeps): Provider<SkodaData> {
       }
       if (res.status === 401 || res.status === 403) throw new Error("Škoda-bryggan nekade åtkomst: kontrollera SKODA_BRIDGE_TOKEN");
       if (res.status === 429) throw new Error("Škoda-bryggan väntar mellan inloggningar, försök igen senare");
+      if (res.status === 502) throw new Error("Škoda svarar inte just nu (kontrollera inloggningen eller försök senare)");
+      if (res.status === 500) throw new Error("Škoda-bryggan saknar inställningar: kontrollera SKODA_USERNAME, SKODA_PASSWORD och SKODA_BRIDGE_TOKEN");
       if (!res.ok) throw new Error(`Škoda-bryggan svarade ${res.status}`);
       try {
         return (await res.json()) as SkodaData;

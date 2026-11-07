@@ -9,7 +9,7 @@ from skoda_bridge.handler import BridgeState
 from skoda_bridge.web import build_handler
 
 TOKEN = "t" * 40
-ENV = {"BRIDGE_TOKEN": TOKEN, "SKODA_USERNAME": "a@example.com", "SKODA_PASSWORD": "pw"}
+ENV = {"SKODA_BRIDGE_TOKEN": TOKEN, "SKODA_USERNAME": "a@example.com", "SKODA_PASSWORD": "pw"}
 
 
 def serve(fetch):
@@ -35,7 +35,7 @@ def get(url, token=None):
 def test_authorized_get_returns_json_with_no_store():
     srv, base = serve(ok_fetch)
     try:
-        status, body, headers = get(base + "/api/status", TOKEN)
+        status, body, headers = get(base + "/api/skoda", TOKEN)
         assert status == 200 and body["levelPct"] == 2 and "fetchedAt" in body
         assert headers["Content-Type"].startswith("application/json")
         assert headers["Cache-Control"] == "no-store"
@@ -46,7 +46,7 @@ def test_authorized_get_returns_json_with_no_store():
 def test_missing_token_is_401():
     srv, base = serve(ok_fetch)
     try:
-        assert get(base + "/api/status")[0] == 401
+        assert get(base + "/api/skoda")[0] == 401
     finally:
         srv.shutdown()
 

@@ -20,7 +20,7 @@ describe("skoda provider", () => {
   it("calls the bridge with bearer token and a normalised url", async () => {
     const { p, calls } = make(200, GOOD);
     await p.getSummary();
-    expect(calls).toEqual([{ url: "https://bridge.example.com/api/status", auth: `Bearer ${TOKEN}` }]);
+    expect(calls).toEqual([{ url: "https://bridge.example.com/api/skoda", auth: `Bearer ${TOKEN}` }]);
   });
   it("valid bridge response becomes ok card data", async () => {
     const { p } = make(200, GOOD);

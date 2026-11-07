@@ -1,4 +1,4 @@
-"""Egen värd (t.ex. Render) eller lokal körning: `python server.py`. Samma kod som Vercel-funktionen."""
+"""Lokal körning eller egen värd: `python -m skoda_bridge`. Samma kod som Vercel-funktionen api/skoda.py."""
 import os
 from http.server import HTTPServer
 

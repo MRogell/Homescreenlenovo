@@ -1,4 +1,4 @@
-"""Tunn HTTP-adapter över handle_request. Används av api/status.py (Vercel) och server.py (egen värd)."""
+"""Tunn HTTP-adapter över handle_request. Används av api/skoda.py (Vercel) och `python -m skoda_bridge` (egen värd)."""
 from __future__ import annotations
 
 import asyncio
@@ -30,7 +30,7 @@ def build_handler(state: BridgeState, fetch: Fetch, env: Mapping[str, str]) -> t
             self.wfile.write(data)
 
         def do_GET(self) -> None:  # noqa: N802
-            if self.path.split("?")[0] not in ("/api/status", "/"):
+            if self.path.split("?")[0] not in ("/api/skoda", "/api/status", "/"):
                 return self._send(404, {"error": "Hittas inte"})
             status, body = asyncio.run(handle_request(self.headers.get("Authorization"), env, state, fetch, _now))
             self._send(status, body)

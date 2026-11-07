@@ -8,6 +8,11 @@ Etapp 3, första delen. Skrivskyddad: visar bilens status, styr ingenting (ägar
 ## Varför en brygga
 Škoda har inget öppet API. Det finns ett inofficiellt Python-bibliotek, `myskoda`, som loggar in med e-post och lösenord. Biblioteket kräver **Python ≥ 3.13**, och hemskärmen är TypeScript på Vercel. Därför läser appen från en **separat liten tjänst** (`skoda-bridge/`, eget Vercel-projekt eller annan Python-värd) som anropar biblioteket.
 
+## Ändring (ägarens val: enklare driftsättning)
+Bryggan ligger nu i **samma Vercel-projekt** som hemskärmen: `api/skoda.py` (Vercel Python-funktion) med logiken i `skoda_bridge/`.
+Appen anropar som standard sin egen adress `${BETTER_AUTH_URL}/api/skoda`. En gemensam variabel `SKODA_BRIDGE_TOKEN` används av båda.
+`SKODA_BRIDGE_URL` behövs bara om bryggan körs på annan värd. Resten av beslutet nedan gäller oförändrat.
+
 ## Beslut
 - **Gränssnitt mellan appen och bryggan:** `GET {SKODA_BRIDGE_URL}/api/status` med `Authorization: Bearer {SKODA_BRIDGE_TOKEN}`. Svar: `{rangeKm, levelPct, levelKind: "battery"|"fuel", locked, charging, parked, fetchedAt}`, där alla utom `levelKind`, `charging` och `fetchedAt` kan vara `null`.
 - **Škoda-inloggningen** (`SKODA_USERNAME`, `SKODA_PASSWORD`, valfri `SKODA_VIN`) ligger bara som hemliga variabler i bryggan, aldrig i appens databas eller kod.

@@ -32,6 +32,4 @@ Om en tjänst återkallar åtkomsten visas "Anslut igen". *Koppla från* raderar
 under bygget, så första riktiga körningen kan kräva små justeringar (se spec för etapp 2).
 
 ## Škoda (etapp 3)
-Škoda läses via en separat Python-brygga (`skoda-bridge/`, eget Vercel-projekt). Steg-för-steg finns i `skoda-bridge/README.md`.
-I hemskärmens projekt behövs `SKODA_BRIDGE_URL` och `SKODA_BRIDGE_TOKEN` (minst 32 tecken, samma värde som `BRIDGE_TOKEN` i bryggan).
-Utan dem visar kortet "Anslut" och Inställningar "Saknar konfiguration". Kortet är skrivskyddat och uppdateras högst var 30:e minut.
+Škoda läses via en Python-funktion i samma Vercel-projekt (`api/skoda.py`). Steg-för-steg och risker: `docs/SKODA.md`.

@@ -15,6 +15,7 @@ Fetch = Callable[[str, str, str | None], Awaitable[dict[str, Any]]]
 class BridgeState:
     guard: RateGuard
     last: dict[str, Any] | None = None
+    last_failed: bool = False
 
 
 def _text(code: str) -> dict[str, str]:
@@ -33,7 +34,8 @@ async def handle_request(
     fetch: Fetch,
     now: Callable[[], str],
 ) -> tuple[int, dict[str, Any]]:
-    token = env.get("BRIDGE_TOKEN", "")
+    # Samma variabel som hemskärmen läser (ett Vercel-projekt). BRIDGE_TOKEN stöds för fristående drift.
+    token = env.get("SKODA_BRIDGE_TOKEN") or env.get("BRIDGE_TOKEN", "")
     # Utan en tillräckligt lång token vägrar bryggan svara alls, även om anroparen skickar samma korta värde.
     if len(token) < 32:
         return 500, _text("misconfigured")
@@ -45,6 +47,8 @@ async def handle_request(
 
     if state.guard.too_soon():
         # Skydd av kontot: ingen ny inloggning, utan senast kända svar om det finns.
+        if state.last_failed:
+            return 502, _text("failed")  # samma orsak som senaste försöket, ingen ny inloggning
         return (200, state.last) if state.last is not None else (429, _text("throttled"))
 
     state.guard.mark()  # även misslyckade försök räknas, så att Škoda inte hamras
@@ -53,6 +57,8 @@ async def handle_request(
     except Exception as e:  # noqa: BLE001
         # Bara typnamnet loggas: bibliotekets meddelande kan innehålla inloggningsuppgifter.
         print(f"[skoda-bridge] hämtning misslyckades: {type(e).__name__}", file=sys.stderr)
+        state.last_failed = True
         return 502, _text("failed")
+    state.last_failed = False
     state.last = {**result, "fetchedAt": now()}
     return 200, state.last

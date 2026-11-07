@@ -13,7 +13,8 @@ const schema = z.object({
   SONOS_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   SPOTIFY_CLIENT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   SPOTIFY_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
-  // Škoda-bryggan (skoda-bridge/): adress och delad token (minst 32 tecken). Saknas de visas Škoda som ej ansluten.
+  // Škoda-bryggan (api/skoda.py i samma projekt): delad token (minst 32 tecken). Utan token visas Škoda som ej ansluten.
+  // SKODA_BRIDGE_URL behövs bara om bryggan körs på annan adress än appen.
   SKODA_BRIDGE_URL: z.preprocess((v) => (v === "" ? undefined : v), z.url().optional()),
   SKODA_BRIDGE_TOKEN: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(32, "SKODA_BRIDGE_TOKEN måste vara minst 32 tecken").optional()),
 });

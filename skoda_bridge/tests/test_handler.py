@@ -4,7 +4,7 @@ from skoda_bridge.guard import RateGuard
 from skoda_bridge.handler import BridgeState, handle_request
 
 TOKEN = "t" * 40
-ENV = {"BRIDGE_TOKEN": TOKEN, "SKODA_USERNAME": "anna@example.com", "SKODA_PASSWORD": "hemligt-lösen-123", "SKODA_VIN": "TMBXXX"}
+ENV = {"SKODA_BRIDGE_TOKEN": TOKEN, "SKODA_USERNAME": "anna@example.com", "SKODA_PASSWORD": "hemligt-lösen-123", "SKODA_VIN": "TMBXXX"}
 AUTH = f"Bearer {TOKEN}"
 RESULT = {"rangeKm": 300, "levelPct": 70, "levelKind": "battery", "locked": True, "charging": False, "parked": "Hemma"}
 
@@ -41,7 +41,7 @@ def test_unauthorized_is_401_and_never_calls_skoda():
 
 
 def test_short_or_missing_bridge_token_is_500_even_with_matching_header():
-    for env in ({**ENV, "BRIDGE_TOKEN": "kort"}, {k: v for k, v in ENV.items() if k != "BRIDGE_TOKEN"}):
+    for env in ({**ENV, "SKODA_BRIDGE_TOKEN": "kort"}, {k: v for k, v in ENV.items() if k != "SKODA_BRIDGE_TOKEN"}):
         (status, _), fetch, _ = run(auth="Bearer kort", env=env)
         assert status == 500 and fetch.calls == []
 
@@ -92,15 +92,32 @@ def test_failed_attempt_still_counts_so_skoda_is_not_hammered():
     bad = Fetch(error=RuntimeError("x"))
     assert asyncio.run(handle_request(AUTH, ENV, state, bad, lambda: "t"))[0] == 502
     status, body = asyncio.run(handle_request(AUTH, ENV, state, bad, lambda: "t"))
-    assert status == 429 and len(bad.calls) == 1
+    # Ingen ny inloggning, och samma felorsak som nyss (inte "väntar"), så att användaren ser det verkliga problemet.
+    assert status == 502 and body == {"error": "Škoda svarade inte"} and len(bad.calls) == 1
 
 
-def test_cached_result_is_kept_after_a_later_failure_window():
+def test_throttled_without_any_previous_attempt_result_is_429():
+    state = BridgeState(RateGuard(600, lambda: 0.0))
+    state.guard.mark()  # t.ex. en annan förfrågan som fortfarande pågår
+    status, _ = asyncio.run(handle_request(AUTH, ENV, state, Fetch(RESULT), lambda: "t"))
+    assert status == 429
+
+
+def test_after_a_failure_old_data_is_not_served_as_fresh():
     now = [0.0]
     state = BridgeState(RateGuard(600, lambda: now[0]))
     asyncio.run(handle_request(AUTH, ENV, state, Fetch(RESULT), lambda: "t"))
     now[0] = 700
     assert asyncio.run(handle_request(AUTH, ENV, state, Fetch(error=RuntimeError("x")), lambda: "t"))[0] == 502
     now[0] = 710
-    status, body = asyncio.run(handle_request(AUTH, ENV, state, Fetch(RESULT), lambda: "t"))
-    assert status == 200 and body["levelPct"] == 70  # senast kända svar före spärrens slut
+    # Appen har egen senast kända data och visar den som "Ej tillgänglig"; bryggan ska inte låtsas att gammal data är ny.
+    assert asyncio.run(handle_request(AUTH, ENV, state, Fetch(RESULT), lambda: "t"))[0] == 502
+    now[0] = 1301
+    status, body = asyncio.run(handle_request(AUTH, ENV, state, Fetch(RESULT), lambda: "ny"))
+    assert status == 200 and body["fetchedAt"] == "ny"  # efter spärren: ny inloggning och färsk data
+
+
+def test_old_bridge_token_name_still_works():
+    env = {k: v for k, v in ENV.items() if k != "SKODA_BRIDGE_TOKEN"} | {"BRIDGE_TOKEN": TOKEN}
+    (status, _), _, _ = run(env=env)
+    assert status == 200
