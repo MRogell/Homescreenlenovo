@@ -33,3 +33,16 @@ describe("safeSummary", () => {
     expect(await safeSummary(p)).toEqual({ status: "not_connected" });
   });
 });
+
+describe("safeSummary isConnected", () => {
+  it("isConnected false gives not_connected without calling provider", async () => {
+    let calls = 0;
+    const p: Provider<{ n: number }> = { id: "sonos", ttlSeconds: 10, schema, isConnected: async () => false, getSummary: async () => { calls++; return { n: 1 }; } };
+    expect(await safeSummary(p)).toEqual({ status: "not_connected" });
+    expect(calls).toBe(0);
+  });
+  it("isConnected true proceeds", async () => {
+    const p: Provider<{ n: number }> = { id: "sonos", ttlSeconds: 10, schema, isConnected: async () => true, getSummary: async () => ({ n: 1 }) };
+    expect((await safeSummary(p)).status).toBe("ok");
+  });
+});

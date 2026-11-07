@@ -2,7 +2,7 @@ import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { db as defaultDb } from "./db";
 import { PROVIDERS } from "./providers";
-import { safeSummary } from "./providers/safe";
+import { providerConnected, safeSummary } from "./providers/safe";
 import type { CardState, Provider, ProviderId } from "./providers/types";
 
 export type HomeStates = Partial<Record<ProviderId, CardState<unknown>>>;
@@ -16,7 +16,7 @@ async function loadLast(db: PrismaClient, p: Provider<unknown>): Promise<{ data:
 }
 
 async function resolveOne(p: Provider<unknown>, now: Date, db: PrismaClient): Promise<CardState<unknown>> {
-  if (p.connected === false) return { status: "not_connected" };
+  if (!(await providerConnected(p))) return { status: "not_connected" };
   const last = await loadLast(db, p);
   if (last) {
     const ageMs = now.getTime() - last.fetchedAt.getTime();

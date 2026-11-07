@@ -15,6 +15,8 @@ export interface Provider<T> {
   ttlSeconds: number;
   /** Sätts till false när tjänsten inte är ansluten. */
   connected?: boolean;
+  /** För tjänster med OAuth: sant först när en fungerande anslutning finns. */
+  isConnected?: () => Promise<boolean>;
   schema: z.ZodType<T>;
   getSummary(): Promise<T>;
 }
