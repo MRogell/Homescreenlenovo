@@ -38,3 +38,10 @@ under bygget, så första riktiga körningen kan kräva små justeringar (se spe
 Inga nycklar eller utvecklarappar behövs. Inställningar → Tado (inomhus) → **Anslut** → **Godkänn hos Tado** (öppnar Tados sida, logga in och godkänn koden).
 Sidan blir klar av sig själv inom några sekunder. Kortet uppdateras var 20:e minut (Tado tillåter 100 anrop per dygn för vanliga konton);
 vid fel eller slut kvot väntar appen 10 minuter. Gäller den äldre generationen (Smart Radiator Thermostat V3/V3+), inte tado X.
+
+## AEG (diskmaskinen)
+1. Logga in på developer.electrolux.one med samma konto som i AEG-appen.
+2. Skapa en **API-nyckel** och generera **access-token** och **refresh-token** i portalen.
+3. Hemskärmen → Inställningar → AEG → **Anslut**, klistra in de tre värdena och tryck **Spara**. De provas mot Electrolux innan de sparas
+   (krypterade). Tokens förnyas automatiskt; om Electrolux återkallar dem visas "Anslut igen", och då skapar du nya i portalen.
+Kortet uppdateras varje minut: läge (Av, Pågår, Klar …), program och tid kvar.

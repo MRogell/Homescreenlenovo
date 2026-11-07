@@ -4,7 +4,7 @@ import { deleteConnection } from "@/server/connections";
 import { getSessionUser } from "@/server/authz";
 import { isOAuthProvider } from "@/server/oauth-providers";
 
-const canDisconnect = (p: string): p is "sonos" | "spotify" | "tado" => isOAuthProvider(p) || p === "tado";
+const canDisconnect = (p: string): p is "sonos" | "spotify" | "tado" | "aeg" => isOAuthProvider(p) || p === "tado" || p === "aeg";
 
 export const dynamic = "force-dynamic";
 

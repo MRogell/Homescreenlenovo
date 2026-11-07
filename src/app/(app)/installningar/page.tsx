@@ -6,6 +6,7 @@ import { PROVIDERS } from "@/server/providers";
 import { DisconnectButton } from "@/components/disconnect-button";
 import { SpotifyDefaultDevice } from "@/components/spotify-default-device";
 import { TadoConnect } from "@/components/tado-connect";
+import { AegConnect } from "@/components/aeg-connect";
 import { getSpotifyDefaultDevice } from "@/server/spotify-prefs";
 import { SignOutButton } from "@/components/sign-out-button";
 
@@ -42,6 +43,17 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           {await Promise.all(PROVIDERS.map(async (p) => {
             const name = NAMES[p.id] ?? p.id;
             const o = isOAuthProvider(p.id) ? oauth.get(p.id) : undefined;
+            if (p.id === "aeg") {
+              const st = await getConnectionStatus("aeg");
+              return (
+                <div className="row" key={p.id} style={{ alignItems: "center", flexWrap: "wrap" }}>
+                  <span>{name}</span>
+                  {st === "ok"
+                    ? <span style={{ display: "flex", gap: 12, alignItems: "center" }}><span>Ansluten</span><DisconnectButton provider="aeg" label="AEG" /></span>
+                    : <AegConnect reconnect={st === "reauth"} />}
+                </div>
+              );
+            }
             if (p.id === "tado") {
               const st = await getConnectionStatus("tado");
               return (

@@ -5,10 +5,11 @@ import { getEnv } from "@/lib/env";
 import { OAuthError, refreshTokens, type OAuthConfig, type TokenSet } from "@/lib/oauth";
 import { db as defaultDb } from "./db";
 import { refreshTadoTokens, TADO_DEFAULT_CLIENT_ID } from "@/lib/tado-auth";
+import { refreshAegTokens } from "@/lib/aeg-auth";
 import { getOAuthConfig, type OAuthProviderId } from "./oauth-providers";
 
 /** Tjänster med lagrade tokens: OAuth (Sonos, Spotify) och Tado (enhetskodsflöde). */
-export type TokenProviderId = OAuthProviderId | "tado";
+export type TokenProviderId = OAuthProviderId | "tado" | "aeg";
 
 /** Anslutningen saknas, är återkallad eller går inte att läsa: användaren måste ansluta igen. */
 export class ReauthRequired extends Error {
@@ -68,7 +69,9 @@ export async function getAccessToken(provider: TokenProviderId, deps: ConnDeps =
 
   let refresh = deps.refresh;
   if (!refresh) {
-    if (provider === "tado") {
+    if (provider === "aeg") {
+      refresh = (rt, n) => refreshAegTokens(rt, deps.fetchFn, n);
+    } else if (provider === "tado") {
       const clientId = getEnv().TADO_CLIENT_ID ?? TADO_DEFAULT_CLIENT_ID;
       refresh = (rt, n) => refreshTadoTokens(clientId, rt, deps.fetchFn, n);
     } else {

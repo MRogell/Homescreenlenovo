@@ -42,10 +42,17 @@ export const SpotifyCard = ({ state, now }: P) => (
 );
 
 export const AegCard = ({ state, now }: P) => (
-  <CardShell<AegData> title="AEG" icon="wash" state={as(state)} now={now} render={(d) => ({
-    pill: { text: d.running ? "Pågår" : "Klar", tone: d.running ? "warn" : "ok" },
-    body: <><div className="big">{d.running ? formatMinutes(d.minutesLeft) : "Klar"}<small>{d.running ? "kvar" : ""}</small></div><div className="bar amber"><i style={{ width: `${d.progressPct}%` }} /></div><div className="mid">{d.appliance} · <strong>{d.program}</strong>{d.running && ` · klar ca ${formatClock(d.doneAt)}`}</div></>,
-  })} />
+  <CardShell<AegData> title="AEG" icon="wash" state={as(state)} now={now} render={(d) => {
+    const active = d.state === "RUNNING" || d.state === "PAUSED" || d.state === "DELAYED_START";
+    return {
+      // Stor text visar läget; pillret visar uppkoppling, eller läget när maskinen kör (då är stora texten tiden kvar).
+      pill: !d.connected ? { text: "Offline", tone: "bad" } : active ? { text: d.stateText, tone: "warn" } : { text: "Online", tone: "ok" },
+      body: <>
+        <div className="big">{active && d.minutesLeft !== null ? formatMinutes(d.minutesLeft) : d.stateText}<small>{active && d.minutesLeft !== null ? "kvar" : ""}</small></div>
+        <div className="mid">{d.appliance}{d.program && <> · <strong>{d.program}</strong></>}{d.phase && active && ` · ${d.phase}`}{d.doneAt && ` · klar ca ${formatClock(d.doneAt)}`}</div>
+      </>,
+    };
+  }} />
 );
 
 export const ArloCard = ({ state, now }: P) => (

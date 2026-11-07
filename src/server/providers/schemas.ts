@@ -12,7 +12,16 @@ export const sonosSchema = z.object({
   groups: z.array(z.object({ id: z.string(), room: z.string(), members: z.array(z.string()), playing: z.boolean(), title: z.string(), artist: z.string(), volume: z.number().nullable() })),
 });
 export const spotifySchema = z.object({ playing: z.boolean(), title: z.string(), artist: z.string(), device: z.string().nullable(), lastPlayedAt: z.string().nullable() });
-export const aegSchema = z.object({ appliance: z.string(), running: z.boolean(), program: z.string(), minutesLeft: z.number().min(0), progressPct: z.number().min(0).max(100), doneAt: z.string() });
+export const aegSchema = z.object({
+  appliance: z.string(),
+  state: z.string(),
+  stateText: z.string(),
+  program: z.string().nullable(),
+  phase: z.string().nullable(),
+  minutesLeft: z.number().nullable(),
+  doneAt: z.string().nullable(),
+  connected: z.boolean(),
+});
 export const arloSchema = z.object({ cameras: z.number(), lastMotionAt: z.string(), lastMotionPlace: z.string() });
 
 export type SkodaData = z.infer<typeof skodaSchema>;

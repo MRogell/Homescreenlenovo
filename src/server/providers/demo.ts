@@ -1,4 +1,4 @@
-import { aegSchema, arloSchema } from "./schemas";
+import { arloSchema } from "./schemas";
 import type { Provider } from "./types";
 
 /** Bevarar typen per tjänst vid definition; registret hanterar dem som Provider<unknown>. */
@@ -14,6 +14,5 @@ function at(h: number, m: number): string {
 }
 
 export const demoProviders = {
-  aeg: def({ id: "aeg", ttlSeconds: 60, schema: aegSchema, getSummary: async () => ({ appliance: "Diskmaskin", running: true, program: "Eco", minutesLeft: 42, progressPct: 58, doneAt: at(20, 24) }) }),
   arlo: def({ id: "arlo", ttlSeconds: 60, schema: arloSchema, getSummary: async () => ({ cameras: 4, lastMotionAt: at(14, 32), lastMotionPlace: "Entré" }) }),
 } satisfies Record<string, Provider<unknown>>;

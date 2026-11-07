@@ -29,3 +29,15 @@ Ingen av källorna kunde nås från byggmiljön. Fältnamnen följer Open-Meteos
   Varje uppdatering är ett enda anrop: `GET /homes/{id}/zoneStates` → per rum temperatur, luftfuktighet, måltemperatur och om det värms.
 - **Kvot:** Tado tillåter 100 anrop/dygn för vanliga konton. TTL 20 min (72/dygn) och 10 min väntetid efter fel (t.ex. 429).
 - **Kort "Inomhus":** alla rum i bokstavsordning med temperatur, som i Google Home. Pillret visar hur många rum som värms.
+
+## 3. Diskmaskinen från AEG (Electrolux Group utvecklar-API)
+Källa: det officiella `electrolux-group-developer-sdk` (v0.7.0, läst ur paketet): bas `https://api.developer.electrolux.one`,
+`GET /api/v1/appliances` → `[{applianceId, applianceName, applianceType, created}]`, `GET /api/v1/appliances/{id}/state` →
+`{applianceId, connectionState, status, properties: {reported: {applianceState, timeToEnd (sekunder), cyclePhase, userSelections: {programUID}, doorState}}}`.
+Huvuden: `Authorization: Bearer <access>` och `x-api-key`. Förnyelse: `POST /api/v1/token/refresh` med `{"refreshToken"}` → `{accessToken, refreshToken}` (roteras).
+- **Anslutning:** ägaren skapar API-nyckel, access- och refresh-token i Electrolux utvecklarportal och klistrar in dem i Inställningar.
+  Servern provar dem mot `/appliances` innan de sparas. Tokens krypteras som övriga; API-nyckeln krypteras och sparas i `connection.settings.apiKeyEnc`.
+  Access-tokenets giltighetstid läses ur JWT:ns `exp` (annars 10 min).
+- **Data:** apparatlistan cachas ett dygn; diskmaskinen väljs på `applianceType = "DW"` (annars första apparaten). TTL 60 s (SDK:t räknar med 10 anrop/s).
+- **Kort:** apparatens namn, läge på svenska (Av, Väntar, Pågår, Pausad, Redo att starta, Startar senare, Klar), program, fas, tid kvar och ungefärlig sluttid.
+- **Overifierat:** inget riktigt konto; fältnamn och sökvägar från SDK:t, svar testade med påhittade data.
