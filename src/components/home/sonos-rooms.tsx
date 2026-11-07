@@ -44,7 +44,8 @@ function Room({ g }: { g: Group }) {
   return (
     <div className="sonos-room">
       <div className="sonos-info">
-        <strong>{g.room}{g.members.length > 0 && <span className="mid"> + {g.members.join(", ")}</span>}</strong>
+        <strong>{g.room}</strong>
+        {g.members.length > 0 && <span className="members">+ {g.members.join(", ")}</span>}
         <span className="mid">{g.title}{g.artist && ` · ${g.artist}`}</span>
         {error && <span className="err" role="alert">{error}</span>}
       </div>
