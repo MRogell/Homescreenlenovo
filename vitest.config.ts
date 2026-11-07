@@ -16,7 +16,11 @@ export default defineConfig({
     env: {
       DATABASE_URL: TEST_DATABASE_URL,
       BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret-123456",
-      BETTER_AUTH_URL: "http://localhost:3000",
+      BETTER_AUTH_URL: "http://127.0.0.1:3000",
+      SONOS_CLIENT_ID: "sonos-id",
+      SONOS_CLIENT_SECRET: "sonos-secret",
+      SPOTIFY_CLIENT_ID: "spotify-id",
+      SPOTIFY_CLIENT_SECRET: "spotify-secret",
     },
     fileParallelism: false,
     testTimeout: 20_000,

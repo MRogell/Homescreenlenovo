@@ -8,6 +8,11 @@ const schema = z.object({
   AUTH_TRUSTED_ORIGINS: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   /** Multiplicerar autentiseringens hastighetsgränser (endast för automatiska tester; standard 1). */
   AUTH_RATE_LIMIT_SCALE: z.coerce.number().int().min(1).max(100).default(1),
+  // OAuth-appar (etapp 2). Saknas de visas "Saknar konfiguration" i Inställningar och inga anrop görs.
+  SONOS_CLIENT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  SONOS_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  SPOTIFY_CLIENT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  SPOTIFY_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
 });
 
 export type Env = z.infer<typeof schema>;
