@@ -6,5 +6,5 @@ Etapp 1: inloggning, databas, hemskärm med demodata för alla åtta tjänster, 
 Etapp 2: Sonos och Spotify med riktig data via OAuth (anslut i Inställningar).
 Därefter: Tado/Škoda/Arlo, sist AEG/Plejd/Tapo (se `docs/superpowers/specs`).
 
-Köra lokalt: `docs/LOKALT.md`. Driftsättning på Render: `docs/DRIFT.md`.
+Köra lokalt: `docs/LOKALT.md`. Driftsättning (Vercel + Render PostgreSQL): `docs/VERCEL.md`. Tjänsteanslutningar: `docs/DRIFT.md`.
 Kontroller: `npm run typecheck && npm run lint && npm test`.

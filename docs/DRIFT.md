@@ -1,4 +1,5 @@
-# Driftsättning på Render
+# Driftsättning
+Vercel för webbappen och Render PostgreSQL för databasen: se `docs/VERCEL.md`. Det här dokumentet beskriver Render som webbtjänst (alternativ) och tjänsteanslutningarna.
 Render (PostgreSQL) är första valet för databas.
 
 1. **Databas:** skapa en PostgreSQL på Render. Den kostnadsfria planen **går ut 30 dagar efter att den skapats** och raderas efter 14 dagars frist

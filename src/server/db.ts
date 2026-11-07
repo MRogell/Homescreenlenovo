@@ -5,7 +5,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 export function createPrisma(connectionString = process.env.DATABASE_URL): PrismaClient {
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString, max: Number(process.env.DB_POOL_MAX ?? 3) }) });
 }
 
 export const db = globalForPrisma.prisma ?? createPrisma();

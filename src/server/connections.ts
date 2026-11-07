@@ -22,10 +22,10 @@ export interface ConnDeps {
 }
 
 const SKEW_MS = 60_000;
-// En förnyelse åt gången per tjänst (och process). Refresh-token kan vara engångs hos vissa tjänster.
-const inflight = new Map<string, Promise<TokenSet>>();
 
-export async function saveTokens(userId: string, provider: OAuthProviderId, tokens: TokenSet, db: PrismaClient = defaultDb): Promise<void> {
+type ConnDb = Pick<PrismaClient, "connection">;
+
+export async function saveTokens(userId: string, provider: OAuthProviderId, tokens: TokenSet, db: ConnDb = defaultDb): Promise<void> {
   const tokenEnc = encryptToken(JSON.stringify(tokens), getEnv().BETTER_AUTH_SECRET);
   await db.connection.upsert({
     where: { userId_provider: { userId, provider } },
@@ -61,18 +61,8 @@ export async function getAccessToken(provider: OAuthProviderId, deps: ConnDeps =
 
   const config = deps.config ?? getOAuthConfig(provider);
   if (!config) throw new Error("Saknar konfiguration");
-  let pending = inflight.get(provider);
-  if (!pending) {
-    pending = refreshTokens(config, tokens.refreshToken, deps.fetchFn, now)
-      .then(async (fresh) => {
-        await saveTokens(row.userId, provider, fresh, db);
-        return fresh;
-      })
-      .finally(() => inflight.delete(provider));
-    inflight.set(provider, pending);
-  }
   try {
-    return (await pending).accessToken;
+    return await refreshLocked(db, provider, config, deps.fetchFn, now);
   } catch (e) {
     // Bara ett uttryckligt "återkallad" kräver ny anslutning. Nätverks- och serverfel är tillfälliga.
     if (e instanceof OAuthError && e.code === "invalid_grant") {
@@ -81,6 +71,26 @@ export async function getAccessToken(provider: OAuthProviderId, deps: ConnDeps =
     }
     throw e;
   }
+}
+
+/**
+ * Förnyar under ett Postgres-lås (en förnyelse åt gången per tjänst, över alla serverinstanser: på Vercel körs flera).
+ * Refresh-token kan vara engångs, så den som kommer sist ska läsa de nya tokens i stället för att förnya igen.
+ */
+async function refreshLocked(db: PrismaClient, provider: OAuthProviderId, config: OAuthConfig, fetchFn: typeof fetch | undefined, now: number): Promise<string> {
+  return db.$transaction(
+    async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`oauth-refresh:${provider}`}))`;
+      const row = await tx.connection.findFirst({ where: { provider } });
+      if (!row || row.status !== "ok") throw new ReauthRequired();
+      const current = JSON.parse(decryptToken(row.tokenEnc, getEnv().BETTER_AUTH_SECRET)) as TokenSet;
+      if (current.expiresAt - now > SKEW_MS) return current.accessToken;
+      const fresh = await refreshTokens(config, current.refreshToken, fetchFn, now);
+      await saveTokens(row.userId, provider, fresh, tx);
+      return fresh.accessToken;
+    },
+    { timeout: 20_000, maxWait: 20_000 },
+  );
 }
 
 /** Kopplar från och raderar tjänstens cachade data. */

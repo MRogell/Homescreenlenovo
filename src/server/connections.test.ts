@@ -97,3 +97,22 @@ describe("connections", () => {
     expect(await getConnectionStatus("spotify", db)).toBe("reauth");
   });
 });
+
+describe("refresh lock across instances", () => {
+  it("a second caller that waited for the lock reads the fresh tokens instead of refreshing again", async () => {
+    await saveTokens("u1", "sonos", tokens({ expiresAt: NOW - 1 }), db);
+    // Två oberoende klienter mot samma databas simulerar två serverinstanser (ingen delad minnesstatus).
+    const db2 = createPrisma(process.env.DATABASE_URL);
+    const f = counting(200, { access_token: "NYTT", refresh_token: "NY", expires_in: 3600 }, 40);
+    try {
+      const r = await Promise.all([
+        getAccessToken("sonos", { db, fetchFn: f.fn, nowMs: NOW, config: cfg }),
+        getAccessToken("sonos", { db: db2, fetchFn: f.fn, nowMs: NOW, config: cfg }),
+      ]);
+      expect(f.calls()).toBe(1);
+      expect(r).toEqual(["NYTT", "NYTT"]);
+    } finally {
+      await db2.$disconnect();
+    }
+  });
+});
