@@ -1,0 +1,50 @@
+# Typkontroll, lint och tester (enhets- och integrationstester mot en riktig PostgreSQL) för varje PR och push till main.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: hem
+          POSTGRES_PASSWORD: hem
+          POSTGRES_DB: hemskarm
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U hem"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Endast testvärden. Testerna skapar och migrerar databasen homescreen_test själva (test/global-setup.ts).
+      DATABASE_URL: postgresql://hem:hem@localhost:5432/hemskarm
+      TEST_DATABASE_URL: postgresql://hem:hem@localhost:5432/homescreen_test
+      BETTER_AUTH_SECRET: ci-secret-ci-secret-ci-secret-1234567
+      BETTER_AUTH_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
