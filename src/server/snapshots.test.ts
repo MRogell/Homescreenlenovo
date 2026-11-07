@@ -57,17 +57,17 @@ describe("getHomeStates", () => {
   it("failing provider serves stale last data and does not affect others", async () => {
     await seed("sonos", { n: 1 }, new Date(T0.getTime() - 120_000));
     const bad = prov("sonos", async () => { throw new Error("nere"); });
-    const good = prov("tado", async () => ({ n: 9 }));
+    const good = prov("aeg", async () => ({ n: 9 }));
     const s = await getHomeStates(T0, [bad.p, good.p], db);
     expect(s.sonos).toMatchObject({ status: "stale", data: { n: 1 }, reason: "nere" });
-    expect(s.tado).toMatchObject({ status: "ok", data: { n: 9 } });
+    expect(s.aeg).toMatchObject({ status: "ok", data: { n: 9 } });
   });
   it("not_connected provider is not called and writes nothing", async () => {
-    const a = prov("tapo", async () => ({ n: 1 }));
+    const a = prov("arlo", async () => ({ n: 1 }));
     a.p.connected = false;
     const s = await getHomeStates(T0, [a.p], db);
     expect(a.calls()).toBe(0);
-    expect(s.tapo).toEqual({ status: "not_connected" });
+    expect(s.arlo).toEqual({ status: "not_connected" });
     expect(await db.snapshot.count()).toBe(0);
   });
 });

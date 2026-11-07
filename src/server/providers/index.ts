@@ -13,5 +13,5 @@ const spotify = createSpotifyProvider({ getToken: () => getAccessToken("spotify"
 const skoda = createSkodaProvider({ getConfig: () => skodaConfigFromEnv(getEnv()) });
 
 const ALL: Record<ProviderId, Provider<unknown>> = { ...demoProviders, skoda: skoda as Provider<unknown>, sonos: sonos as Provider<unknown>, spotify: spotify as Provider<unknown> };
-export const PROVIDERS: Provider<unknown>[] = (["skoda", "sonos", "spotify", "plejd", "tado", "tapo", "aeg", "arlo"] as const).map((id) => ALL[id]);
+export const PROVIDERS: Provider<unknown>[] = (["skoda", "sonos", "spotify", "aeg", "arlo"] as const).map((id) => ALL[id]);
 export { demoProviders };

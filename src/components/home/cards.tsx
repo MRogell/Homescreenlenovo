@@ -1,6 +1,6 @@
-import { formatClock, formatMinutes, formatTemp } from "@/lib/format";
+import { formatClock, formatMinutes } from "@/lib/format";
 import type { CardState } from "@/server/providers/types";
-import type { AegData, ArloData, PlejdData, SkodaData, SonosData, SpotifyData, TadoData } from "@/server/providers/schemas";
+import type { AegData, ArloData, SkodaData, SonosData, SpotifyData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
 import { SpotifyControls } from "./spotify-controls";
 
@@ -34,30 +34,6 @@ export const SpotifyCard = ({ state, now }: P) => (
   <CardShell<SpotifyData> title="Spotify" icon="note" state={as(state)} now={now} render={(d) => ({
     pill: { text: d.playing ? "Spelar" : "Pausad", tone: d.playing ? "ok" : undefined },
     body: <><div className="big text">{d.title}</div>{d.artist && <div className="mid">{d.artist}</div>}<div className="rows"><div className="row"><span>Enhet</span><span>{d.device ?? "–"}</span></div><div className="row"><span>{d.playing ? "Status" : "Senast spelat"}</span><span>{d.playing ? "Spelar nu" : d.lastPlayedAt ? formatClock(d.lastPlayedAt) : "–"}</span></div></div><SpotifyControls playing={d.playing} /></>,
-  })} />
-);
-
-export const PlejdCard = ({ state, now }: P) => (
-  <CardShell<PlejdData> title="Plejd" icon="bulb" state={as(state)} now={now} render={(d) => ({
-    pill: { text: `${d.on} tända`, tone: d.on > 0 ? "warn" : undefined },
-    body: <><div className="big">{d.on}<small>av {d.total} lampor</small></div><div className="rows">{d.rooms.map((r) => <div className="row" key={r.name}><span>{r.name}</span><span>{r.on}</span></div>)}</div></>,
-  })} />
-);
-
-export const TadoCard = ({ state, now }: P) => (
-  <CardShell<TadoData> title="Tado" icon="temp" state={as(state)} now={now} render={(d) => {
-    const [first, ...rest] = d.rooms;
-    return {
-      pill: { text: d.heating ? "Värmer" : "Vilar", tone: d.heating ? "ok" : undefined },
-      body: <><div className="big">{first ? formatTemp(first.tempC) : "–"}<small>°C</small></div>{first && <div className="mid">{first.name} · mål <strong>{formatTemp(first.targetC)}°</strong></div>}<div className="rows">{rest.map((r) => <div className="row" key={r.name}><span>{r.name}</span><span>{formatTemp(r.tempC)}°</span></div>)}</div></>,
-    };
-  }} />
-);
-
-export const TapoCard = ({ state, now }: P) => (
-  <CardShell<{ plugsOn: number; plugsTotal: number; camerasOnline: number; camerasTotal: number }> title="Tapo" icon="plug" state={as(state)} now={now} render={(d) => ({
-    pill: { text: `${d.camerasOnline}/${d.camerasTotal} kameror`, tone: "ok" },
-    body: <><div className="big">{d.plugsOn}<small>av {d.plugsTotal} uttag på</small></div></>,
   })} />
 );
 

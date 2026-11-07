@@ -71,3 +71,11 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .device { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font: 600 15px var(--body); padding: 0 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; text-align: left; }
 .device span { color: var(--muted); font-weight: 500; font-size: 13px; }
 .device:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+/* Google Home-rutan: tar resten av nedre raden (3 kolumner på bred skärm, 1 på smal). */
+.card.gh { grid-column: span 3; }
+@media (max-width: 1000px) { .card.gh { grid-column: span 1; } }
+@media (max-width: 560px) { .card.gh { grid-column: auto; } }
+.gh-icon { width: 22px; height: 22px; stroke: var(--accent); flex: none; }
+.gh-actions { margin-top: auto; display: flex; flex-wrap: wrap; gap: 12px; }
+.gh-actions .btn { margin-top: 0; min-width: 200px; }
+.btn.secondary { background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); }
