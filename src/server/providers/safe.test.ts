@@ -46,3 +46,21 @@ describe("safeSummary isConnected", () => {
     expect((await safeSummary(p)).status).toBe("ok");
   });
 });
+
+describe("safeSummary timeout", () => {
+  const hang = () => new Promise<{ n: number }>(() => {});
+  it("a provider that never answers becomes unavailable after its timeout", async () => {
+    const p: Provider<{ n: number }> = { id: "sonos", ttlSeconds: 10, timeoutMs: 30, schema, getSummary: hang };
+    const s = await safeSummary(p);
+    expect(s).toMatchObject({ status: "unavailable" });
+    expect((s as { reason: string }).reason).toMatch(/i tid/);
+  });
+  it("a timeout serves stale last data when it exists", async () => {
+    const p: Provider<{ n: number }> = { id: "sonos", ttlSeconds: 10, timeoutMs: 30, schema, getSummary: hang };
+    expect(await safeSummary(p, { data: { n: 4 }, fetchedAt: "2026-11-07T10:00:00.000Z" })).toMatchObject({ status: "stale", data: { n: 4 } });
+  });
+  it("a fast provider is unaffected by the timeout", async () => {
+    const p: Provider<{ n: number }> = { id: "sonos", ttlSeconds: 10, timeoutMs: 1000, schema, getSummary: async () => ({ n: 1 }) };
+    expect((await safeSummary(p)).status).toBe("ok");
+  });
+});

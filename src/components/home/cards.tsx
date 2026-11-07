@@ -10,8 +10,16 @@ type P = { state: CardState<unknown> | undefined; now: Date };
 
 export const SkodaCard = ({ state, now }: P) => (
   <CardShell<SkodaData> title="Škoda" icon="car" state={as(state)} now={now} render={(d) => ({
-    pill: { text: d.locked ? "Låst" : "Olåst", tone: d.locked ? "ok" : "warn" },
-    body: <><div className="big">{d.rangeKm}<small>km</small></div><div className="bar"><i style={{ width: `${d.batteryPct}%` }} /></div><div className="mid"><strong>{d.batteryPct} %</strong> batteri · parkerad {d.parked}</div></>,
+    pill: d.locked === null ? { text: "Okänt läge" } : { text: d.locked ? "Låst" : "Olåst", tone: d.locked ? "ok" : "warn" },
+    body: <>
+      <div className="big">{d.rangeKm ?? "–"}<small>km</small></div>
+      {d.levelPct !== null && <div className="bar"><i style={{ width: `${d.levelPct}%` }} /></div>}
+      <div className="mid">
+        {d.levelPct !== null && <><strong>{d.levelPct} %</strong> {d.levelKind === "battery" ? "batteri" : "tank"} · </>}
+        {d.charging && "laddar · "}
+        {d.parked ? `parkerad ${d.parked}` : "plats okänd"}
+      </div>
+    </>,
   })} />
 );
 

@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-export const skodaSchema = z.object({ rangeKm: z.number(), batteryPct: z.number().min(0).max(100), locked: z.boolean(), parked: z.string() });
+export const skodaSchema = z.object({
+  rangeKm: z.number().nullable(),
+  levelPct: z.number().min(0).max(100).nullable(),
+  levelKind: z.enum(["battery", "fuel"]),
+  locked: z.boolean().nullable(),
+  charging: z.boolean(),
+  parked: z.string().nullable(),
+});
 export const sonosSchema = z.object({ playing: z.boolean(), title: z.string(), artist: z.string(), room: z.string(), grouped: z.array(z.string()), volume: z.number(), progressPct: z.number().min(0).max(100) });
 export const spotifySchema = z.object({ playing: z.boolean(), title: z.string(), artist: z.string(), device: z.string().nullable(), lastPlayedAt: z.string().nullable() });
 export const plejdSchema = z.object({ on: z.number(), total: z.number(), rooms: z.array(z.object({ name: z.string(), on: z.number() })) });

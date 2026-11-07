@@ -36,10 +36,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
       <section className="card" aria-label="Anslutningar">
         <div className="card-head"><span className="name">Anslutningar</span></div>
         <div className="rows">
-          {PROVIDERS.map((p) => {
+          {await Promise.all(PROVIDERS.map(async (p) => {
             const name = NAMES[p.id] ?? p.id;
             const o = isOAuthProvider(p.id) ? oauth.get(p.id) : undefined;
-            if (!o) return <div className="row" key={p.id}><span>{name}</span><span>{p.connected === false ? "Ej ansluten" : "Demodata"}</span></div>;
+            if (!o) {
+              // Tjänster utan OAuth: visar bryggans status om de har en, annars demodata.
+              const label = p.isConnected ? ((await p.isConnected()) ? "Ansluten via brygga" : "Saknar konfiguration") : p.connected === false ? "Ej ansluten" : "Demodata";
+              return <div className="row" key={p.id}><span>{name}</span><span>{label}</span></div>;
+            }
             const label = !o.configured && o.status !== "ok" ? "Saknar konfiguration" : o.status === "ok" ? "Ansluten" : o.status === "reauth" ? "Anslut igen" : "Ej ansluten";
             return (
               <div className="row" key={p.id} style={{ alignItems: "center", flexWrap: "wrap" }}>
@@ -50,7 +54,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
                 </span>
               </div>
             );
-          })}
+          }))}
         </div>
       </section>
       <section className="card" aria-label="Konto">

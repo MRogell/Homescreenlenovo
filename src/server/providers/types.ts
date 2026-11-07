@@ -13,6 +13,8 @@ export interface Provider<T> {
   id: ProviderId;
   /** Hur länge en hämtad snapshot räknas som färsk. */
   ttlSeconds: number;
+  /** Längsta väntetid på getSummary innan tjänsten räknas som otillgänglig (standard 10 s). */
+  timeoutMs?: number;
   /** Sätts till false när tjänsten inte är ansluten. */
   connected?: boolean;
   /** För tjänster med OAuth: sant först när en fungerande anslutning finns. */
