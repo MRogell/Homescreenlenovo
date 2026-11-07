@@ -1,3 +1,5 @@
+> **Borttagen** på ägarens begäran (2026-11-08). Beslutet nedan gäller inte längre.
+
 # Hemskärm – Google Home-ruta (design)
 Ägarens beslut: Tado, Plejd och Tapo ersätts av en Google Home-ruta.
 
