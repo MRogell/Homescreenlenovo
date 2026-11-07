@@ -11,13 +11,15 @@ interface Props<T> {
   now: Date;
   /** Innehåll för ok och stale. Returnerar även statuspillret. */
   render: (data: T) => { pill?: Pill; body: React.ReactNode };
+  /** Extra klass, t.ex. för kort som tar två kolumner. */
+  className?: string;
 }
 
 /** Gemensam ram som hanterar alla fyra lägen. Tjänsterna renderar bara sin egen data. */
-export function CardShell<T>({ title, icon, state, now, render }: Props<T>) {
+export function CardShell<T>({ title, icon, state, now, render, className = "" }: Props<T>) {
   if (!state || state.status === "not_connected") {
     return (
-      <section className="card off" aria-label={title}>
+      <section className={`card off ${className}`} aria-label={title}>
         <div className="card-head"><Icon name={icon} /><span className="name">{title}</span><span className="pill">Ej ansluten</span></div>
         <div className="big">Anslut</div>
         <div className="mid">Visa {title} här.</div>
@@ -27,7 +29,7 @@ export function CardShell<T>({ title, icon, state, now, render }: Props<T>) {
   }
   if (state.status === "unavailable") {
     return (
-      <section className="card off" aria-label={title}>
+      <section className={`card off ${className}`} aria-label={title}>
         <div className="card-head"><Icon name={icon} /><span className="name">{title}</span><span className="pill bad">Ej tillgänglig</span></div>
         <div className="mid">Tjänsten svarar inte just nu.</div>
         <div className="foot">{state.reason}</div>
@@ -36,7 +38,7 @@ export function CardShell<T>({ title, icon, state, now, render }: Props<T>) {
   }
   const { pill, body } = render(state.data);
   return (
-    <section className="card" aria-label={title}>
+    <section className={`card ${className}`} aria-label={title}>
       <div className="card-head">
         <Icon name={icon} /><span className="name">{title}</span>
         {state.status === "stale" ? <span className="pill bad">Ej tillgänglig</span> : pill && <span className={`pill ${pill.tone ?? ""}`}>{pill.text}</span>}

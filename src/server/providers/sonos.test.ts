@@ -4,77 +4,55 @@ import { createSonosProvider } from "./sonos";
 import { fakeFetch, type FakeRoute } from "./fake-fetch";
 
 const H = "/households";
-const players = [{ id: "P1", name: "Vardagsrum" }, { id: "P2", name: "Köket" }, { id: "P3", name: "Sovrum" }];
+const players = [{ id: "P1", name: "Vardagsrum - Höger" }, { id: "P2", name: "Vardagsrum - Vänster" }, { id: "P3", name: "Kök" }, { id: "P4", name: "Barnrum" }];
 const G = (id: string, coordinatorId: string, playerIds: string[], playbackState?: string) => ({ id, name: id, coordinatorId, playerIds, ...(playbackState ? { playbackState } : {}) });
-const base = (groups: unknown[]): Record<string, FakeRoute> => ({
-  [H]: { body: { households: [{ id: "HH" }] } },
-  [`${H}/HH/groups`]: { body: { groups, players } },
-});
-const play = (g: string, state: string, position = 0): Record<string, FakeRoute> => ({ [`/groups/${g}/playback`]: { body: { playbackState: state, positionMillis: position } } });
+const base = (groups: unknown[]): Record<string, FakeRoute> => ({ [H]: { body: { households: [{ id: "HH" }] } }, [`${H}/HH/groups`]: { body: { groups, players } } });
 const meta = (g: string, body: unknown): Record<string, FakeRoute> => ({ [`/groups/${g}/playbackMetadata`]: { body } });
 const vol = (g: string, v: number): Record<string, FakeRoute> => ({ [`/groups/${g}/groupVolume`]: { body: { volume: v } } });
+const play = (g: string, state: string): Record<string, FakeRoute> => ({ [`/groups/${g}/playback`]: { body: { playbackState: state } } });
+const track = (name: string, artist = "Artist") => ({ currentItem: { track: { name, artist: { name: artist } } } });
 const make = (routes: Record<string, FakeRoute>) => {
   const f = fakeFetch(routes);
   return { p: createSonosProvider({ getToken: async () => "TOK", fetchFn: f.fn }), f };
 };
-const track = { currentItem: { track: { name: "Kvällsmys", artist: { name: "Band" }, durationMillis: 200_000 } } };
 
-describe("sonos provider", () => {
-  it("picks playing group", async () => {
-    const { p } = make({ ...base([G("A", "P1", ["P1"], "PLAYBACK_STATE_PAUSED"), G("B", "P3", ["P3"], "PLAYBACK_STATE_PLAYING")]), ...play("B", "PLAYBACK_STATE_PLAYING", 50_000), ...meta("B", track), ...vol("B", 22) });
+describe("sonos provider (all rooms)", () => {
+  it("lists every group with room name, members, track and volume; playing first", async () => {
+    const { p } = make({
+      ...base([G("A", "P3", ["P3"], "PLAYBACK_STATE_PAUSED"), G("B", "P1", ["P1", "P2"], "PLAYBACK_STATE_PLAYING"), G("C", "P4", ["P4"], "PLAYBACK_STATE_IDLE")]),
+      ...meta("A", track("Kvart i fem", "JULIETT")), ...vol("A", 12),
+      ...meta("B", track("Funeral", "Teddy Swims")), ...vol("B", 30),
+      ...meta("C", {}), ...vol("C", 8),
+    });
     const d = await p.getSummary();
-    expect(d).toEqual({ playing: true, title: "Kvällsmys", artist: "Band", room: "Sovrum", grouped: [], volume: 22, progressPct: 25 });
+    expect(d.groups).toEqual([
+      { id: "B", room: "Vardagsrum - Höger", members: ["Vardagsrum - Vänster"], playing: true, title: "Funeral", artist: "Teddy Swims", volume: 30 },
+      { id: "C", room: "Barnrum", members: [], playing: false, title: "Inget spelas", artist: "", volume: 8 },
+      { id: "A", room: "Kök", members: [], playing: false, title: "Kvart i fem", artist: "JULIETT", volume: 12 },
+    ]);
     expect(sonosSchema.safeParse(d).success).toBe(true);
   });
-  it("falls back to first group", async () => {
-    const { p } = make({ ...base([G("A", "P1", ["P1"], "PLAYBACK_STATE_IDLE"), G("B", "P3", ["P3"], "PLAYBACK_STATE_IDLE")]), ...play("A", "PLAYBACK_STATE_IDLE"), ...meta("A", track), ...vol("A", 10) });
-    const d = await p.getSummary();
-    expect(d).toMatchObject({ playing: false, room: "Vardagsrum" });
+  it("asks /playback when a group has no playbackState", async () => {
+    const { p } = make({ ...base([G("A", "P3", ["P3"])]), ...play("A", "PLAYBACK_STATE_PLAYING"), ...meta("A", track("X")), ...vol("A", 1) });
+    expect((await p.getSummary()).groups[0]!.playing).toBe(true);
   });
-  it("asks /playback per group when groups lack playbackState", async () => {
-    const { p } = make({ ...base([G("A", "P1", ["P1"]), G("B", "P3", ["P3"])]), ...play("A", "PLAYBACK_STATE_IDLE"), ...play("B", "PLAYBACK_STATE_PLAYING"), ...meta("B", track), ...vol("B", 5) });
-    expect(await p.getSummary()).toMatchObject({ playing: true, room: "Sovrum" });
+  it("radio container name is used when there is no track name", async () => {
+    const { p } = make({ ...base([G("A", "P3", ["P3"], "PLAYBACK_STATE_PLAYING")]), ...meta("A", { container: { name: "P3 Radio" } }), ...vol("A", 1) });
+    expect((await p.getSummary()).groups[0]!.title).toBe("P3 Radio");
   });
-  it("grouped lists other players", async () => {
-    const { p } = make({ ...base([G("A", "P1", ["P1", "P2"], "PLAYBACK_STATE_PLAYING")]), ...play("A", "PLAYBACK_STATE_PLAYING"), ...meta("A", track), ...vol("A", 30) });
-    expect(await p.getSummary()).toMatchObject({ room: "Vardagsrum", grouped: ["Köket"] });
+  it("a group whose metadata or volume fails is still listed", async () => {
+    const { p } = make({ ...base([G("A", "P3", ["P3"], "PLAYBACK_STATE_PAUSED")]), [`/groups/A/playbackMetadata`]: { status: 500 }, [`/groups/A/groupVolume`]: { status: 500 } });
+    expect((await p.getSummary()).groups[0]).toMatchObject({ room: "Kök", title: "Inget spelas", volume: null });
   });
-  it("progressPct is 0 when duration is missing", async () => {
-    const { p } = make({ ...base([G("A", "P1", ["P1"], "PLAYBACK_STATE_PLAYING")]), ...play("A", "PLAYBACK_STATE_PLAYING", 9000), ...meta("A", { currentItem: { track: { name: "Radio" } } }), ...vol("A", 30) });
-    expect((await p.getSummary()).progressPct).toBe(0);
-  });
-  it("progressPct is clamped to 100", async () => {
-    const { p } = make({ ...base([G("A", "P1", ["P1"], "PLAYBACK_STATE_PLAYING")]), ...play("A", "PLAYBACK_STATE_PLAYING", 999_999), ...meta("A", track), ...vol("A", 30) });
-    expect((await p.getSummary()).progressPct).toBe(100);
-  });
-  it('missing currentItem gives "Inget spelas"', async () => {
-    const { p } = make({ ...base([G("A", "P1", ["P1"], "PLAYBACK_STATE_IDLE")]), ...play("A", "PLAYBACK_STATE_IDLE"), ...meta("A", {}), ...vol("A", 12) });
-    expect(await p.getSummary()).toMatchObject({ title: "Inget spelas", artist: "" });
-  });
-  it("uses container name for radio when track has no name", async () => {
-    const { p } = make({ ...base([G("A", "P1", ["P1"], "PLAYBACK_STATE_PLAYING")]), ...play("A", "PLAYBACK_STATE_PLAYING"), ...meta("A", { container: { name: "P3 Radio" } }), ...vol("A", 12) });
-    expect((await p.getSummary()).title).toBe("P3 Radio");
-  });
-  it("no households throws", async () => {
-    const { p } = make({ [H]: { body: { households: [] } } });
-    await expect(p.getSummary()).rejects.toThrow(/hushåll/i);
-  });
-  it("empty groups throws", async () => {
-    const { p } = make(base([]));
-    await expect(p.getSummary()).rejects.toThrow(/grupp/i);
-  });
-  it("401 throws without leaking the token", async () => {
-    const { p } = make({ [H]: { status: 401 } });
-    const err = await p.getSummary().catch((e) => e);
+  it("no households, 401 and garbage throw clear errors", async () => {
+    await expect(make({ [H]: { body: { households: [] } } }).p.getSummary()).rejects.toThrow(/hushåll/i);
+    const err = await make({ [H]: { status: 401 } }).p.getSummary().catch((e) => e);
     expect(err.message).toMatch(/Sonos/);
     expect(err.message).not.toContain("TOK");
+    await expect(make({ [H]: { body: { households: [{ id: "HH" }] } }, [`${H}/HH/groups`]: { raw: "null" } }).p.getSummary()).rejects.toThrow();
   });
-  it("garbage JSON in groups throws instead of crashing", async () => {
-    const { p } = make({ [H]: { body: { households: [{ id: "HH" }] } }, [`${H}/HH/groups`]: { body: null } });
-    await expect(p.getSummary()).rejects.toThrow();
+  it("no groups gives an empty list, not an error", async () => {
+    expect((await make(base([])).p.getSummary()).groups).toEqual([]);
   });
-  it("is registered with ttl 15", () => {
-    expect(make({}).p.ttlSeconds).toBe(15);
-    expect(make({}).p.id).toBe("sonos");
-  });
+  it("ttl is 30 s", () => expect(make({}).p.ttlSeconds).toBe(30));
 });

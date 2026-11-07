@@ -20,7 +20,7 @@ beforeEach(async () => {
 
 describe("handleControl", () => {
   it("unknown provider is 404", async () => expect((await handleControl({ ...ok, provider: "foo" }, deps().d)).status).toBe(404));
-  it("sonos is not supported yet and gives 404", async () => expect((await handleControl({ ...ok, provider: "sonos" }, deps().d)).status).toBe(404));
+  it("arlo has no controls and gives 404", async () => expect((await handleControl({ ...ok, provider: "arlo" }, deps().d)).status).toBe(404));
   it("without session is 401 and makes no Spotify call", async () => {
     const x = deps();
     expect((await handleControl({ ...ok, userId: null }, x.d)).status).toBe(401);
@@ -163,5 +163,41 @@ describe("handleControl default device and backoff", () => {
     const fetchFn = (async () => new Response(null, { status: 204 })) as unknown as typeof fetch;
     await handleControl(ok, { getToken: async () => "TOK", fetchFn, db, getPreferred: async () => null });
     expect(await db.providerBackoff.count({ where: { provider: "spotify" } })).toBe(0);
+  });
+});
+
+describe("handleControl sonos", () => {
+  const sonosReq = { ...ok, provider: "sonos", body: { action: "pause", groupId: "RINCON_1:23" } };
+  function rec(status: number) {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => { calls.push(`${init.method} ${url}`); return new Response("{}", { status }); }) as unknown as typeof fetch;
+    return { calls, fetchFn };
+  }
+  it("pause posts to the group and clears only the sonos snapshot", async () => {
+    await db.snapshot.create({ data: { provider: "sonos", payload: {}, fetchedAt: new Date() } });
+    const f = rec(200);
+    const r = await handleControl(sonosReq, { getToken: async () => "TOK", fetchFn: f.fetchFn, db });
+    expect(r.status).toBe(204);
+    expect(f.calls).toEqual(["POST https://api.ws.sonos.com/control/api/v1/groups/RINCON_1%3A23/playback/pause"]);
+    expect((await db.snapshot.findMany()).map((x) => x.provider).sort()).toEqual(["spotify", "tado"]);
+  });
+  it("invalid sonos bodies are 400 without any call", async () => {
+    const f = rec(200);
+    for (const body of [{ action: "pause" }, { action: "pause", groupId: "../x" }, { action: "volume", groupId: "G" }, { action: "pause", groupId: "G", extra: 1 }, { action: "devices" }, { action: "transfer", deviceId: "A", play: true }]) {
+      expect((await handleControl({ ...sonosReq, body }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db })).status, JSON.stringify(body)).toBe(400);
+    }
+    expect(f.calls).toHaveLength(0);
+  });
+  it("session and origin are checked first", async () => {
+    const f = rec(200);
+    expect((await handleControl({ ...sonosReq, userId: null }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db })).status).toBe(401);
+    expect((await handleControl({ ...sonosReq, origin: "https://ond.example.com" }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db })).status).toBe(403);
+    expect(f.calls).toHaveLength(0);
+  });
+  it("errors map to statuses with Swedish text", async () => {
+    const r = await handleControl(sonosReq, { getToken: async () => "TOK", fetchFn: rec(404).fetchFn, db });
+    expect(r.status).toBe(409);
+    expect(r.json?.code).toBe("gone");
+    expect((await handleControl(sonosReq, { getToken: async () => "TOK", fetchFn: rec(429).fetchFn, db })).status).toBe(429);
   });
 });

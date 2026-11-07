@@ -2,6 +2,7 @@ import { formatClock, formatMinutes, formatTemp, formatTempShort } from "@/lib/f
 import type { CardState } from "@/server/providers/types";
 import type { AegData, ArloData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
+import { SonosRooms } from "./sonos-rooms";
 import { SpotifyControls } from "./spotify-controls";
 
 type S<T> = CardState<unknown> | undefined;
@@ -24,10 +25,13 @@ export const SkodaCard = ({ state, now }: P) => (
 );
 
 export const SonosCard = ({ state, now }: P) => (
-  <CardShell<SonosData> title="Sonos" icon="spk" state={as(state)} now={now} render={(d) => ({
-    pill: { text: d.playing ? "Spelar" : "Pausad", tone: d.playing ? "ok" : undefined },
-    body: <><div className="big text">{d.title}</div><div className="mid">{d.artist && `${d.artist} · `}<strong>{d.room}</strong>{d.grouped.length > 0 && ` + ${d.grouped.join(", ")}`}</div><div className="bar amber"><i style={{ width: `${d.progressPct}%` }} /></div><div className="rows"><div className="row"><span>Volym</span><span>{d.volume}</span></div></div></>,
-  })} />
+  <CardShell<SonosData> title="Sonos" icon="spk" state={as(state)} now={now} className="sonos" render={(d) => {
+    const playing = d.groups.filter((g) => g.playing).length;
+    return {
+      pill: playing > 0 ? { text: `Spelar i ${playing} rum`, tone: "ok" } : { text: "Tyst" },
+      body: <SonosRooms groups={d.groups} />,
+    };
+  }} />
 );
 
 export const SpotifyCard = ({ state, now }: P) => (

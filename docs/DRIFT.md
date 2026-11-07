@@ -23,7 +23,7 @@ Båda kräver en egen utvecklarapp. Hemligheterna läggs i miljövariablerna `SO
 Appen är i utvecklarläge, vilket räcker för ett eget konto. Lägg till ditt Spotify-konto under *User Management* om tjänsten kräver det.
 Scope som begärs: `user-read-playback-state user-modify-playback-state user-read-recently-played` (den mellersta behövs för att kunna spela, pausa och byta låt; Spotify Premium krävs).
 Har du anslutit innan styrningen fanns: tryck **Koppla från** och **Anslut** igen så att den nya behörigheten godkänns.
-**Sonos:** skapa en integration på developer.sonos.com (Control Integration). Scope som begärs: `playback-control-all` (appen läser bara, den styr inget).
+**Sonos:** skapa en integration på developer.sonos.com (Control Integration). Scope som begärs: `playback-control-all`. Kortet visar alla rum och kan spela/pausa och byta låt per rum.
 
 **Anslut:** logga in, öppna *Inställningar* och tryck *Anslut* vid tjänsten. Tokens lagras krypterade i databasen och förnyas automatiskt.
 Om en tjänst återkallar åtkomsten visas "Anslut igen". *Koppla från* raderar anslutningen och den cachade datan.

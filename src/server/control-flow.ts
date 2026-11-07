@@ -5,6 +5,7 @@ import { sameOrigin } from "./connect-flow";
 import { getAccessToken, ReauthRequired } from "./connections";
 import { db as defaultDb } from "./db";
 import { getSpotifyDefaultDevice, type DefaultDevice } from "./spotify-prefs";
+import { controlSonos, SONOS_ACTIONS, SonosControlError, type SonosAction, type SonosErrorCode } from "./providers/sonos-control";
 import { ControlError, SPOTIFY_ACTIONS, controlSpotify, listSpotifyDevices, transferSpotify, type ControlErrorCode, type SpotifyAction, type SpotifyDevice } from "./providers/spotify-control";
 
 export interface ControlRequest {
@@ -40,6 +41,25 @@ const bodySchema = z.union([
   z.object({ action: z.literal("transfer"), deviceId, play: z.boolean() }).strict(),
 ]);
 
+const sonosBody = z.object({ action: z.enum(SONOS_ACTIONS as unknown as [SonosAction, ...SonosAction[]]), groupId: z.string().regex(/^[A-Za-z0-9:_.-]{1,100}$/) }).strict();
+const SONOS_STATUS: Record<SonosErrorCode, number> = { reauth: 409, gone: 409, rate_limit: 429, failed: 502 };
+
+/** Sonos: spela/pausa/nästa/föregående i en grupp (ett eller flera ihopkopplade rum). */
+async function handleSonos(body: unknown, deps: ControlFlowDeps): Promise<ControlResult> {
+  const parsed = sonosBody.safeParse(body);
+  if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
+  try {
+    await controlSonos(parsed.data.action, parsed.data.groupId, { getToken: deps.getToken ?? (() => getAccessToken("sonos")), fetchFn: deps.fetchFn });
+  } catch (e) {
+    const err = e instanceof ReauthRequired ? new SonosControlError("reauth") : e instanceof SonosControlError ? e : new SonosControlError("failed");
+    return { status: SONOS_STATUS[err.code], json: { error: err.message, code: err.code } };
+  }
+  const db = deps.db ?? defaultDb;
+  await db.snapshot.deleteMany({ where: { provider: "sonos" } });
+  await db.providerBackoff.deleteMany({ where: { provider: "sonos" } });
+  return { status: 204 };
+}
+
 const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, choose_device: 409, premium: 403, rate_limit: 429, failed: 502 };
 const GENERIC = new ControlError("failed");
 
@@ -48,9 +68,10 @@ const GENERIC = new ControlError("failed");
  * Etapp: bara Spotify. Efter ett lyckat kommando rensas tjänstens cache så att nästa hämtning ger färsk status.
  */
 export async function handleControl(req: ControlRequest, deps: ControlFlowDeps = {}): Promise<ControlResult> {
-  if (req.provider !== "spotify") return { status: 404, json: { error: "Okänd tjänst", code: "unknown" } };
+  if (req.provider !== "spotify" && req.provider !== "sonos") return { status: 404, json: { error: "Okänd tjänst", code: "unknown" } };
   if (!req.userId) return { status: 401, json: { error: "Inte inloggad", code: "unauthenticated" } };
   if (!sameOrigin(req.origin, req.host)) return { status: 403, json: { error: "Ogiltigt ursprung", code: "origin" } };
+  if (req.provider === "sonos") return handleSonos(req.body, deps);
   const parsed = bodySchema.safeParse(req.body);
   if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
 

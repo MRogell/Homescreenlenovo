@@ -83,3 +83,12 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .rows.compact .row { padding: 5px 0; font-size: 14px; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 99px; background: var(--warn); margin-right: 8px; vertical-align: middle; }
 .tado-pending { display: inline-flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+/* Sonos: alla rum med egna knappar. Tar två kolumner på bred skärm. */
+.card.sonos { grid-column: span 2; }
+@media (max-width: 560px) { .card.sonos { grid-column: auto; } }
+.sonos-rooms { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.sonos-room { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.sonos-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sonos-info strong { font-weight: 600; }
+.sonos-info .mid { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sonos-buttons { display: flex; gap: 8px; flex: none; }

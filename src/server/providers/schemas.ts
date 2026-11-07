@@ -8,7 +8,9 @@ export const skodaSchema = z.object({
   charging: z.boolean(),
   parked: z.string().nullable(),
 });
-export const sonosSchema = z.object({ playing: z.boolean(), title: z.string(), artist: z.string(), room: z.string(), grouped: z.array(z.string()), volume: z.number(), progressPct: z.number().min(0).max(100) });
+export const sonosSchema = z.object({
+  groups: z.array(z.object({ id: z.string(), room: z.string(), members: z.array(z.string()), playing: z.boolean(), title: z.string(), artist: z.string(), volume: z.number().nullable() })),
+});
 export const spotifySchema = z.object({ playing: z.boolean(), title: z.string(), artist: z.string(), device: z.string().nullable(), lastPlayedAt: z.string().nullable() });
 export const aegSchema = z.object({ appliance: z.string(), running: z.boolean(), program: z.string(), minutesLeft: z.number().min(0), progressPct: z.number().min(0).max(100), doneAt: z.string() });
 export const arloSchema = z.object({ cameras: z.number(), lastMotionAt: z.string(), lastMotionPlace: z.string() });
