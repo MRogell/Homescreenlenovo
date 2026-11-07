@@ -8,6 +8,9 @@ Etapp 3, första delen. Skrivskyddad: visar bilens status, styr ingenting (ägar
 ## Varför en brygga
 Škoda har inget öppet API. Det finns ett inofficiellt Python-bibliotek, `myskoda`, som loggar in med e-post och lösenord. Biblioteket kräver **Python ≥ 3.13**, och hemskärmen är TypeScript på Vercel. Därför läser appen från en **separat liten tjänst** (`skoda-bridge/`, eget Vercel-projekt eller annan Python-värd) som anropar biblioteket.
 
+## Utfall av försöket med samma projekt
+Vercel byggde inte `api/skoda.py` i Next.js-projektet (bygget avbröts av `functions`-mönstret). Konfigurationen är borttagen; bryggan måste köras som egen tjänst och nås via `SKODA_BRIDGE_URL`. Beslut om värd tas med ägaren.
+
 ## Ändring (ägarens val: enklare driftsättning)
 Bryggan ligger nu i **samma Vercel-projekt** som hemskärmen: `api/skoda.py` (Vercel Python-funktion) med logiken i `skoda_bridge/`.
 Appen anropar som standard sin egen adress `${BETTER_AUTH_URL}/api/skoda`. En gemensam variabel `SKODA_BRIDGE_TOKEN` används av båda.

@@ -3,11 +3,5 @@
   "framework": "nextjs",
   "regions": [
     "fra1"
-  ],
-  "functions": {
-    "api/skoda.py": {
-      "maxDuration": 60,
-      "includeFiles": "skoda_bridge/*.py"
-    }
-  }
+  ]
 }

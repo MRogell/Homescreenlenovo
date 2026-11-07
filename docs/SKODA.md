@@ -3,20 +3,11 @@
 och använder det inofficiella biblioteket [myskoda](https://pypi.org/project/myskoda/) (pinnat till 2.17.2, kräver Python 3.13).
 Kortet är skrivskyddat: det visar batteri eller tank, räckvidd, låst/olåst, laddning och parkeringsplats, men styr ingenting.
 
-## Så slår du på det (i det Vercel-projekt du redan har)
-1. Projektet → **Settings → Environment Variables** → lägg till, miljö **Production**:
-
-   | Key | Value |
-   |---|---|
-   | `SKODA_USERNAME` | e-post till ditt MySkoda-konto |
-   | `SKODA_PASSWORD` | lösenordet till MySkoda (slå på **Sensitive**) |
-   | `SKODA_BRIDGE_TOKEN` | slumpad hemlighet, minst 32 tecken (slå på **Sensitive**) |
-   | `SKODA_VIN` | valfritt: chassinumret om kontot har flera bilar |
-
-   Skapa token i PowerShell: `$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)`
-2. **Deployments → senaste → ⋯ → Redeploy.**
-3. Kontroll: `https://<din-adress>/api/skoda` i webbläsaren ska ge `{"error": "Ej behörig"}`. Då körs funktionen.
-4. Hemskärmen hämtar ny Škoda-data högst var 30:e minut. Inställningar visar "Ansluten via brygga".
+## Status: fungerar inte i samma Vercel-projekt
+Första bygget visade att Vercel **inte** bygger Python-funktioner i `api/` när projektet är ett Next.js-projekt
+("The pattern api/skoda.py defined in functions doesn't match any Serverless Functions"). Konfigurationen är därför borttagen och
+Škoda är **inte påslaget**. Lägg inte in `SKODA_*`-variablerna i hemskärmens projekt förrän bryggan körs någon annanstans:
+då pekar `SKODA_BRIDGE_URL` på den värden. Koden i `skoda_bridge/` är oförändrad och kan köras som egen tjänst (se nedan).
 
 ## Risker och begränsningar
 - **Inofficiellt API:** Škoda kan ändra det utan förvarning. Ett konto kan låsas vid många misslyckade inloggningar.
@@ -25,7 +16,7 @@ Kortet är skrivskyddat: det visar batteri eller tank, räckvidd, låst/olåst, 
 - **Overifierat:** inget är provat mot ett riktigt Škoda-konto, och det är inte provat att Vercel kör Python 3.13 i ett Next.js-projekt.
   Misslyckas bygget eller visar kortet "Ej tillgänglig", titta i Vercel → **Logs** (filtrera på `/api/skoda`).
 
-## Om Vercel inte stöder Python 3.13
+## Köra bryggan som egen tjänst
 Kör samma kod på en annan värd (t.ex. Render Web Service): build `pip install -r requirements.txt`, start `python -m skoda_bridge` (lyssnar på `$PORT`),
 samma miljövariabler. Lägg sedan `SKODA_BRIDGE_URL` (värdens adress) och samma `SKODA_BRIDGE_TOKEN` i hemskärmens projekt.
 
