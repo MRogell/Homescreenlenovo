@@ -1,0 +1,10 @@
+[project]
+name = "skoda-bridge"
+version = "0.1.0"
+description = "Liten brygga som läser Škoda-data åt hemskärmen"
+requires-python = ">=3.13"
+dependencies = ["myskoda==2.17.2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
