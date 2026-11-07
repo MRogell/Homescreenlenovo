@@ -58,3 +58,12 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .wrap { min-height: calc(100dvh - 40px); }
   .grid { flex: 1; grid-auto-rows: minmax(0, 1fr); }
 }
+/* Uppspelningsknappar (Spotify). Tryckytor minst 48 px. */
+.controls { display: flex; flex-direction: column; gap: 6px; }
+.controls-row { display: flex; gap: 10px; align-items: center; justify-content: center; }
+.ctl { min-width: 52px; min-height: 52px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.ctl svg { width: 22px; height: 22px; }
+.ctl.main { min-width: 64px; min-height: 64px; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.ctl.main svg { width: 28px; height: 28px; }
+.ctl:disabled { opacity: .55; cursor: progress; }
+.ctl:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }

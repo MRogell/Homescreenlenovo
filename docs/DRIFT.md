@@ -21,7 +21,8 @@ Båda kräver en egen utvecklarapp. Hemligheterna läggs i miljövariablerna `SO
 
 **Spotify:** skapa en app på developer.spotify.com/dashboard. Redirect-URI måste vara https, eller en loopback-IP som `http://127.0.0.1:3000/...` (aldrig `localhost`).
 Appen är i utvecklarläge, vilket räcker för ett eget konto. Lägg till ditt Spotify-konto under *User Management* om tjänsten kräver det.
-Scope som begärs: `user-read-playback-state user-read-recently-played`.
+Scope som begärs: `user-read-playback-state user-modify-playback-state user-read-recently-played` (den mellersta behövs för att kunna spela, pausa och byta låt; Spotify Premium krävs).
+Har du anslutit innan styrningen fanns: tryck **Koppla från** och **Anslut** igen så att den nya behörigheten godkänns.
 **Sonos:** skapa en integration på developer.sonos.com (Control Integration). Scope som begärs: `playback-control-all` (appen läser bara, den styr inget).
 
 **Anslut:** logga in, öppna *Inställningar* och tryck *Anslut* vid tjänsten. Tokens lagras krypterade i databasen och förnyas automatiskt.

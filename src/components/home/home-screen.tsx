@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { HomeStates } from "@/server/snapshots";
 import { Clock } from "./clock";
+import { RefreshContext } from "./refresh-context";
 import { AegCard, ArloCard, PlejdCard, SkodaCard, SonosCard, SpotifyCard, TadoCard, TapoCard } from "./cards";
 
 const POLL_MS = 30_000;
@@ -35,6 +36,7 @@ export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initi
   }, [refresh]);
 
   return (
+    <RefreshContext.Provider value={refresh}>
     <div className="wrap">
       <header className="top-bar"><Clock /></header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
@@ -49,5 +51,6 @@ export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initi
         <ArloCard state={states.arlo} now={now} />
       </main>
     </div>
+    </RefreshContext.Provider>
   );
 }

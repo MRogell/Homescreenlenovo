@@ -2,6 +2,7 @@ import { formatClock, formatMinutes, formatTemp } from "@/lib/format";
 import type { CardState } from "@/server/providers/types";
 import type { AegData, ArloData, PlejdData, SkodaData, SonosData, SpotifyData, TadoData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
+import { SpotifyControls } from "./spotify-controls";
 
 type S<T> = CardState<unknown> | undefined;
 const as = <T,>(s: S<T>) => s as CardState<T> | undefined;
@@ -24,7 +25,7 @@ export const SonosCard = ({ state, now }: P) => (
 export const SpotifyCard = ({ state, now }: P) => (
   <CardShell<SpotifyData> title="Spotify" icon="note" state={as(state)} now={now} render={(d) => ({
     pill: { text: d.playing ? "Spelar" : "Pausad", tone: d.playing ? "ok" : undefined },
-    body: <><div className="big text">{d.title}</div>{d.artist && <div className="mid">{d.artist}</div>}<div className="rows"><div className="row"><span>Enhet</span><span>{d.device ?? "–"}</span></div><div className="row"><span>{d.playing ? "Status" : "Senast spelat"}</span><span>{d.playing ? "Spelar nu" : d.lastPlayedAt ? formatClock(d.lastPlayedAt) : "–"}</span></div></div></>,
+    body: <><div className="big text">{d.title}</div>{d.artist && <div className="mid">{d.artist}</div>}<div className="rows"><div className="row"><span>Enhet</span><span>{d.device ?? "–"}</span></div><div className="row"><span>{d.playing ? "Status" : "Senast spelat"}</span><span>{d.playing ? "Spelar nu" : d.lastPlayedAt ? formatClock(d.lastPlayedAt) : "–"}</span></div></div><SpotifyControls playing={d.playing} /></>,
   })} />
 );
 
