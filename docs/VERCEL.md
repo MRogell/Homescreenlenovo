@@ -12,9 +12,7 @@ Webbappen körs på Vercel. Databasen är Render PostgreSQL (projektregel: Rende
 
 ## 2. Projekt på Vercel
 1. vercel.com → **Add New → Project** → välj GitHub-repon `MRogell/Homescreenlenovo` (ge Vercel åtkomst till den om den frågar).
-2. **Framework Preset:** Next.js (väljs automatiskt).
-   **Production Branch:** repon har ännu ingen `main`: all kod ligger på grenen `claude/determined-meitner-uyhstd`.
-   Skriv den grenen som Production Branch (Settings → Environments → Production → Branch Tracking), eller be om att koden läggs på `main` först.
+2. **Framework Preset:** Next.js (väljs automatiskt). **Production Branch:** `main`.
 3. **Environment Variables** (Production):
 
    | Namn | Värde |
