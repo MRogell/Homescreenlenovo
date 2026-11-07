@@ -5,13 +5,14 @@ import { getOAuthConfig, isOAuthProvider, type OAuthProviderId } from "@/server/
 import { PROVIDERS } from "@/server/providers";
 import { DisconnectButton } from "@/components/disconnect-button";
 import { SpotifyDefaultDevice } from "@/components/spotify-default-device";
+import { TadoConnect } from "@/components/tado-connect";
 import { getSpotifyDefaultDevice } from "@/server/spotify-prefs";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Inställningar" };
 
-const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", arlo: "Arlo", weather: "Väder" };
+const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", arlo: "Arlo", weather: "Väder", tado: "Tado (inomhus)" };
 const ERRORS: Record<string, string> = {
   "ogiltig-state": "Anslutningen avbröts av säkerhetsskäl. Försök igen från början.",
   avbrutet: "Du avbröt anslutningen.",
@@ -41,6 +42,17 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           {await Promise.all(PROVIDERS.map(async (p) => {
             const name = NAMES[p.id] ?? p.id;
             const o = isOAuthProvider(p.id) ? oauth.get(p.id) : undefined;
+            if (p.id === "tado") {
+              const st = await getConnectionStatus("tado");
+              return (
+                <div className="row" key={p.id} style={{ alignItems: "center", flexWrap: "wrap" }}>
+                  <span>{name}</span>
+                  <span style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    {st === "ok" ? <><span>Ansluten</span><DisconnectButton provider="tado" label="Tado" /></> : <><span>{st === "reauth" ? "Anslut igen" : "Ej ansluten"}</span><TadoConnect label={st === "reauth" ? "Anslut igen" : "Anslut"} /></>}
+                  </span>
+                </div>
+              );
+            }
             if (!o) {
               // Tjänster utan OAuth: visar bryggans status om de har en, annars demodata.
               const label = p.sourceLabel ? p.sourceLabel : p.isConnected ? ((await p.isConnected()) ? "Ansluten via brygga" : "Saknar konfiguration") : p.connected === false ? "Ej ansluten" : "Demodata";

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { PROVIDERS, demoProviders } from "./index";
 
 describe("demo providers", () => {
-  it("has exactly the six ids", () => {
-    expect(PROVIDERS.map((p) => p.id).sort()).toEqual(["aeg", "arlo", "skoda", "sonos", "spotify", "weather"]);
+  it("has exactly the seven ids", () => {
+    expect(PROVIDERS.map((p) => p.id).sort()).toEqual(["aeg", "arlo", "skoda", "sonos", "spotify", "tado", "weather"]);
   });
   it("every connected demo provider returns data valid for its own schema", async () => {
     for (const p of Object.values(demoProviders).filter((p) => p.connected !== false)) {

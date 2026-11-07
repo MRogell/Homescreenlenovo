@@ -4,7 +4,11 @@ import { decryptToken, encryptToken } from "@/lib/crypto";
 import { getEnv } from "@/lib/env";
 import { OAuthError, refreshTokens, type OAuthConfig, type TokenSet } from "@/lib/oauth";
 import { db as defaultDb } from "./db";
+import { refreshTadoTokens, TADO_DEFAULT_CLIENT_ID } from "@/lib/tado-auth";
 import { getOAuthConfig, type OAuthProviderId } from "./oauth-providers";
+
+/** Tjänster med lagrade tokens: OAuth (Sonos, Spotify) och Tado (enhetskodsflöde). */
+export type TokenProviderId = OAuthProviderId | "tado";
 
 /** Anslutningen saknas, är återkallad eller går inte att läsa: användaren måste ansluta igen. */
 export class ReauthRequired extends Error {
@@ -19,13 +23,15 @@ export interface ConnDeps {
   fetchFn?: typeof fetch;
   nowMs?: number;
   config?: OAuthConfig;
+  /** Förnyar tokens; standard väljs per tjänst (Tado: publik klient, övriga: OAuth-konfigurationen). */
+  refresh?: (refreshToken: string, nowMs: number) => Promise<TokenSet>;
 }
 
 const SKEW_MS = 60_000;
 
 type ConnDb = Pick<PrismaClient, "connection">;
 
-export async function saveTokens(userId: string, provider: OAuthProviderId, tokens: TokenSet, db: ConnDb = defaultDb): Promise<void> {
+export async function saveTokens(userId: string, provider: TokenProviderId, tokens: TokenSet, db: ConnDb = defaultDb): Promise<void> {
   const tokenEnc = encryptToken(JSON.stringify(tokens), getEnv().BETTER_AUTH_SECRET);
   await db.connection.upsert({
     where: { userId_provider: { userId, provider } },
@@ -34,9 +40,10 @@ export async function saveTokens(userId: string, provider: OAuthProviderId, toke
   });
 }
 
-export async function getConnectionStatus(provider: OAuthProviderId, db: PrismaClient = defaultDb): Promise<"ok" | "reauth" | "none"> {
+export async function getConnectionStatus(provider: TokenProviderId, db: PrismaClient = defaultDb): Promise<"ok" | "reauth" | "none" | "pending"> {
   const row = await db.connection.findFirst({ where: { provider }, select: { status: true } });
   if (!row) return "none";
+  if (row.status === "pending") return "pending"; // inloggning påbörjad men inte godkänd
   return row.status === "ok" ? "ok" : "reauth";
 }
 
@@ -44,7 +51,7 @@ async function markReauth(db: PrismaClient, id: string, reason: string) {
   await db.connection.update({ where: { id }, data: { status: "reauth", lastError: reason } });
 }
 
-export async function getAccessToken(provider: OAuthProviderId, deps: ConnDeps = {}): Promise<string> {
+export async function getAccessToken(provider: TokenProviderId, deps: ConnDeps = {}): Promise<string> {
   const db = deps.db ?? defaultDb;
   const now = deps.nowMs ?? Date.now();
   const row = await db.connection.findFirst({ where: { provider } });
@@ -59,10 +66,19 @@ export async function getAccessToken(provider: OAuthProviderId, deps: ConnDeps =
   }
   if (tokens.expiresAt - now > SKEW_MS) return tokens.accessToken;
 
-  const config = deps.config ?? getOAuthConfig(provider);
-  if (!config) throw new Error("Saknar konfiguration");
+  let refresh = deps.refresh;
+  if (!refresh) {
+    if (provider === "tado") {
+      const clientId = getEnv().TADO_CLIENT_ID ?? TADO_DEFAULT_CLIENT_ID;
+      refresh = (rt, n) => refreshTadoTokens(clientId, rt, deps.fetchFn, n);
+    } else {
+      const config = deps.config ?? getOAuthConfig(provider);
+      if (!config) throw new Error("Saknar konfiguration");
+      refresh = (rt, n) => refreshTokens(config, rt, deps.fetchFn, n);
+    }
+  }
   try {
-    return await refreshLocked(db, provider, config, deps.fetchFn, now);
+    return await refreshLocked(db, provider, refresh, now);
   } catch (e) {
     // Bara ett uttryckligt "återkallad" kräver ny anslutning. Nätverks- och serverfel är tillfälliga.
     if (e instanceof OAuthError && e.code === "invalid_grant") {
@@ -77,7 +93,7 @@ export async function getAccessToken(provider: OAuthProviderId, deps: ConnDeps =
  * Förnyar under ett Postgres-lås (en förnyelse åt gången per tjänst, över alla serverinstanser: på Vercel körs flera).
  * Refresh-token kan vara engångs, så den som kommer sist ska läsa de nya tokens i stället för att förnya igen.
  */
-async function refreshLocked(db: PrismaClient, provider: OAuthProviderId, config: OAuthConfig, fetchFn: typeof fetch | undefined, now: number): Promise<string> {
+async function refreshLocked(db: PrismaClient, provider: TokenProviderId, refresh: (refreshToken: string, nowMs: number) => Promise<TokenSet>, now: number): Promise<string> {
   return db.$transaction(
     async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`oauth-refresh:${provider}`}))`;
@@ -85,7 +101,7 @@ async function refreshLocked(db: PrismaClient, provider: OAuthProviderId, config
       if (!row || row.status !== "ok") throw new ReauthRequired();
       const current = JSON.parse(decryptToken(row.tokenEnc, getEnv().BETTER_AUTH_SECRET)) as TokenSet;
       if (current.expiresAt - now > SKEW_MS) return current.accessToken;
-      const fresh = await refreshTokens(config, current.refreshToken, fetchFn, now);
+      const fresh = await refresh(current.refreshToken, now);
       await saveTokens(row.userId, provider, fresh, tx);
       return fresh.accessToken;
     },
@@ -94,7 +110,7 @@ async function refreshLocked(db: PrismaClient, provider: OAuthProviderId, config
 }
 
 /** Kopplar från och raderar tjänstens cachade data. */
-export async function deleteConnection(provider: OAuthProviderId, db: PrismaClient = defaultDb): Promise<void> {
+export async function deleteConnection(provider: TokenProviderId, db: PrismaClient = defaultDb): Promise<void> {
   await db.connection.deleteMany({ where: { provider } });
   await db.snapshot.deleteMany({ where: { provider } });
 }

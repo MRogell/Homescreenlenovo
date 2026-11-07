@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-export const PROVIDER_IDS = ["skoda", "sonos", "spotify", "aeg", "arlo", "weather"] as const;
+export const PROVIDER_IDS = ["skoda", "sonos", "spotify", "aeg", "arlo", "weather", "tado"] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 export type CardState<T> =
@@ -15,6 +15,8 @@ export interface Provider<T> {
   ttlSeconds: number;
   /** Längsta väntetid på getSummary innan tjänsten räknas som otillgänglig (standard 10 s). */
   timeoutMs?: number;
+  /** Väntetid efter misslyckat försök (standard 60 s). Längre för tjänster med dygnskvot, t.ex. Tado. */
+  failureBackoffMs?: number;
   /** Sätts till false när tjänsten inte är ansluten. */
   connected?: boolean;
   /** För tjänster med OAuth: sant först när en fungerande anslutning finns. */

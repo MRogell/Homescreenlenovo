@@ -17,3 +17,15 @@ Plejd-lamporna kan bara läsas lokalt via Bluetooth och nås fortsatt via Google
 
 ## Overifierat
 Ingen av källorna kunde nås från byggmiljön. Fältnamnen följer Open-Meteos dokumentation och är testade mot påhittade svar.
+
+## 2. Inomhustemperaturer från Tado (äldre generation, V3/V3+)
+- **Inloggning:** Tados enhetskodsflöde. Inställningar → "Anslut Tado" → servern anropar `POST login.tado.com/oauth2/device_authorize`
+  (`client_id`, `scope=offline_access`) och sparar den väntande koden krypterat (`connection.status = "pending"`). Användaren öppnar
+  `verification_uri_complete` och godkänner. Sidan frågar servern var `interval`:e sekund; servern frågar `POST /oauth2/token`
+  (`grant_type=urn:ietf:params:oauth:grant-type:device_code`). `authorization_pending`/`slow_down` = vänta, `expired_token`/`access_denied` = avbrutet.
+- **Klient-id:** Tados publika klient (inget hemligt), kan ändras med `TADO_CLIENT_ID`. Ej verifierat här (skrivet efter Tados hjälpartikel och community-bibliotek).
+- **Tokens:** krypterade som Sonos/Spotify. Refresh-token roteras vid varje förnyelse; förnyelsen går under samma Postgres-lås.
+- **Data:** `GET /me` (hem-id) och `GET /homes/{id}/zones` (rumsnamn, bara `HEATING`) sparas i `connection.settings.tado` och förnyas en gång per dygn.
+  Varje uppdatering är ett enda anrop: `GET /homes/{id}/zoneStates` → per rum temperatur, luftfuktighet, måltemperatur och om det värms.
+- **Kvot:** Tado tillåter 100 anrop/dygn för vanliga konton. TTL 20 min (72/dygn) och 10 min väntetid efter fel (t.ex. 429).
+- **Kort "Inomhus":** alla rum i bokstavsordning med temperatur, som i Google Home. Pillret visar hur många rum som värms.

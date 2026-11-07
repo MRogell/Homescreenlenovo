@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAgo, formatMinutes, formatTemp } from "./format";
+import { formatAgo, formatMinutes, formatTemp, formatTempShort } from "./format";
 
 const now = new Date("2026-11-07T12:00:00.000Z");
 describe("format", () => {
@@ -18,4 +18,13 @@ describe("format", () => {
     expect(formatAgo("2026-11-03T12:00:00.000Z", now)).toBe("4 dygn sedan");
   });
   it("formatTemp uses decimal comma", () => expect(formatTemp(21.4)).toBe("21,4"));
+});
+
+describe("formatTempShort", () => {
+  it("drops a trailing ,0 like Google Home", () => {
+    expect(formatTempShort(20)).toBe("20");
+    expect(formatTempShort(23.5)).toBe("23,5");
+    expect(formatTempShort(22.04)).toBe("22");
+    expect(formatTempShort(-3.25)).toBe("-3,3");
+  });
 });

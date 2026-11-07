@@ -1,6 +1,6 @@
-import { formatClock, formatMinutes, formatTemp } from "@/lib/format";
+import { formatClock, formatMinutes, formatTemp, formatTempShort } from "@/lib/format";
 import type { CardState } from "@/server/providers/types";
-import type { AegData, ArloData, SkodaData, SonosData, SpotifyData, WeatherData } from "@/server/providers/schemas";
+import type { AegData, ArloData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
 import { SpotifyControls } from "./spotify-controls";
 
@@ -60,4 +60,19 @@ export const WeatherCard = ({ state, now }: P) => (
       <div className="rows"><div className="row"><span>Luftkvalitet</span><span>{d.aqi !== null ? `${d.aqi} · ${d.aqiLabel}` : "–"}</span></div></div>
     </>,
   })} />
+);
+
+export const TadoCard = ({ state, now }: P) => (
+  <CardShell<TadoData> title="Inomhus" icon="temp" state={as(state)} now={now} render={(d) => {
+    const heating = d.rooms.filter((r) => r.heating).length;
+    return {
+      pill: heating > 0 ? { text: `Värmer i ${heating} rum`, tone: "warn" } : { text: "Vilar" },
+      body: <div className="rows compact">{d.rooms.length === 0 ? <p className="mid">Inga rum hittades i Tado.</p> : d.rooms.map((r) => (
+        <div className="row" key={r.name}>
+          <span>{r.heating && <span className="dot" aria-label="värmer" />}{r.name}</span>
+          <span>{r.tempC !== null ? `${formatTempShort(r.tempC)}°` : "–"}</span>
+        </div>
+      ))}</div>,
+    };
+  }} />
 );

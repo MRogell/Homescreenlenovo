@@ -13,6 +13,8 @@ const schema = z.object({
   SONOS_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   SPOTIFY_CLIENT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   SPOTIFY_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  // Tado (enhetskodsflöde, publik klient). Behöver normalt inte sättas.
+  TADO_CLIENT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(8).optional()),
   // Väder och luftkvalitet (Open-Meteo). Standard: Luleå.
   WEATHER_PLACE: z.preprocess((v) => (v === "" ? undefined : v), z.string().trim().min(1).max(60).default("Luleå")),
   WEATHER_LAT: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().min(-90).max(90).default(65.5848)),

@@ -33,3 +33,8 @@ under bygget, så första riktiga körningen kan kräva små justeringar (se spe
 
 ## Škoda (etapp 3)
 Škoda läses via en Python-funktion i samma Vercel-projekt (`api/skoda.py`). Steg-för-steg och risker: `docs/SKODA.md`.
+
+## Tado (inomhustemperaturer)
+Inga nycklar eller utvecklarappar behövs. Inställningar → Tado (inomhus) → **Anslut** → **Godkänn hos Tado** (öppnar Tados sida, logga in och godkänn koden).
+Sidan blir klar av sig själv inom några sekunder. Kortet uppdateras var 20:e minut (Tado tillåter 100 anrop per dygn för vanliga konton);
+vid fel eller slut kvot väntar appen 10 minuter. Gäller den äldre generationen (Smart Radiator Thermostat V3/V3+), inte tado X.

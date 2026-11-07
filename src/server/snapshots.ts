@@ -42,7 +42,7 @@ async function resolveOne(p: Provider<unknown>, now: Date, db: PrismaClient): Pr
     return { ...state, fetchedAt: now.toISOString() };
   }
   if (state.status === "stale" || state.status === "unavailable") {
-    const until = new Date(now.getTime() + BACKOFF_MS);
+    const until = new Date(now.getTime() + (p.failureBackoffMs ?? BACKOFF_MS));
     await db.providerBackoff.upsert({ where: { provider: p.id }, create: { provider: p.id, reason: state.reason, until }, update: { reason: state.reason, until } });
   }
   return state;

@@ -26,3 +26,10 @@ export function formatTemp(n: number): string {
 export function formatClock(iso: string): string {
   return new Date(iso).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
 }
+
+/** 20 -> "20", 23.5 -> "23,5" (en decimal, utan ",0"). */
+export function formatTempShort(n: number): string {
+  // toFixed avrundar halvor bort från noll även för minusgrader (-3,25 -> -3,3).
+  const r = Number(n.toFixed(1));
+  return (Number.isInteger(r) ? String(r) : r.toFixed(1)).replace(".", ",");
+}

@@ -113,3 +113,15 @@ describe("backoff after failure", () => {
     expect(await db.providerBackoff.count()).toBe(0);
   });
 });
+
+describe("provider-specific backoff", () => {
+  it("uses the provider's own wait after failure when set", async () => {
+    const bad = prov("sonos", async () => { throw new Error("kvot"); });
+    bad.p.failureBackoffMs = 600_000;
+    await getHomeStates(T0, [bad.p], db);
+    await getHomeStates(new Date(T0.getTime() + 300_000), [bad.p], db);
+    expect(bad.calls()).toBe(1);
+    await getHomeStates(new Date(T0.getTime() + 600_000), [bad.p], db);
+    expect(bad.calls()).toBe(2);
+  });
+});

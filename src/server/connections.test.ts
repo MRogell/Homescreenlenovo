@@ -116,3 +116,20 @@ describe("refresh lock across instances", () => {
     }
   });
 });
+
+describe("tado tokens", () => {
+  it("getAccessToken for tado uses the given refresher and stores the rotated token", async () => {
+    await saveTokens("u1", "tado", tokens({ expiresAt: NOW - 1, refreshToken: "R1" }), db);
+    const seen: string[] = [];
+    const t = await getAccessToken("tado", { db, nowMs: NOW, refresh: async (rt) => { seen.push(rt); return { accessToken: "NY", refreshToken: "R2", expiresAt: NOW + 600_000 }; } });
+    expect(t).toBe("NY");
+    expect(seen).toEqual(["R1"]);
+    const row = await db.connection.findFirstOrThrow({ where: { provider: "tado" } });
+    expect(JSON.parse(decryptToken(row.tokenEnc, SECRET)).refreshToken).toBe("R2");
+  });
+  it("a pending tado login is not usable as a connection", async () => {
+    await db.connection.create({ data: { userId: "u1", provider: "tado", tokenEnc: "x", status: "pending" } });
+    expect(await getConnectionStatus("tado", db)).toBe("pending");
+    await expect(getAccessToken("tado", { db, nowMs: NOW })).rejects.toBeInstanceOf(ReauthRequired);
+  });
+});

@@ -29,3 +29,8 @@ export const weatherSchema = z.object({
   aqiLabel: z.string().nullable(),
 });
 export type WeatherData = z.infer<typeof weatherSchema>;
+
+export const tadoSchema = z.object({
+  rooms: z.array(z.object({ name: z.string(), tempC: z.number().nullable(), humidity: z.number().nullable(), targetC: z.number().nullable(), heating: z.boolean() })),
+});
+export type TadoData = z.infer<typeof tadoSchema>;
