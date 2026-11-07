@@ -17,7 +17,7 @@ export interface ControlRequest {
 
 export interface ControlResult {
   status: number;
-  json?: { error: string; code: string };
+  json?: { error: string; code: string; devices?: { id: string; name: string; type: string }[] };
 }
 
 export interface ControlFlowDeps {
@@ -26,9 +26,16 @@ export interface ControlFlowDeps {
   db?: PrismaClient;
 }
 
-const bodySchema = z.object({ action: z.enum(SPOTIFY_ACTIONS as unknown as [string, ...string[]]) }).strict();
+const bodySchema = z
+  .object({
+    action: z.enum(SPOTIFY_ACTIONS as unknown as [string, ...string[]]),
+    // Spotifys enhets-id: bara bokstäver och siffror. Endast för "play" (val av enhet när ingen är aktiv).
+    deviceId: z.string().regex(/^[A-Za-z0-9]{1,128}$/).optional(),
+  })
+  .strict()
+  .refine((v) => v.deviceId === undefined || v.action === "play");
 
-const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, premium: 403, rate_limit: 429, failed: 502 };
+const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, choose_device: 409, premium: 403, rate_limit: 429, failed: 502 };
 const GENERIC = new ControlError("failed");
 
 /**
@@ -43,10 +50,10 @@ export async function handleControl(req: ControlRequest, deps: ControlFlowDeps =
   if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
 
   try {
-    await controlSpotify(parsed.data.action as (typeof SPOTIFY_ACTIONS)[number], { getToken: deps.getToken ?? (() => getAccessToken("spotify")), fetchFn: deps.fetchFn });
+    await controlSpotify(parsed.data.action as (typeof SPOTIFY_ACTIONS)[number], { getToken: deps.getToken ?? (() => getAccessToken("spotify")), fetchFn: deps.fetchFn }, parsed.data.deviceId);
   } catch (e) {
     const err = e instanceof ReauthRequired ? new ControlError("reauth") : e instanceof ControlError ? e : GENERIC;
-    return { status: STATUS[err.code], json: { error: err.message, code: err.code } };
+    return { status: STATUS[err.code], json: { error: err.message, code: err.code, ...(err.devices ? { devices: err.devices } : {}) } };
   }
   await (deps.db ?? defaultDb).snapshot.deleteMany({ where: { provider: "spotify" } });
   return { status: 204 };

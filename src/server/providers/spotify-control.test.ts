@@ -60,3 +60,63 @@ describe("controlSpotify errors", () => {
     expect(e.code).toBe("failed");
   });
 });
+
+describe("controlSpotify without an active device", () => {
+  type Route = { status: number; body?: unknown };
+  function routed(routes: Record<string, Route>) {
+    const calls: { key: string; body?: string }[] = [];
+    const fn = (async (url: string, init: RequestInit) => {
+      const key = `${init.method ?? "GET"} ${url.replace("https://api.spotify.com/v1", "")}`;
+      calls.push({ key, body: init.body ? String(init.body) : undefined });
+      const r = routes[key] ?? { status: 404, body: { error: { reason: "NO_ACTIVE_DEVICE" } } };
+      return r.status === 204 ? new Response(null, { status: 204 }) : new Response(JSON.stringify(r.body ?? {}), { status: r.status });
+    }) as unknown as typeof fetch;
+    return { fn, calls };
+  }
+  const NO_DEVICE = { status: 404, body: { error: { status: 404, reason: "NO_ACTIVE_DEVICE" } } };
+  const devices = (...d: { id: string; name: string; type?: string; is_restricted?: boolean }[]) => ({ status: 200, body: { devices: d.map((x) => ({ type: "Smartphone", is_restricted: false, is_active: false, ...x })) } });
+
+  it("play with exactly one available device transfers playback to it and plays", async () => {
+    const f = routed({ "PUT /me/player/play": NO_DEVICE, "GET /me/player/devices": devices({ id: "PHONE1", name: "Mickaels iPhone" }), "PUT /me/player": { status: 204 } });
+    await controlSpotify("play", { getToken: async () => "TOK", fetchFn: f.fn });
+    expect(f.calls.map((c) => c.key)).toEqual(["PUT /me/player/play", "GET /me/player/devices", "PUT /me/player"]);
+    expect(JSON.parse(f.calls[2]!.body!)).toEqual({ device_ids: ["PHONE1"], play: true });
+  });
+  it("restricted devices are ignored", async () => {
+    const f = routed({ "PUT /me/player/play": NO_DEVICE, "GET /me/player/devices": devices({ id: "R", name: "Låst", is_restricted: true }, { id: "OK", name: "Dator" }), "PUT /me/player": { status: 204 } });
+    await controlSpotify("play", { getToken: async () => "TOK", fetchFn: f.fn });
+    expect(JSON.parse(f.calls[2]!.body!).device_ids).toEqual(["OK"]);
+  });
+  it("several devices: asks the user to choose and lists them", async () => {
+    const f = routed({ "PUT /me/player/play": NO_DEVICE, "GET /me/player/devices": devices({ id: "A", name: "Mickaels iPhone" }, { id: "B", name: "Vardagsrum", type: "Speaker" }) });
+    const e = (await controlSpotify("play", { getToken: async () => "TOK", fetchFn: f.fn }).catch((x) => x)) as ControlError;
+    expect(e.code).toBe("choose_device");
+    expect(e.devices).toEqual([{ id: "A", name: "Mickaels iPhone", type: "Smartphone" }, { id: "B", name: "Vardagsrum", type: "Speaker" }]);
+    expect(f.calls.map((c) => c.key)).not.toContain("PUT /me/player");
+  });
+  it("no available devices gives no_device with a clear hint", async () => {
+    const f = routed({ "PUT /me/player/play": NO_DEVICE, "GET /me/player/devices": devices() });
+    const e = (await controlSpotify("play", { getToken: async () => "TOK", fetchFn: f.fn }).catch((x) => x)) as ControlError;
+    expect(e.code).toBe("no_device");
+    expect(e.message).toMatch(/Spotify-appen/);
+  });
+  it("device list failing gives no_device", async () => {
+    const f = routed({ "PUT /me/player/play": NO_DEVICE, "GET /me/player/devices": { status: 500 } });
+    expect(((await controlSpotify("play", { getToken: async () => "TOK", fetchFn: f.fn }).catch((x) => x)) as ControlError).code).toBe("no_device");
+  });
+  it("play with a chosen device transfers directly without trying play first", async () => {
+    const f = routed({ "PUT /me/player": { status: 204 } });
+    await controlSpotify("play", { getToken: async () => "TOK", fetchFn: f.fn }, "B");
+    expect(f.calls.map((c) => c.key)).toEqual(["PUT /me/player"]);
+    expect(JSON.parse(f.calls[0]!.body!)).toEqual({ device_ids: ["B"], play: true });
+  });
+  it("next without active device does not transfer (nothing to skip on)", async () => {
+    const f = routed({ "POST /me/player/next": NO_DEVICE });
+    expect(((await controlSpotify("next", { getToken: async () => "TOK", fetchFn: f.fn }).catch((x) => x)) as ControlError).code).toBe("no_device");
+    expect(f.calls).toHaveLength(1);
+  });
+  it("a failed transfer maps like other errors", async () => {
+    const f = routed({ "PUT /me/player/play": NO_DEVICE, "GET /me/player/devices": devices({ id: "X", name: "Dator" }), "PUT /me/player": { status: 403, body: { error: { reason: "PREMIUM_REQUIRED" } } } });
+    expect(((await controlSpotify("play", { getToken: async () => "TOK", fetchFn: f.fn }).catch((x) => x)) as ControlError).code).toBe("premium");
+  });
+});

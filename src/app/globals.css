@@ -67,3 +67,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .ctl.main svg { width: 28px; height: 28px; }
 .ctl:disabled { opacity: .55; cursor: progress; }
 .ctl:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.devices { display: flex; flex-direction: column; gap: 8px; }
+.device { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font: 600 15px var(--body); padding: 0 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; text-align: left; }
+.device span { color: var(--muted); font-weight: 500; font-size: 13px; }
+.device:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }

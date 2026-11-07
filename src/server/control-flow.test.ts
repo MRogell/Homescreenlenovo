@@ -53,7 +53,7 @@ describe("handleControl", () => {
   it("no active device is 409 with a Swedish message", async () => {
     const r = await handleControl(ok, deps(404, { error: { reason: "NO_ACTIVE_DEVICE" } }).d);
     expect(r.status).toBe(409);
-    expect(r.json).toEqual({ code: "no_device", error: "Öppna Spotify på någon enhet först." });
+    expect(r.json).toEqual({ code: "no_device", error: "Spotify hittar ingen enhet. Öppna Spotify-appen på telefonen eller datorn och försök igen." });
   });
   it("premium required is 403 and scope missing is 409", async () => {
     expect((await handleControl(ok, deps(403, { error: { reason: "PREMIUM_REQUIRED" } }).d)).status).toBe(403);
@@ -72,5 +72,30 @@ describe("handleControl", () => {
     const r = await handleControl(ok, { db, getToken: async () => { throw new Error("hemlig-detalj TOK"); } });
     expect(r.status).toBe(502);
     expect(JSON.stringify(r.json)).not.toContain("hemlig");
+  });
+});
+
+describe("handleControl device choice", () => {
+  const NO_DEVICE = new Response(JSON.stringify({ error: { reason: "NO_ACTIVE_DEVICE" } }), { status: 404 });
+  it("play with a valid deviceId is accepted and transferred", async () => {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => { calls.push(`${init.method} ${url} ${init.body ?? ""}`); return new Response(null, { status: 204 }); }) as unknown as typeof fetch;
+    const r = await handleControl({ ...ok, body: { action: "play", deviceId: "abc123DEF" } }, { getToken: async () => "TOK", fetchFn, db });
+    expect(r.status).toBe(204);
+    expect(calls).toEqual(['PUT https://api.spotify.com/v1/me/player {"device_ids":["abc123DEF"],"play":true}']);
+  });
+  it("deviceId with odd characters, too long, or on another action is rejected", async () => {
+    const d = { getToken: async () => "TOK", db };
+    for (const body of [{ action: "play", deviceId: "../x" }, { action: "play", deviceId: "a".repeat(200) }, { action: "play", deviceId: "" }, { action: "pause", deviceId: "abc" }]) {
+      expect((await handleControl({ ...ok, body }, d)).status, JSON.stringify(body)).toBe(400);
+    }
+  });
+  it("several devices gives 409 choose_device with the list", async () => {
+    const fetchFn = (async (url: string) => url.endsWith("/me/player/devices")
+      ? new Response(JSON.stringify({ devices: [{ id: "A", name: "iPhone", type: "Smartphone", is_restricted: false }, { id: "B", name: "Vardagsrum", type: "Speaker", is_restricted: false }] }), { status: 200 })
+      : NO_DEVICE.clone()) as unknown as typeof fetch;
+    const r = await handleControl({ ...ok, body: { action: "play" } }, { getToken: async () => "TOK", fetchFn, db });
+    expect(r.status).toBe(409);
+    expect(r.json).toMatchObject({ code: "choose_device", devices: [{ id: "A", name: "iPhone" }, { id: "B", name: "Vardagsrum" }] });
   });
 });

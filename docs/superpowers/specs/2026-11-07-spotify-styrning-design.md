@@ -15,7 +15,10 @@ Spela/pausa, föregående och nästa från Spotify-kortet på plattan.
 
 ## Begränsningar
 - Enligt min kännedom kräver Spotifys styr-API **Premium** (ägaren har det). Ej verifierat mot dokumentationen.
-- Spotify spelar bara på en **aktiv** enhet. Enhetsväljare ingår inte.
+- Spotify spelar bara på en **aktiv** enhet. När ingen är aktiv (t.ex. Spotify pausad i bakgrunden på telefonen) hämtar appen tillgängliga enheter
+  (`GET /me/player/devices`, begränsade enheter utesluts) och flyttar uppspelningen dit (`PUT /me/player` med `play: true`):
+  en enhet → spelar direkt, flera → kortet visar en lista att välja i (`deviceId`, bara bokstäver och siffror, bara för "play"), ingen → tydligt fel.
+  Om iPhone-appen syns i listan när den ligger i bakgrunden avgörs av Spotify och iOS.
 - Sökvägar och felformat är skrivna från minnet och testade mot falska svar, inte mot riktiga Spotify.
 - Ingen volymkontroll och ingen styrning av Sonos i den här leveransen.
 
