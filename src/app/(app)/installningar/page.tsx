@@ -3,6 +3,8 @@ import { requireUser } from "@/server/authz";
 import { getConnectionStatus } from "@/server/connections";
 import { getOAuthConfig, isOAuthProvider, type OAuthProviderId } from "@/server/oauth-providers";
 import { PROVIDERS } from "@/server/providers";
+import { skodaConfigProblem } from "@/server/providers/skoda-config";
+import { getEnv } from "@/lib/env";
 import { DiagnoseButton } from "@/components/diagnose-button";
 import { DisconnectButton } from "@/components/disconnect-button";
 import { SpotifyDefaultDevice } from "@/components/spotify-default-device";
@@ -63,6 +65,16 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
                   <span style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                     {st === "ok" ? <><span>Ansluten</span><DisconnectButton provider="tado" label="Tado" /></> : <><span>{st === "reauth" ? "Anslut igen" : "Ej ansluten"}</span><TadoConnect label={st === "reauth" ? "Anslut igen" : "Anslut"} /></>}
                   </span>
+                </div>
+              );
+            }
+            if (p.id === "skoda") {
+              // Visar vilken variabel som saknas eller är fel (bara namnet, aldrig värdet).
+              const problem = skodaConfigProblem(getEnv());
+              return (
+                <div className="row" key={p.id} style={{ alignItems: "center", flexWrap: "wrap" }}>
+                  <span>{name}</span>
+                  <span style={{ textAlign: "right" }}>{problem ? <>Saknar konfiguration<br /><small className="mid">{problem}</small></> : "Ansluten via brygga"}</span>
                 </div>
               );
             }

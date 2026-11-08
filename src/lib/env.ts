@@ -21,8 +21,9 @@ const schema = z.object({
   WEATHER_LON: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().min(-180).max(180).default(22.1547)),
   // Škoda-bryggan (skoda-bridge/, eget Vercel-projekt): adress och delad token (minst 32 tecken). Utan båda visas Škoda som ej ansluten.
   // SKODA_BRIDGE_URL är bryggans egen adress, t.ex. https://hemskarm-skoda.vercel.app.
-  SKODA_BRIDGE_URL: z.preprocess((v) => (v === "" ? undefined : v), z.url().optional()),
-  SKODA_BRIDGE_TOKEN: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(32, "SKODA_BRIDGE_TOKEN måste vara minst 32 tecken").optional()),
+  // Valideras i skoda-config.ts, inte här: ett fel i Škodas variabler får aldrig stoppa bygget eller resten av appen.
+  SKODA_BRIDGE_URL: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim().optional()),
+  SKODA_BRIDGE_TOKEN: z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim().optional()),
 });
 
 export type Env = z.infer<typeof schema>;
