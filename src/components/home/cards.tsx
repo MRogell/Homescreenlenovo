@@ -20,7 +20,7 @@ export const SkodaCard = ({ state, now }: P) => (
     const v = skodaView(d, now);
     return {
       pill: v.pill,
-      body: <>
+      body: <div className="skoda-body"><div className="skoda-info">
         <div className="skoda-main">
           <div className="big">{d.rangeKm ?? "–"}<small>km</small></div>
           {v.levelText && <div className="skoda-level"><strong>{d.levelPct}<small>%</small></strong><span>{d.levelKind === "battery" ? "batteri" : "tank"}</span></div>}
@@ -39,12 +39,13 @@ export const SkodaCard = ({ state, now }: P) => (
             ))}
           </ul>
         )}
-        <SkodaClimate on={v.climate.on} targetC={v.climate.targetC} text={v.climate.text} pending={v.climate.pending} />
         <div className="skoda-place">
           <Icon name="pin" />
           <span><span className="addr" title={v.placeFull ?? undefined}>{v.place}</span>{v.reported && <small>{v.reported}</small>}</span>
         </div>
-      </>,
+      </div>
+        <SkodaClimate on={v.climate.on} targetC={v.climate.targetC} text={v.climate.text} pending={v.climate.pending} />
+      </div>,
     };
   }} />
 );

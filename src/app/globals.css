@@ -200,3 +200,17 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .skoda-climate-btn.stop { background: transparent; color: var(--fg); border: 1.5px solid var(--line); }
 .skoda-climate-btn:disabled { opacity: .7; cursor: default; }
 .skoda-climate-error { color: var(--bad); margin: 0; align-self: stretch; text-align: center; }
+
+/* Škoda-kortet är dubbelt så brett på surfplatta och dator: bilinfo till vänster, klimat till höger. Telefon: en kolumn. */
+.card.skoda { grid-column: span 2; }
+.skoda-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; flex: 1; }
+.skoda-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.skoda-info .skoda-place { margin-top: auto; }
+.skoda-body .skoda-climate { justify-content: center; }
+@media (max-width: 560px) {
+  .card.skoda { grid-column: auto; }
+  /* En kolumn: platsen hamnar efter klimatrutan, som tidigare. */
+  .skoda-body { display: flex; flex-direction: column; gap: 8px; }
+  .skoda-info { display: contents; }
+  .skoda-info .skoda-place { order: 2; margin-top: 4px; }
+}
