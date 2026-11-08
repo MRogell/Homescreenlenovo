@@ -7,6 +7,7 @@ from typing import Any
 from myskoda.models.air_conditioning import AirConditioningState
 from myskoda.models.charging import ChargingState
 from myskoda.models.common import DoorLockedState, OpenState
+from myskoda.models.position import ErrorType
 
 
 def _locked(status: Any) -> bool | None:
@@ -57,7 +58,14 @@ def _ts(part: Any) -> datetime | None:
     return t if t.tzinfo is not None else t.replace(tzinfo=UTC)
 
 
-def _level_and_range(battery: Any, charging: Any, driving_range: Any) -> tuple[int | None, int | None, str]:
+def _driving(positions: Any) -> bool | None:
+    """Škodas moln anger själv när bilen körs (VEHICLE_IN_MOTION). Inget svar = okänt, aldrig "står still" på en gissning."""
+    if positions is None:
+        return None
+    return any(e.type == ErrorType.VEHICLE_IN_MOTION for e in positions.errors)
+
+
+def _level_and_range(battery: Any, charging: Any, driving_range: Any) -> tuple[int | None, int | None, str, datetime | None]:
     """Batterinivå och räckvidd från SAMMA källa, den som bilen rapporterade senast (som Škoda-appen visar dem).
 
     Laddningsdelen uppdateras ofta bara under laddning och kan vara gammal; räckviddsdelen är normalt färskast.
@@ -82,19 +90,19 @@ def _level_and_range(battery: Any, charging: Any, driving_range: Any) -> tuple[i
         range_km = chosen[1] if chosen[1] is not None else (other[1] if other else None)
         if range_km is None and driving_range is not None:
             range_km = driving_range.total_range_in_km
-        return chosen[0], range_km, "battery"
+        return chosen[0], range_km, "battery", chosen[2]
 
     # Ingen batterinivå: bränslebil (eller okänt).
     level = driving_range.primary_engine_range.current_fuel_level_in_percent if driving_range is not None else None
     range_km = driving_range.total_range_in_km if driving_range is not None else None
-    return level, range_km, "fuel"
+    return level, range_km, "fuel", _ts(driving_range)
 
 
-def summarize(charging: Any, status: Any, parking: Any, driving_range: Any, air: Any = None) -> dict[str, Any]:
+def summarize(charging: Any, status: Any, parking: Any, driving_range: Any, air: Any = None, positions: Any = None) -> dict[str, Any]:
     """Alla argument får vara None (anropet misslyckades eller bilen saknar funktionen)."""
     battery = charging.status.battery if charging is not None and charging.status is not None else None
 
-    level, range_km, kind = _level_and_range(battery, charging, driving_range)
+    level, range_km, kind, battery_at = _level_and_range(battery, charging, driving_range)
 
     is_charging = bool(charging is not None and charging.status is not None and charging.status.state == ChargingState.CHARGING)
 
@@ -122,5 +130,8 @@ def summarize(charging: Any, status: Any, parking: Any, driving_range: Any, air:
         "trunkOpen": _open(detail.trunk) if detail is not None else None,
         "bonnetOpen": _open(detail.bonnet) if detail is not None else None,
         "capturedAt": _captured_at(status, charging, air),
+        # Batteriets egen rapporttid: statusdelarna (lås, dörrar) kan vara färskare än batteridelen.
+        "batteryAt": battery_at.isoformat() if battery_at else None,
+        "driving": _driving(positions),
         **_climate(air),
     }

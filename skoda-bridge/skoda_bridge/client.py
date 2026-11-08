@@ -1,4 +1,4 @@
-"""Nätverksdelen: loggar in hos Škoda, skickar ev. klimatkommando och hämtar fem delar parallellt. Testas inte automatiskt (kräver riktigt konto)."""
+"""Nätverksdelen: loggar in hos Škoda, skickar ev. klimatkommando och hämtar sex delar parallellt. Testas inte automatiskt (kräver riktigt konto)."""
 from __future__ import annotations
 
 import asyncio
@@ -31,6 +31,7 @@ async def fetch_summary(email: str, password: str, vin: str | None = None, comma
             api.get_parking_position(vin),
             api.get_driving_range(vin),
             api.get_air_conditioning(vin),
+            api.get_positions(vin),
             return_exceptions=True,
         )
         parts = [None if isinstance(r, BaseException) else r for r in results]

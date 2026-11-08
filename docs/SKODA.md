@@ -33,6 +33,12 @@ Gör **Redeploy**. Inställningar visar "Ansluten via brygga", och kortet hämta
 Bryggan tar procent och km från **samma** del, den som bilen rapporterade senast enligt bilens egen tidsstämpel,
 så att kortet visar samma siffror som Škoda-appen. Bilens rapporttid står längst ner i kortet.
 
+## Körning
+Škodas moln anger själv när bilen körs. Kortet visar då "Bilen körs" i stället för plats och hämtar data var 2:a minut.
+Batteriets egen rapporttid följer med: är den 10 minuter eller äldre under körning står "Batteriet senast rapporterat HH:MM".
+Bryggan kan bara läsa det Škodas moln har fått från bilen. Det finns inget sätt att tvinga fram en ny avläsning
+(biblioteket har bara `wakeup`, som Škoda begränsar till tre gånger per dygn), så under körning är batteriet så färskt som bilen själv skickar.
+
 ## Klimatisering
 Škoda-kortet kan starta och stoppa bilens klimatisering (16–29,5 °C i steg om 0,5). Hemskärmen skickar kommandot till bryggan
 (`POST /api/skoda` med `{"climate":"start","temperatureC":21}` eller `{"climate":"stop"}`), och bryggan loggar in, skickar

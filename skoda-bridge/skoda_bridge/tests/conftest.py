@@ -60,3 +60,10 @@ def air_conditioning(state="OFF", target=21.0, ready_at=None, captured=None):
     if captured is not None:
         data["carCapturedTimestamp"] = captured
     return AirConditioning.from_dict(data)
+
+
+def positions(in_motion=False):
+    from myskoda.models.position import Positions
+    errors = [{"type": "VEHICLE_IN_MOTION", "description": "Vehicle is in motion"}] if in_motion else []
+    pos = [] if in_motion else [{"gpsCoordinates": {"latitude": 59.3, "longitude": 18.0}, "type": "VEHICLE"}]
+    return Positions.from_dict({"errors": errors, "positions": pos})

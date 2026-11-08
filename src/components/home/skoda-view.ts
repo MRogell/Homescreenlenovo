@@ -14,6 +14,8 @@ export interface SkodaView {
   /** Lås, dörrar, fönster, bagage (och motorhuv om den står öppen). Värden bilen inte rapporterar utelämnas. */
   checks: SkodaCheck[];
   place: string;
+  /** Under körning, när batteridelen är 10 min eller äldre: "Batteriet senast rapporterat 10:52". Annars null. */
+  batteryNote: string | null;
   /** Hela adressen (för title), eller null om platsen är okänd. */
   placeFull: string | null;
   reported: string | null;
@@ -80,6 +82,16 @@ export function shortAddress(address: string): string {
   return parts.join(", ") || address.trim();
 }
 
+const BATTERY_STALE_MS = 10 * 60_000;
+
+/** Ärlig färskhet under körning: Škodas moln uppdaterar batteriet bara när bilen skickar, så visa när det var. */
+function batteryNote(d: SkodaData, now: Date): string | null {
+  if (!d.driving || !d.batteryAt) return null;
+  const at = new Date(d.batteryAt);
+  if (Number.isNaN(at.getTime()) || now.getTime() - at.getTime() < BATTERY_STALE_MS) return null;
+  return `Batteriet senast rapporterat ${clock(at)}`;
+}
+
 function pillFor(d: SkodaData): SkodaView["pill"] {
   if (d.doorsOpen) return { text: "Dörr öppen", tone: "bad" };
   if (d.trunkOpen) return { text: "Bagagelucka öppen", tone: "bad" };
@@ -122,7 +134,8 @@ export function skodaView(d: SkodaData, now: Date): SkodaView {
     chargeLine,
     targetPct: d.charging ? d.chargeTargetPct : null,
     checks,
-    place: d.parked ? shortAddress(d.parked) : "Plats okänd",
+    place: d.parked ? shortAddress(d.parked) : d.driving ? "Bilen körs" : "Plats okänd",
+    batteryNote: batteryNote(d, now),
     placeFull: d.parked,
     reported: reportedText(d.capturedAt, now),
     climate: climateView(d, now),

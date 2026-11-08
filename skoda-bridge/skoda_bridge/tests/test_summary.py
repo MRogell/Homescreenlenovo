@@ -1,5 +1,5 @@
 from skoda_bridge.summary import summarize
-from conftest import air_conditioning, charging, driving_range, parking, status
+from conftest import air_conditioning, charging, driving_range, parking, positions, status
 
 
 def test_electric_car_full_data():
@@ -7,7 +7,7 @@ def test_electric_car_full_data():
     assert r == {"rangeKm": 312, "levelPct": 78, "levelKind": "battery", "locked": True, "charging": False, "parked": "Storgatan 1, Stockholm",
                  "chargeMinutesLeft": None, "chargeKw": None, "chargeTargetPct": None,
                  "doorsOpen": False, "windowsOpen": False, "trunkOpen": False, "bonnetOpen": False, "capturedAt": None,
-                 "climateOn": None, "climateTargetC": None, "climateReadyAt": None}
+                 "climateOn": None, "climateTargetC": None, "climateReadyAt": None, "driving": None, "batteryAt": None}
 
 
 def test_charging_state_sets_charging_flag():
@@ -46,7 +46,7 @@ def test_unknown_lock_state_is_none_not_false():
 
 def test_everything_missing_gives_nulls():
     assert summarize(None, None, None, None) == {"rangeKm": None, "levelPct": None, "levelKind": "fuel", "locked": None, "charging": False, "parked": None,
-                                                 "chargeMinutesLeft": None, "chargeKw": None, "chargeTargetPct": None, "doorsOpen": None, "windowsOpen": None, "trunkOpen": None, "bonnetOpen": None, "capturedAt": None, "climateOn": None, "climateTargetC": None, "climateReadyAt": None}
+                                                 "chargeMinutesLeft": None, "chargeKw": None, "chargeTargetPct": None, "doorsOpen": None, "windowsOpen": None, "trunkOpen": None, "bonnetOpen": None, "capturedAt": None, "climateOn": None, "climateTargetC": None, "climateReadyAt": None, "driving": None, "batteryAt": None}
 
 
 def test_partial_failure_keeps_the_other_fields():
@@ -129,3 +129,25 @@ def test_same_or_missing_timestamps_prefer_driving_range():
 def test_driving_range_without_soc_falls_back_to_charging_level_but_keeps_pairing():
     r = summarize(charging(soc=78, range_m=312_000), status(), None, driving_range(total=300))
     assert (r["levelPct"], r["rangeKm"]) == (78, 312)
+
+
+def test_driving_flag_from_positions():
+    assert summarize(None, None, None, None, None, positions(in_motion=True))["driving"] is True
+    assert summarize(None, None, None, None, None, positions(in_motion=False))["driving"] is False
+    assert summarize(None, None, None, None, None, None)["driving"] is None
+
+
+def test_battery_at_is_the_timestamp_of_the_chosen_battery_source_not_the_newest_part():
+    # Låsstatusen är färsk (11:01) men batteridelen gammal (10:29): batteriets egen tid ska visas.
+    r = summarize(charging(soc=89, range_m=319_000, captured="2026-11-08T10:29:00Z"), status(captured="2026-11-08T11:01:00Z"), None, None)
+    assert r["capturedAt"].startswith("2026-11-08T11:01:00")
+    assert r["batteryAt"].startswith("2026-11-08T10:29:00")
+
+
+def test_battery_at_follows_the_source_that_won():
+    r = summarize(charging(soc=89, captured="2026-11-08T08:00:00Z"), None, None, driving_range(total=314, soc=87, captured="2026-11-08T09:44:00Z"))
+    assert r["batteryAt"].startswith("2026-11-08T09:44:00")
+
+
+def test_battery_at_without_timestamp_is_none():
+    assert summarize(charging(), None, None, None)["batteryAt"] is None

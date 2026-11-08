@@ -154,3 +154,28 @@ describe("dialAngle", () => {
     expect(dialAngle(40)).toBe(135);
   });
 });
+
+describe("skodaView driving", () => {
+  it("while driving the place says so instead of unknown", () => {
+    expect(v({ parked: null, driving: true }).place).toBe("Bilen körs");
+    expect(v({ parked: null, driving: true }).placeFull).toBeNull();
+    expect(v({ parked: null, driving: false }).place).toBe("Plats okänd");
+    expect(v({ parked: null, driving: null }).place).toBe("Plats okänd");
+  });
+  it("battery note appears when driving and the battery data is 10 min or older", () => {
+    const old = new Date(NOW.getTime() - 25 * 60_000).toISOString();
+    expect(v({ driving: true, batteryAt: old }).batteryNote).toBe("Batteriet senast rapporterat 17:35");
+  });
+  it("no battery note when driving with fresh battery data, when parked, or without a time", () => {
+    const fresh = new Date(NOW.getTime() - 3 * 60_000).toISOString();
+    const old = new Date(NOW.getTime() - 25 * 60_000).toISOString();
+    expect(v({ driving: true, batteryAt: fresh }).batteryNote).toBeNull();
+    expect(v({ driving: false, batteryAt: old }).batteryNote).toBeNull();
+    expect(v({ driving: true, batteryAt: null }).batteryNote).toBeNull();
+    expect(v({ driving: true, batteryAt: "inte ett datum" }).batteryNote).toBeNull();
+  });
+  it("old payloads without the new fields still parse", () => {
+    const o = skodaSchema.parse({ rangeKm: 1, levelPct: 2, levelKind: "battery", locked: true, charging: false, parked: "X" });
+    expect(o).toMatchObject({ driving: null, batteryAt: null });
+  });
+});

@@ -22,6 +22,10 @@ export const skodaSchema = z.object({
   /** Beräknad tid då kupén når måltemperaturen (ISO), bara när klimatiseringen är på. */
   climateReadyAt: z.string().nullable().default(null),
   /** Satt av hemskärmen när ett klimatkommando skickats men bilen ännu inte bekräftat det (bryggan väntar inte på bilen). */
+  /** Bilen körs just nu (Škodas moln anger det själv). null = okänt. */
+  driving: z.boolean().nullable().default(null),
+  /** Batteriets egen rapporttid (ISO). Lås och dörrar kan vara färskare än batteridelen. */
+  batteryAt: z.string().nullable().default(null),
   climateRequested: z.object({ action: z.enum(["start", "stop"]), at: z.string() }).nullable().default(null),
 });
 export const sonosSchema = z.object({

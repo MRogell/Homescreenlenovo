@@ -260,3 +260,4 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .sp-popover { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); max-height: min(60vh, 360px); overflow-y: auto; z-index: 20;
   padding: 8px; gap: 6px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 16px 40px rgb(0 0 0 / .45); }
 .sp-popover .device { background: var(--surface-2); }
+.skoda-place small.stale { color: var(--warn); }

@@ -69,6 +69,8 @@ describe("skoda provider", () => {
     expect(p.ttlFor?.({ ...GOOD, charging: false } as never)).toBe(300);
     expect(p.ttlFor?.({ ...GOOD, charging: false, climateOn: true } as never)).toBe(120);
     expect(p.ttlFor?.({ ...GOOD, charging: false, climateOn: false } as never)).toBe(300);
+    expect(p.ttlFor?.({ ...GOOD, driving: true } as never)).toBe(120);
+    expect(p.ttlFor?.({ ...GOOD, driving: false } as never)).toBe(300);
     const recent = new Date(Date.now() - 60_000).toISOString(), old = new Date(Date.now() - 11 * 60_000).toISOString();
     expect(p.ttlFor?.({ ...GOOD, climateOn: false, climateRequested: { action: "start", at: recent } } as never)).toBe(120);
     expect(p.ttlFor?.({ ...GOOD, climateOn: false, climateRequested: { action: "start", at: old } } as never)).toBe(300);
