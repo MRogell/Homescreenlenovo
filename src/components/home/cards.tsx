@@ -40,7 +40,7 @@ export const SkodaCard = ({ state, now }: P) => (
         )}
         <div className="skoda-place">
           <Icon name="pin" />
-          <span><span className="addr">{v.place}</span>{v.reported && <small>{v.reported}</small>}</span>
+          <span><span className="addr" title={v.place}>{v.place}</span>{v.reported && <small>{v.reported}</small>}</span>
         </div>
       </>,
     };
