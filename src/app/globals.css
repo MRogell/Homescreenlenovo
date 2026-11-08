@@ -5,12 +5,13 @@
   --bg: #0f1419; --surface: #182029; --surface-2: #1f2a35; --line: #2a3745;
   --fg: #eef2f6; --muted: #93a3b4; --accent: #e9c98f; --accent-ink: #1b1608;
   --ok: #6fd3a0; --warn: #f0b45a; --bad: #f08a7e;
+  --c-blue: #6fa8f0; --c-green: #6fd3a0; --c-yellow: #e9c98f; --c-red: #f08a7e; --c-purple: #b49ad8;
   --display: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
   --body: "DM Sans", "Segoe UI", system-ui, sans-serif;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
-  :root { --bg: #eef1f4; --surface: #ffffff; --surface-2: #f3f5f8; --line: #d8dee5; --fg: #141b22; --muted: #566676; --accent: #8a5a12; --accent-ink: #ffffff; --ok: #17794a; --warn: #8f5a00; --bad: #b3372b; color-scheme: light; }
+  :root { --bg: #eef1f4; --surface: #ffffff; --surface-2: #f3f5f8; --line: #d8dee5; --fg: #141b22; --muted: #566676; --accent: #8a5a12; --accent-ink: #ffffff; --ok: #17794a; --warn: #8f5a00; --bad: #b3372b; --c-blue: #2f6fb8; --c-green: #17794a; --c-yellow: #8a5a12; --c-red: #b3372b; --c-purple: #6b4fa0; color-scheme: light; }
 }
 * { box-sizing: border-box; }
 /* Ingen zoom: dubbeltryck-zoom av, ingen automatisk textförstoring i liggande läge, ingen studs i sidled. */
@@ -397,3 +398,41 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .ti-cap { color: var(--muted); font-size: 12px; line-height: 1.25; }
 .ti-sum.span-3 .ti-cap, .ti-sum.span-2 .ti-cap { font-size: 13px; text-align: left; }
 .ti-cap b { color: var(--warn); font-weight: 600; }
+
+/* Kalender: nästa händelse stort, resten under. Färgprick = vilken kalender. */
+.cal { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cal-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--cal, var(--muted)); display: inline-block; }
+.cal-grp { font: 600 13px var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.cal-next { display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 16px; background: linear-gradient(160deg, color-mix(in srgb, var(--cal) 22%, var(--surface-2)), var(--surface-2) 75%); }
+.cal-when { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.cal-ttl { font: 600 24px/1.15 var(--display); overflow-wrap: anywhere; }
+.cal-meta { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.cal-ev { display: grid; grid-template-columns: 3.6em 8px minmax(0, 1fr); gap: 10px; align-items: center; min-height: 40px; }
+.cal-t { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.cal-ti { min-width: 0; }
+.cal-ti b { display: block; font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-ti small { color: var(--muted); font-size: 12px; }
+.cal-allday { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--cal) 16%, transparent); font-size: 14px; font-weight: 500; min-width: 0; }
+.cal-empty { display: flex; flex-direction: column; gap: 4px; padding: 10px 0 4px; }
+.cal-empty b { font: 600 20px var(--display); }
+
+/* Kalenderinställningar */
+.c-blue { --cal: var(--c-blue); } .c-green { --cal: var(--c-green); } .c-yellow { --cal: var(--c-yellow); } .c-red { --cal: var(--c-red); } .c-purple { --cal: var(--c-purple); }
+.calsettings { gap: 12px; }
+.cs-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cs-list li { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+.cs-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--cal); flex: none; }
+.cs-name { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.cs-del { margin-top: 0; min-height: 44px; }
+.cs-form { display: flex; flex-direction: column; gap: 12px; }
+.cs-form > label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-weight: 500; }
+.cs-form input:not([type="radio"]) { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); padding: 0 12px; font: 16px var(--body); min-width: 0; }
+.cs-form .btn { margin-top: 0; align-self: flex-start; }
+.cs-form .btn:disabled { opacity: .5; }
+.cs-colors { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.cs-colors legend { color: var(--muted); font-weight: 500; padding: 0; margin-bottom: 4px; }
+.cs-color { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
+.cs-color::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--cal); }
+.cs-color input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.cs-color:has(input:checked) { border-color: var(--cal); box-shadow: 0 0 0 2px var(--cal); }
+.cs-color:has(input:focus-visible) { outline: 3px solid var(--fg); outline-offset: 2px; }

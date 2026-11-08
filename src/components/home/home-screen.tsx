@@ -9,7 +9,7 @@ import { attentionLine } from "./attention";
 import type { SonosInfo } from "./spotify-view";
 import { Clock } from "./clock";
 import { RefreshContext, SpotifyRefreshContext } from "./refresh-context";
-import { AegCard, SkodaCard, SonosCard, SpotifyCard, TadoCard, WeatherCard } from "./cards";
+import { AegCard, CalendarCard, SkodaCard, SonosCard, SpotifyCard, TadoCard, WeatherCard } from "./cards";
 
 const POLL_MS = 30_000;
 /** Spotify uppdateras oftare (direkt från Spotify) så att kortet följer vad som spelas utan märkbar fördröjning. */
@@ -81,6 +81,7 @@ export function HomeScreen({ initial, initialNow, initialSettings }: { initial: 
         {visible.map((id) => {
           switch (id) {
             case "weather": return <WeatherCard key={id} state={states.weather} now={now} />;
+            case "calendar": return <CalendarCard key={id} state={states.calendar} now={now} />;
             case "spotify": return <SpotifyCard key={id} state={states.spotify} now={now} sonos={sonosInfo} />;
             case "aeg": return <AegCard key={id} state={states.aeg} now={now} />;
             case "tado": return <TadoCard key={id} state={states.tado} now={now} />;

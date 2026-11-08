@@ -10,6 +10,8 @@ import { createAegProvider, type AegCache } from "./aeg";
 import { getAegApiKey } from "../aeg-connect";
 import { db } from "../db";
 import { createSpotifyProvider } from "./spotify";
+import { createCalendarProvider } from "./calendar";
+import { listCalendars } from "../calendar/store";
 import type { Provider, ProviderId } from "./types";
 
 const sonos = createSonosProvider({ getToken: () => getAccessToken("sonos"), isConnected: async () => (await getConnectionStatus("sonos")) === "ok" });
@@ -65,5 +67,10 @@ const aeg = createAegProvider({
   saveCache: (appliance) => updateSettings("aeg", { appliance }),
 });
 
-const ALL: Record<ProviderId, Provider<unknown>> = { skoda: skoda as Provider<unknown>, sonos: sonos as Provider<unknown>, spotify: spotify as Provider<unknown>, weather: weather as Provider<unknown>, tado: tado as Provider<unknown>, aeg: aeg as Provider<unknown> };
-export const PROVIDERS: Provider<unknown>[] = (["skoda", "sonos", "spotify", "aeg", "weather", "tado"] as const).map((id) => ALL[id]);
+// Kalendrarnas hemliga adresser ligger krypterade i databasen och dekrypteras här, bara på servern.
+const calendar = createCalendarProvider({
+  loadCalendars: async () => (await listCalendars(db, getEnv().BETTER_AUTH_SECRET)).map(({ id, name, color, url }) => ({ id, name, color, url })),
+});
+
+const ALL: Record<ProviderId, Provider<unknown>> = { calendar: calendar as Provider<unknown>, skoda: skoda as Provider<unknown>, sonos: sonos as Provider<unknown>, spotify: spotify as Provider<unknown>, weather: weather as Provider<unknown>, tado: tado as Provider<unknown>, aeg: aeg as Provider<unknown> };
+export const PROVIDERS: Provider<unknown>[] = (["skoda", "sonos", "spotify", "aeg", "weather", "tado", "calendar"] as const).map((id) => ALL[id]);

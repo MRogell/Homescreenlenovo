@@ -105,3 +105,15 @@ export const tadoSchema = z.object({
   rooms: z.array(z.object({ name: z.string(), tempC: z.number().nullable(), humidity: z.number().nullable(), targetC: z.number().nullable(), heating: z.boolean() })),
 });
 export type TadoData = z.infer<typeof tadoSchema>;
+
+const calendarEvent = z.object({ title: z.string(), allDay: z.boolean(), start: z.string(), end: z.string(), calendarId: z.string() });
+const calendarDay = z.object({ date: z.string(), events: z.array(calendarEvent) });
+export const calendarSchema = z.object({
+  today: calendarDay,
+  tomorrow: calendarDay,
+  /** De kopplade kalendrarna (namn och färg, aldrig adressen). */
+  calendars: z.array(z.object({ id: z.string(), name: z.string(), color: z.enum(["blue", "green", "yellow", "red", "purple"]) })),
+  /** Hur många kalendrar som inte svarade den här gången. */
+  failed: z.number(),
+});
+export type CalendarData = z.infer<typeof calendarSchema>;

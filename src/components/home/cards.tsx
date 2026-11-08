@@ -1,6 +1,6 @@
 import { formatClock, formatMinutes, formatTemp } from "@/lib/format";
 import type { CardState } from "@/server/providers/types";
-import type { AegData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData } from "@/server/providers/schemas";
+import type { AegData, CalendarData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
 import { Icon, type IconName } from "./icons";
 import { skodaView } from "./skoda-view";
@@ -11,6 +11,7 @@ import { Droplets, Moon, Snowflake, Sun, Sunrise, Sunset, Wind } from "lucide-re
 import { SonosNow } from "./sonos-now";
 import { TadoDial } from "./tado-dial";
 import { tadoSummary, tadoView } from "./tado-view";
+import { calendarView, type CalEventRow } from "./calendar-view";
 import { AegControls } from "./aeg-controls";
 import { AegProgram } from "./aeg-program";
 import { SpotifyControls } from "./spotify-controls";
@@ -183,6 +184,49 @@ export const TadoCard = ({ state, now }: P) => (
               <span className="ti-cap">snitt i {sum.rooms} rum<br />{sum.heating > 0 ? <><b>{sum.heating}</b> värmer</> : "alla vilar"}</span>
             </div>
           )}
+        </div>
+      ),
+    };
+  }} />
+);
+
+const CalRow = ({ e }: { e: CalEventRow }) => (
+  <div className="cal-ev" style={{ "--cal": `var(--c-${e.color})` } as React.CSSProperties}>
+    <span className="cal-t">{e.time}</span>
+    <i className="cal-dot" />
+    <span className="cal-ti"><b>{e.title}</b><small>{e.meta}</small></span>
+  </div>
+);
+const CalAllDay = ({ title, color }: { title: string; color: string }) => (
+  <div className="cal-allday" style={{ "--cal": `var(--c-${color})` } as React.CSSProperties}><i className="cal-dot" />{title}</div>
+);
+
+/** Kalender: nästa händelse stort, resten av dagen och imorgon under. */
+export const CalendarCard = ({ state, now }: P) => (
+  <CardShell<CalendarData> title="Kalender" icon="cal" state={as(state)} now={now} className="calendar" render={(d) => {
+    const v = calendarView(d, now);
+    return {
+      pill: { text: v.pill },
+      body: (
+        <div className="cal">
+          {v.allDayToday.map((a, i) => <CalAllDay key={`t${i}`} {...a} />)}
+          {v.empty && <div className="cal-empty"><b>Inget i kalendern</b><span className="mid">Ingenting idag eller imorgon.</span></div>}
+          {v.hero && (
+            <div className="cal-next" style={{ "--cal": `var(--c-${v.hero.color})` } as React.CSSProperties}>
+              <div className="cal-when"><i className="cal-dot" />{v.hero.when}</div>
+              <div className="cal-ttl">{v.hero.title}</div>
+              <div className="cal-meta">{v.hero.meta}</div>
+            </div>
+          )}
+          {v.later.length > 0 && <><div className="cal-grp">Senare idag</div>{v.later.map((e) => <CalRow key={e.key} e={e} />)}</>}
+          {(v.tomorrow.allDay.length > 0 || v.tomorrow.events.length > 0) && (
+            <>
+              <div className="cal-grp">Imorgon</div>
+              {v.tomorrow.allDay.map((a, i) => <CalAllDay key={`m${i}`} {...a} />)}
+              {v.tomorrow.events.map((e) => <CalRow key={e.key} e={e} />)}
+            </>
+          )}
+          {v.note && <p className="mid small">{v.note}</p>}
         </div>
       ),
     };

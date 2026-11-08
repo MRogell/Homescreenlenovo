@@ -55,3 +55,9 @@ Det kräver inget nytt bygge och inga miljövariabler. Saknas en inställning g�
 - **Väderplats:** sökningen använder Open-Meteos öppna ortssökning (utan nyckel). Miljövariablerna är reserv när ingen plats är vald.
 - **Nattläge:** dämpar bilden med ett mörkt lager efter enhetens klocka. Skärmens riktiga ljusstyrka kan en webbapp inte ändra.
 - **Kugghjulet** uppe vid klockan leder alltid till Inställningar, även om alla kort är dolda.
+
+## Kalender (iCal)
+Kalendrar läggs till under Inställningar → Kalender med den hemliga iCal-adressen (Google Kalender: Inställningar → din kalender → "Hemlig adress i iCal-format"; `webcal://` fungerar också).
+- Adressen sparas krypterad (AES-256-GCM med `BETTER_AUTH_SECRET`) i `AppSetting` ("calendars") och skickas aldrig tillbaka till webbläsaren, bara värdnamnet.
+- Servern hämtar bara https, blockerar lokala och privata adresser (även efter DNS och vid omdirigering), 8 s timeout och högst 3 MB.
+- Högst 6 kalendrar. Byter du `BETTER_AUTH_SECRET` måste kalendrarna läggas till igen.

@@ -1,7 +1,7 @@
 import { skodaSchema } from "@/server/providers/schemas";
 import type { CardState } from "@/server/providers/types";
 
-const SERVICES: [string, string][] = [["weather", "Väder"], ["skoda", "Škoda"], ["spotify", "Spotify"], ["sonos", "Sonos"], ["aeg", "AEG"], ["tado", "Inomhus"]];
+const SERVICES: [string, string][] = [["weather", "Väder"], ["calendar", "Kalender"], ["skoda", "Škoda"], ["spotify", "Spotify"], ["sonos", "Sonos"], ["aeg", "AEG"], ["tado", "Inomhus"]];
 const LOW_BATTERY_PCT = 20;
 const MAX_SHOWN = 2;
 

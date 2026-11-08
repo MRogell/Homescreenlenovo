@@ -14,11 +14,13 @@ import { getSpotifyDefaultDevice } from "@/server/spotify-prefs";
 import { SignOutButton } from "@/components/sign-out-button";
 import { AppearanceSettings } from "@/components/appearance-settings";
 import { getSettings } from "@/server/settings";
+import { CalendarSettings } from "@/components/calendar-settings";
+import { listCalendars, publicCalendars } from "@/server/calendar/store";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Inställningar" };
 
-const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", weather: "Väder", tado: "Tado (inomhus)" };
+const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", weather: "Väder", tado: "Tado (inomhus)", calendar: "Kalender" };
 const ERRORS: Record<string, string> = {
   "ogiltig-state": "Anslutningen avbröts av säkerhetsskäl. Försök igen från början.",
   avbrutet: "Du avbröt anslutningen.",
@@ -37,6 +39,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const user = await requireUser();
   const sp = await searchParams;
   const oauth = new Map((await Promise.all((["sonos", "spotify"] as const).map(oauthRow))).map((r) => [r.id, r]));
+  const calendars = publicCalendars(await listCalendars(undefined, getEnv().BETTER_AUTH_SECRET));
   const notice = sp.tjanst && NAMES[sp.tjanst] ? (sp.ok ? `${NAMES[sp.tjanst]} är ansluten.` : sp.fel ? (ERRORS[sp.fel] ?? "Något gick fel.") : null) : null;
   return (
     <div className="wrap">
@@ -80,6 +83,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
                 </div>
               );
             }
+            if (p.id === "calendar") {
+              return <div className="row" key={p.id}><span>{name}</span><span>{calendars.length ? `${calendars.length} ansluten${calendars.length > 1 ? "a" : ""}` : "Ej ansluten"}</span></div>;
+            }
             if (!o) {
               // Tjänster utan OAuth: visar bryggans status om de har en, annars demodata.
               const label = p.sourceLabel ? p.sourceLabel : p.isConnected ? ((await p.isConnected()) ? "Ansluten via brygga" : "Saknar konfiguration") : p.connected === false ? "Ej ansluten" : "Demodata";
@@ -98,6 +104,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           }))}
         </div>
       </section>
+      <CalendarSettings initial={calendars} />
       {oauth.get("spotify")?.status === "ok" && (
         <section className="card" aria-label="Spotify">
           <div className="card-head"><span className="name">Spotify</span></div>
