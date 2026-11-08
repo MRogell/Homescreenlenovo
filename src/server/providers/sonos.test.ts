@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sonosSchema } from "./schemas";
-import { createSonosProvider } from "./sonos";
+import { createSonosProvider, pickSonosImage } from "./sonos";
 import { fakeFetch, type FakeRoute } from "./fake-fetch";
 
 const H = "/households";
@@ -26,9 +26,9 @@ describe("sonos provider (all rooms)", () => {
     });
     const d = await p.getSummary();
     expect(d.groups).toEqual([
-      { id: "B", room: "Vardagsrum - Höger", members: ["Vardagsrum - Vänster"], playing: true, title: "Funeral", artist: "Teddy Swims", volume: 30 },
-      { id: "C", room: "Barnrum", members: [], playing: false, title: "Inget spelas", artist: "", volume: 8 },
-      { id: "A", room: "Kök", members: [], playing: false, title: "Kvart i fem", artist: "JULIETT", volume: 12 },
+      { id: "B", room: "Vardagsrum - Höger", members: ["Vardagsrum - Vänster"], playing: true, title: "Funeral", artist: "Teddy Swims", volume: 30, imageUrl: null },
+      { id: "C", room: "Barnrum", members: [], playing: false, title: "Inget spelas", artist: "", volume: 8, imageUrl: null },
+      { id: "A", room: "Kök", members: [], playing: false, title: "Kvart i fem", artist: "JULIETT", volume: 12, imageUrl: null },
     ]);
     expect(sonosSchema.safeParse(d).success).toBe(true);
   });
@@ -68,4 +68,31 @@ describe("sonos provider (all rooms)", () => {
     expect(sonosSchema.parse({ groups: [] }).players).toEqual([]);
   });
   it("ttl is 30 s", () => expect(make({}).p.ttlSeconds).toBe(30));
+});
+
+describe("album art", () => {
+  const withArt = (track: Record<string, unknown>, container?: Record<string, unknown>) => ({ currentItem: { track: { name: "X", artist: { name: "A" }, ...track } }, ...(container ? { container } : {}) });
+  it("the track image is used and reaches the card data", async () => {
+    const { p } = make({ ...base([G("A", "P3", ["P3"], "PLAYBACK_STATE_PLAYING")]), ...meta("A", withArt({ imageUrl: "https://cdn.example.com/cover.jpg" })), ...vol("A", 10) });
+    const d = await p.getSummary();
+    expect(d.groups[0]!.imageUrl).toBe("https://cdn.example.com/cover.jpg");
+    expect(sonosSchema.safeParse(d).success).toBe(true);
+  });
+  it("falls back to the first image in images, then to the container image", () => {
+    expect(pickSonosImage({ images: [{ url: "https://a.example.com/1.jpg" }] }, undefined)).toBe("https://a.example.com/1.jpg");
+    expect(pickSonosImage({}, { imageUrl: "https://b.example.com/c.jpg" })).toBe("https://b.example.com/c.jpg");
+    expect(pickSonosImage({ imageUrl: "https://t.example.com/t.jpg" }, { imageUrl: "https://b.example.com/c.jpg" })).toBe("https://t.example.com/t.jpg");
+  });
+  it("only https is accepted; insecure, odd or too long addresses give null", () => {
+    for (const url of ["http://x.example.com/a.jpg", "javascript:alert(1)", "data:image/png;base64,AAAA", "ftp://x/y", "inte en adress", "", `https://x.example.com/${"a".repeat(600)}`]) {
+      expect(pickSonosImage({ imageUrl: url }, undefined), url).toBeNull();
+    }
+    expect(pickSonosImage(undefined, undefined)).toBeNull();
+  });
+  it("an insecure first choice falls through to a secure one", () => {
+    expect(pickSonosImage({ imageUrl: "http://x.example.com/a.jpg", images: [{ url: "https://ok.example.com/b.jpg" }] }, undefined)).toBe("https://ok.example.com/b.jpg");
+  });
+  it("old cached payloads without imageUrl still parse", () => {
+    expect(sonosSchema.parse({ groups: [{ id: "A", room: "Kök", members: [], playing: false, title: "x", artist: "", volume: 1 }] }).groups[0]!.imageUrl).toBeNull();
+  });
 });

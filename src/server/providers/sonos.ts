@@ -17,6 +17,20 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v ? v 
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const PLAYING = new Set(["PLAYBACK_STATE_PLAYING", "PLAYBACK_STATE_BUFFERING"]);
 
+/** Omslaget ur uppspelningsdata. Bara https och rimlig längd godtas (sidan är https, och bilden visas direkt i kortet). */
+export function pickSonosImage(track: Json | undefined, container: Json | undefined): string | null {
+  for (const c of [str(track?.imageUrl), str(obj(arr(track?.images)[0])?.url), str(container?.imageUrl)]) {
+    if (!c || c.length > 500) continue;
+    try {
+      const u = new URL(c);
+      if (u.protocol === "https:") return u.toString();
+    } catch {
+      // Ingen giltig adress: prova nästa.
+    }
+  }
+  return null;
+}
+
 export function createSonosProvider(deps: SonosDeps): Provider<SonosData> {
   const fetchFn = deps.fetchFn ?? fetch;
 
@@ -70,6 +84,7 @@ export function createSonosProvider(deps: SonosDeps): Provider<SonosData> {
             title: str(track?.name) ?? str(obj(metadata?.container)?.name) ?? "Inget spelas",
             artist: str(obj(track?.artist)?.name) ?? "",
             volume: typeof volume?.volume === "number" ? volume.volume : null,
+            imageUrl: pickSonosImage(track, obj(metadata?.container)),
           };
         }),
       );

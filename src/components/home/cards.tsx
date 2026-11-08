@@ -1,4 +1,4 @@
-import { formatClock, formatMinutes, formatTemp, formatTempShort } from "@/lib/format";
+import { formatClock, formatMinutes, formatTemp } from "@/lib/format";
 import type { CardState } from "@/server/providers/types";
 import type { AegData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
@@ -8,7 +8,9 @@ import { SkodaClimate } from "./skoda-climate";
 import { weatherView, wxTint } from "./weather-view";
 import { WeatherIcon } from "./weather-icon";
 import { Droplets, Moon, Snowflake, Sun, Sunrise, Sunset, Wind } from "lucide-react";
-import { SonosRooms } from "./sonos-rooms";
+import { SonosNow } from "./sonos-now";
+import { TadoDial } from "./tado-dial";
+import { tadoView } from "./tado-view";
 import { AegControls } from "./aeg-controls";
 import { AegProgram } from "./aeg-program";
 import { SpotifyControls } from "./spotify-controls";
@@ -62,7 +64,7 @@ export const SonosCard = ({ state, now }: P) => (
     const playing = d.groups.filter((g) => g.playing).length;
     return {
       pill: playing > 0 ? { text: `Spelar i ${playing} rum`, tone: "ok" } : { text: "Tyst" },
-      body: <SonosRooms groups={d.groups} />,
+      body: <SonosNow groups={d.groups} />,
     };
   }} />
 );
@@ -168,14 +170,10 @@ export const WeatherCard = ({ state, now }: P) => (
 export const TadoCard = ({ state, now }: P) => (
   <CardShell<TadoData> title="Inomhus" icon="temp" state={as(state)} now={now} render={(d) => {
     const heating = d.rooms.filter((r) => r.heating).length;
+    const rooms = tadoView(d.rooms);
     return {
       pill: heating > 0 ? { text: `Värmer i ${heating} rum`, tone: "warn" } : { text: "Vilar" },
-      body: <div className="rows compact">{d.rooms.length === 0 ? <p className="mid">Inga rum hittades i Tado.</p> : d.rooms.map((r) => (
-        <div className="row" key={r.name}>
-          <span>{r.heating && <span className="dot" aria-label="värmer" />}{r.name}</span>
-          <span>{r.tempC !== null ? `${formatTempShort(r.tempC)}°` : "–"}</span>
-        </div>
-      ))}</div>,
+      body: rooms.length === 0 ? <p className="mid">Inga rum hittades i Tado.</p> : <div className="ti-dials">{rooms.map((r) => <TadoDial key={r.name} r={r} />)}</div>,
     };
   }} />
 );
