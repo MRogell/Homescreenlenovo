@@ -30,7 +30,7 @@ Gör **Redeploy**. Inställningar visar "Ansluten via brygga", och kortet hämta
 
 ## Risker
 - **Inofficiellt API:** Škoda kan ändra det utan förvarning. Ett konto kan låsas vid många misslyckade inloggningar; bryggan loggar därför in högst
-  högst var 100:e sekund, och hemskärmen frågar var 15:e minut (var 2:a minut under laddning). Fel och loggar visar aldrig inloggningsuppgifter.
+  var 100:e sekund, och hemskärmen frågar var 15:e minut (var 2:a minut under laddning). Fel och loggar visar aldrig inloggningsuppgifter.
 - **Overifierat:** inget är provat mot ett riktigt Škoda-konto. Bryggan är skriven mot bibliotekets verkliga modeller och testad med byggda svar.
   Visar kortet "Ej tillgänglig": titta i bryggans Vercel-projekt → Logs.
 
