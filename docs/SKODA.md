@@ -26,7 +26,12 @@ Hemskärmens projekt (`homescreenlenovo`) → Settings → Environment Variables
 - `SKODA_BRIDGE_URL` = bryggans adress, t.ex. `https://hemskarm-skoda.vercel.app` (utan `/api/skoda`)
 - `SKODA_BRIDGE_TOKEN` = **samma** värde som i bryggan (Sensitive)
 - Ta bort `SKODA_USERNAME` och `SKODA_PASSWORD` från hemskärmens projekt om de ligger kvar: de behövs bara i bryggan.
-Gör **Redeploy**. Inställningar visar "Ansluten via brygga", och kortet hämtar data var 15:e minut, eller var 2:a minut när bilen laddar.
+Gör **Redeploy**. Inställningar visar "Ansluten via brygga", och kortet hämtar data var 5:e minut, eller var 2:a minut när bilen laddar eller klimatiseras.
+
+## Batterinivå och räckvidd
+Škoda skickar batterinivån på två ställen: i laddningsdelen (uppdateras främst under laddning) och i räckviddsdelen.
+Bryggan tar procent och km från **samma** del, den som bilen rapporterade senast enligt bilens egen tidsstämpel,
+så att kortet visar samma siffror som Škoda-appen. Bilens rapporttid står längst ner i kortet.
 
 ## Klimatisering
 Škoda-kortet kan starta och stoppa bilens klimatisering (16–29,5 °C i steg om 0,5). Hemskärmen skickar kommandot till bryggan
@@ -36,7 +41,7 @@ Bilen kan ta en stund att reagera; rätt läge visas senast vid nästa avläsnin
 
 ## Risker
 - **Inofficiellt API:** Škoda kan ändra det utan förvarning. Ett konto kan låsas vid många misslyckade inloggningar; bryggan loggar därför in högst
-  var 100:e sekund, och hemskärmen frågar var 15:e minut (var 2:a minut under laddning). Fel och loggar visar aldrig inloggningsuppgifter.
+  var 100:e sekund, och hemskärmen frågar var 5:e minut (var 2:a minut under laddning och klimatisering). Fel och loggar visar aldrig inloggningsuppgifter.
 - **Overifierat:** inget är provat mot ett riktigt Škoda-konto. Bryggan är skriven mot bibliotekets verkliga modeller och testad med byggda svar.
   Visar kortet "Ej tillgänglig": titta i bryggans Vercel-projekt → Logs.
 

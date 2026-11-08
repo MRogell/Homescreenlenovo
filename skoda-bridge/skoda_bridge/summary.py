@@ -1,7 +1,7 @@
 """Kartlägger myskoda-modellerna till det enkla svar hemskärmen läser. Ren logik, inget nätverk."""
 from __future__ import annotations
 
-from datetime import UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from myskoda.models.air_conditioning import AirConditioningState
@@ -50,22 +50,51 @@ def _climate(air: Any) -> dict[str, Any]:
     return {"climateOn": on, "climateTargetC": target, "climateReadyAt": ready.isoformat() if ready else None}
 
 
+def _ts(part: Any) -> datetime | None:
+    t = getattr(part, "car_captured_timestamp", None) if part is not None else None
+    if t is None:
+        return None
+    return t if t.tzinfo is not None else t.replace(tzinfo=UTC)
+
+
+def _level_and_range(battery: Any, charging: Any, driving_range: Any) -> tuple[int | None, int | None, str]:
+    """Batterinivå och räckvidd från SAMMA källa, den som bilen rapporterade senast (som Škoda-appen visar dem).
+
+    Laddningsdelen uppdateras ofta bara under laddning och kan vara gammal; räckviddsdelen är normalt färskast.
+    Lika eller saknade tider: räckviddsdelen vinner.
+    """
+    ch = None
+    if battery is not None and battery.state_of_charge_in_percent is not None:
+        m = battery.remaining_cruising_range_in_meters
+        ch = (battery.state_of_charge_in_percent, round(m / 1000) if m is not None else None, _ts(charging))
+    dr = None
+    if driving_range is not None and driving_range.primary_engine_range.current_soc_in_percent is not None:
+        dr = (driving_range.primary_engine_range.current_soc_in_percent, driving_range.total_range_in_km, _ts(driving_range))
+
+    chosen = None
+    if ch and dr:
+        newer_charging = ch[2] is not None and (dr[2] is None or ch[2] > dr[2])
+        chosen = ch if newer_charging else dr
+    else:
+        chosen = ch or dr
+    if chosen is not None:
+        other = dr if chosen is ch else ch
+        range_km = chosen[1] if chosen[1] is not None else (other[1] if other else None)
+        if range_km is None and driving_range is not None:
+            range_km = driving_range.total_range_in_km
+        return chosen[0], range_km, "battery"
+
+    # Ingen batterinivå: bränslebil (eller okänt).
+    level = driving_range.primary_engine_range.current_fuel_level_in_percent if driving_range is not None else None
+    range_km = driving_range.total_range_in_km if driving_range is not None else None
+    return level, range_km, "fuel"
+
+
 def summarize(charging: Any, status: Any, parking: Any, driving_range: Any, air: Any = None) -> dict[str, Any]:
     """Alla argument får vara None (anropet misslyckades eller bilen saknar funktionen)."""
     battery = charging.status.battery if charging is not None and charging.status is not None else None
 
-    level: int | None = None
-    kind = "fuel"
-    if battery is not None and battery.state_of_charge_in_percent is not None:
-        level, kind = battery.state_of_charge_in_percent, "battery"
-    elif driving_range is not None:
-        level = driving_range.primary_engine_range.current_fuel_level_in_percent
-
-    range_km: int | None = None
-    if driving_range is not None and driving_range.total_range_in_km is not None:
-        range_km = driving_range.total_range_in_km
-    elif battery is not None and battery.remaining_cruising_range_in_meters is not None:
-        range_km = round(battery.remaining_cruising_range_in_meters / 1000)
+    level, range_km, kind = _level_and_range(battery, charging, driving_range)
 
     is_charging = bool(charging is not None and charging.status is not None and charging.status.state == ChargingState.CHARGING)
 

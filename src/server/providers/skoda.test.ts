@@ -61,17 +61,17 @@ describe("skoda provider", () => {
     expect(await safeSummary(p)).toEqual({ status: "not_connected" });
     expect(calls).toHaveLength(0);
   });
-  it("with config isConnected is true; ttl is 15 min (2 min while charging) and timeout is long enough for a login", () => {
+  it("with config isConnected is true; ttl is 5 min (2 min while charging) and timeout is long enough for a login", () => {
     const { p } = make(200, GOOD);
     expect(p.id).toBe("skoda");
-    expect(p.ttlSeconds).toBe(900);
+    expect(p.ttlSeconds).toBe(300);
     expect(p.ttlFor?.({ ...GOOD, charging: true } as never)).toBe(120);
-    expect(p.ttlFor?.({ ...GOOD, charging: false } as never)).toBe(900);
+    expect(p.ttlFor?.({ ...GOOD, charging: false } as never)).toBe(300);
     expect(p.ttlFor?.({ ...GOOD, charging: false, climateOn: true } as never)).toBe(120);
-    expect(p.ttlFor?.({ ...GOOD, charging: false, climateOn: false } as never)).toBe(900);
+    expect(p.ttlFor?.({ ...GOOD, charging: false, climateOn: false } as never)).toBe(300);
     const recent = new Date(Date.now() - 60_000).toISOString(), old = new Date(Date.now() - 11 * 60_000).toISOString();
     expect(p.ttlFor?.({ ...GOOD, climateOn: false, climateRequested: { action: "start", at: recent } } as never)).toBe(120);
-    expect(p.ttlFor?.({ ...GOOD, climateOn: false, climateRequested: { action: "start", at: old } } as never)).toBe(900);
+    expect(p.ttlFor?.({ ...GOOD, climateOn: false, climateRequested: { action: "start", at: old } } as never)).toBe(300);
     expect(p.timeoutMs).toBeGreaterThanOrEqual(20_000);
   });
   it("schema accepts the bridge shape", () => expect(skodaSchema.safeParse(GOOD).success).toBe(true));

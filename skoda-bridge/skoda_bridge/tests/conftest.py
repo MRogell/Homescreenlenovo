@@ -7,7 +7,7 @@ from myskoda.models.status import Status
 _RM = {"oneX": "", "oneAndHalfX": "", "twoX": "", "threeX": ""}
 
 
-def charging(soc=78, range_m=312_000, state="READY_FOR_CHARGING", battery=True, power_kw=None, minutes_left=None, target=None):
+def charging(soc=78, range_m=312_000, state="READY_FOR_CHARGING", battery=True, power_kw=None, minutes_left=None, target=None, captured=None):
     status = {"battery": {"stateOfChargeInPercent": soc, "remainingCruisingRangeInMeters": range_m}, "state": state} if battery else None
     if status is not None:
         if power_kw is not None:
@@ -18,6 +18,8 @@ def charging(soc=78, range_m=312_000, state="READY_FOR_CHARGING", battery=True, 
     if target is not None:
         settings["targetStateOfChargeInPercent"] = target
     data = {"errors": [], "settings": settings, "isVehicleInSavedLocation": True}
+    if captured is not None:
+        data["carCapturedTimestamp"] = captured
     if status:
         data["status"] = status
     return Charging.from_dict(data)
@@ -38,8 +40,14 @@ def parking(address="Storgatan 1, Stockholm"):
     return ParkingPositionV3.from_dict({"parkingPosition": {"gpsCoordinates": {"latitude": 59.3, "longitude": 18.0}, "formattedAddress": address}})
 
 
-def driving_range(total=312, fuel_pct=78, engine="electric"):
-    return DrivingRange.from_dict({"primaryEngineRange": {"engineType": engine, "currentFuelLevelInPercent": fuel_pct, "remainingRangeInKm": total}, "totalRangeInKm": total, "carType": engine})
+def driving_range(total=312, fuel_pct=78, engine="electric", soc=None, captured=None):
+    engine_range = {"engineType": engine, "currentFuelLevelInPercent": fuel_pct, "remainingRangeInKm": total}
+    if soc is not None:
+        engine_range["currentSoCInPercent"] = soc
+    data = {"primaryEngineRange": engine_range, "totalRangeInKm": total, "carType": engine}
+    if captured is not None:
+        data["carCapturedTimestamp"] = captured
+    return DrivingRange.from_dict(data)
 
 
 def air_conditioning(state="OFF", target=21.0, ready_at=None, captured=None):

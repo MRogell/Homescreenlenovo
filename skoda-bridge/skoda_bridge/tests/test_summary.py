@@ -106,3 +106,26 @@ def test_climate_target_and_ready_at():
 def test_ready_at_hidden_when_climate_off():
     r = summarize(None, None, None, None, air_conditioning("OFF", ready_at="2026-11-08T06:45:00Z"))
     assert r["climateReadyAt"] is None and r["climateTargetC"] == 21.0
+
+
+def test_level_and_range_come_from_the_same_newest_source_driving_range():
+    # Laddningsdelen är gammal (89 % / 319 km), räckviddsdelen färsk (87 % / 314 km) som i Škoda-appen.
+    r = summarize(charging(soc=89, range_m=319_000, captured="2026-11-08T08:00:00Z"), status(), None,
+                  driving_range(total=314, soc=87, captured="2026-11-08T09:44:00Z"))
+    assert (r["levelPct"], r["rangeKm"], r["levelKind"]) == (87, 314, "battery")
+
+
+def test_newer_charging_data_wins_while_charging():
+    r = summarize(charging(soc=60, range_m=220_000, state="CHARGING", captured="2026-11-08T10:00:00Z"), status(), None,
+                  driving_range(total=200, soc=55, captured="2026-11-08T09:30:00Z"))
+    assert (r["levelPct"], r["rangeKm"]) == (60, 220)
+
+
+def test_same_or_missing_timestamps_prefer_driving_range():
+    r = summarize(charging(soc=89, range_m=319_000), status(), None, driving_range(total=314, soc=87))
+    assert (r["levelPct"], r["rangeKm"]) == (87, 314)
+
+
+def test_driving_range_without_soc_falls_back_to_charging_level_but_keeps_pairing():
+    r = summarize(charging(soc=78, range_m=312_000), status(), None, driving_range(total=300))
+    assert (r["levelPct"], r["rangeKm"]) == (78, 312)
