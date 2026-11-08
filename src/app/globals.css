@@ -21,7 +21,8 @@ body { background: var(--bg); color: var(--fg); font: 15px/1.4 var(--body); marg
 .wrap { max-width: 1480px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 header.top-bar { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
 h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap: balance; }
-.sub { color: var(--muted); margin-top: 4px; }
+.sub { color: var(--muted); margin-top: 4px; min-height: 1.4em; }
+.sub:not(:empty) { text-wrap: balance; }
 .clock { text-align: right; font-family: var(--display); }
 .clock b { display: block; font-size: clamp(36px, 5vw, 64px); line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
 .clock span { color: var(--muted); font-family: var(--body); }
@@ -279,7 +280,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .wx-chance { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted); }
 .wx-chance.rain { color: var(--dial-cold); } .wx-chance.snow { color: #cfe3f5; }
 .wx-days { list-style: none; margin: 0; padding: 8px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
-.wx-days li { display: grid; grid-template-columns: 3.2em 22px 2.6em minmax(30px, 1fr) 2.6em; align-items: center; gap: 4px 8px; font-size: 14px; }
+.wx-days li { display: grid; grid-template-columns: 2.6em 20px 2.2em minmax(24px, 1fr) 2.2em 4.8em; align-items: center; gap: 0 6px; min-height: 28px; font-size: 14px; }
 .wx-days .wx-icon { width: 20px; height: 20px; }
 .wx-day { font-weight: 600; }
 .wx-min { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
@@ -288,10 +289,12 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .wx-range i { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: linear-gradient(90deg, var(--dial-cold), var(--dial-warm)); }
 .wx-days-head { color: var(--muted); font-size: 11px; }
 .wx-days-head span { display: inline-flex; align-items: center; gap: 3px; }
-.wx-days-head svg { width: 12px; height: 12px; stroke-width: 2; }
+.wx-days-head svg { width: 12px; height: 12px; stroke-width: 2; flex: none; }
+.wx-days li.wx-days-head { min-height: 16px; }
 .wx-night-h { justify-content: flex-end; } .wx-day-h { justify-content: flex-start; }
-.wx-precip { grid-column: 3 / -1; display: flex; align-items: center; gap: 5px; margin-top: -2px; font-size: 12px; font-weight: 500; }
-.wx-precip svg { width: 13px; height: 13px; flex: none; }
+.wx-precip { display: flex; align-items: center; justify-content: flex-end; gap: 3px; font-size: 12px; font-weight: 500; white-space: nowrap; min-width: 0; }
+.wx-precip svg { width: 12px; height: 12px; flex: none; }
+.wx-precip svg + svg, .wx-precip svg:not(:first-child) { margin-left: 3px; }
 .wx-precip.rain { color: var(--dial-cold); } .wx-precip.snow { color: #cfe3f5; } .wx-precip.mix { color: #bcd3ee; }
 .wx-meta { margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
 .wx-meta span { display: inline-flex; align-items: center; gap: 5px; }

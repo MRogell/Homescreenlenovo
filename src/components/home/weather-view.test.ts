@@ -124,12 +124,12 @@ describe("weatherView", () => {
 describe("rain or snow is explicit", () => {
   const one = (over: Record<string, unknown>) => weatherView({ ...base, daily: [day("2026-11-08", over)] }, NOW).days[0]!;
   it("rain, snow and sleet get their own text and kind", () => {
-    expect(one({ rainMm: 4.2 }).precip).toEqual({ text: "4,2 mm regn", kind: "rain" });
-    expect(one({ snowCm: 3 }).precip).toEqual({ text: "3 cm snö", kind: "snow" });
-    expect(one({ rainMm: 1.5, snowCm: 2.1 }).precip).toEqual({ text: "1,5 mm regn · 2,1 cm snö", kind: "mix" });
+    expect(one({ rainMm: 4.2 }).precip).toEqual({ text: "4,2 mm regn", kind: "rain", rain: "4,2 mm", snow: null });
+    expect(one({ snowCm: 3 }).precip).toEqual({ text: "3 cm snö", kind: "snow", rain: null, snow: "3 cm" });
+    expect(one({ rainMm: 1.5, snowCm: 2.1 }).precip).toEqual({ text: "1,5 mm regn · 2,1 cm snö", kind: "mix", rain: "1,5 mm", snow: "2,1 cm" });
   });
   it("old cache without snowCm shows rain mm as before", () => {
-    expect(one({ rainMm: 2, snowCm: null }).precip).toEqual({ text: "2 mm regn", kind: "rain" });
+    expect(one({ rainMm: 2, snowCm: null }).precip).toEqual({ text: "2 mm regn", kind: "rain", rain: "2 mm", snow: null });
   });
   it("hours tell snow from rain", () => {
     const h = nextHours([hour(12, { code: 73, rainPct: 60 }), hour(13, { code: 63, rainPct: 50 })], NOW);

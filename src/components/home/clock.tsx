@@ -5,7 +5,8 @@ function greeting(h: number) {
   return h < 5 ? "God natt" : h < 10 ? "God morgon" : h < 17 ? "Hej" : "God kväll";
 }
 
-export function Clock() {
+/** `note`: raden under hälsningen. Bara det som kräver uppmärksamhet; tom när allt är som det ska. Platsen är reserverad så att inget hoppar. */
+export function Clock({ note = null }: { note?: string | null }) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     // Sätts efter montering så att serverns och klientens första rendering är identiska.
@@ -18,7 +19,7 @@ export function Clock() {
     <>
       <div>
         <h1>{now ? greeting(now.getHours()) : "Hej"}</h1>
-        <div className="sub">Allt hemma just nu</div>
+        <div className="sub" role="status">{note ?? "\u00a0"}</div>
       </div>
       <div className="clock" aria-live="off">
         <b>{now ? now.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</b>

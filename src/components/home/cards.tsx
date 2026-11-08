@@ -133,7 +133,7 @@ export const WeatherCard = ({ state, now }: P) => (
               <li className="wx-days-head" aria-hidden="true">
                 <span /><span />
                 <span className="wx-night-h"><Moon /> natt</span><span />
-                <span className="wx-day-h"><Sun /> dag</span>
+                <span className="wx-day-h"><Sun /> dag</span><span />
               </li>
               {v.days.map((x) => (
                 <li key={x.label}>
@@ -142,13 +142,15 @@ export const WeatherCard = ({ state, now }: P) => (
                   <span className="wx-min" aria-label={`natt ${x.night}`}>{x.night}</span>
                   <span className="wx-range" aria-hidden="true"><i style={{ left: `${x.left}%`, width: `${x.width}%` }} /></span>
                   <span className="wx-max" aria-label={`dag ${x.day}`}>{x.day}</span>
-                  {x.precip && (
-                    <span className={`wx-precip ${x.precip.kind}`}>
-                      {x.precip.kind !== "snow" && <Droplets aria-hidden="true" />}
-                      {x.precip.kind !== "rain" && <Snowflake aria-hidden="true" />}
-                      {x.precip.text}
-                    </span>
-                  )}
+                  {/* Alltid en cell, så att kolumnerna ligger lika på alla rader. Mix: bara siffror, ikonerna visar vilken som är vilken. */}
+                  <span className={`wx-precip ${x.precip?.kind ?? ""}`} title={x.precip?.text} aria-label={x.precip?.text}>
+                    {x.precip && (
+                      <>
+                        {x.precip.rain && <><Droplets aria-hidden="true" />{x.precip.kind === "mix" ? x.precip.rain.replace(" mm", "") : x.precip.rain}</>}
+                        {x.precip.snow && <><Snowflake aria-hidden="true" />{x.precip.kind === "mix" ? x.precip.snow.replace(" cm", "") : x.precip.snow}</>}
+                      </>
+                    )}
+                  </span>
                 </li>
               ))}
             </ol>

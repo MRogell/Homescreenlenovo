@@ -75,12 +75,21 @@ export function clockOf(iso: string | null): string | null {
 const amount = (v: number) => String(Math.round(v * 10) / 10).replace(".", ",");
 
 /** "4,2 mm regn", "3 cm snö" eller båda ("1,5 mm regn · 2,1 cm snö", kind mix). Under 0,1 räknas inte. */
-function precipOf(rainMm: number | null, snowCm: number | null): { text: string; kind: PrecipKind | "mix" } | null {
-  const rain = rainMm !== null && rainMm >= 0.1 ? `${amount(rainMm)} mm regn` : null;
-  const snow = snowCm !== null && snowCm >= 0.1 ? `${amount(snowCm)} cm snö` : null;
-  if (rain && snow) return { text: `${rain} · ${snow}`, kind: "mix" };
-  if (rain) return { text: rain, kind: "rain" };
-  if (snow) return { text: snow, kind: "snow" };
+export interface PrecipView {
+  /** Hela texten (för skärmläsare och tooltip): "1,5 mm regn · 2,1 cm snö". */
+  text: string;
+  kind: PrecipKind | "mix";
+  /** Mängderna med enhet ("4,2 mm", "3 cm"). Kortet visar dem på samma rad som dagen, så texten ska vara kort. */
+  rain: string | null;
+  snow: string | null;
+}
+
+function precipOf(rainMm: number | null, snowCm: number | null): PrecipView | null {
+  const rain = rainMm !== null && rainMm >= 0.1 ? `${amount(rainMm)} mm` : null;
+  const snow = snowCm !== null && snowCm >= 0.1 ? `${amount(snowCm)} cm` : null;
+  if (rain && snow) return { text: `${rain} regn · ${snow} snö`, kind: "mix", rain, snow };
+  if (rain) return { text: `${rain} regn`, kind: "rain", rain, snow: null };
+  if (snow) return { text: `${snow} snö`, kind: "snow", rain: null, snow };
   return null;
 }
 
@@ -89,7 +98,7 @@ export interface DayView {
   /** Natt (kallaste mörka timmen) och dag (varmaste ljusa timmen). Saknas timdata används min och max. */
   night: string; day: string;
   left: number; width: number;
-  precip: { text: string; kind: PrecipKind | "mix" } | null;
+  precip: PrecipView | null;
 }
 export interface WeatherView {
   icon: WxIcon;

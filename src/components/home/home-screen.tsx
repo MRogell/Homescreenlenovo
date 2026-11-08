@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { HomeStates } from "@/server/snapshots";
 import { CARD_ORDER } from "./card-order";
+import { attentionLine } from "./attention";
 import type { SonosInfo } from "./spotify-view";
 import { Clock } from "./clock";
 import { RefreshContext, SpotifyRefreshContext } from "./refresh-context";
@@ -65,7 +66,7 @@ export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initi
     <RefreshContext.Provider value={refresh}>
     <SpotifyRefreshContext.Provider value={refreshSpotify}>
     <div className="wrap">
-      <header className="top-bar"><Clock /></header>
+      <header className="top-bar"><Clock note={attentionLine(states)} /></header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
       <main className="grid">
         {CARD_ORDER.map((id) => {
