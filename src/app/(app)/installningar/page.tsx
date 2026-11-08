@@ -3,6 +3,7 @@ import { requireUser } from "@/server/authz";
 import { getConnectionStatus } from "@/server/connections";
 import { getOAuthConfig, isOAuthProvider, type OAuthProviderId } from "@/server/oauth-providers";
 import { PROVIDERS } from "@/server/providers";
+import { DiagnoseButton } from "@/components/diagnose-button";
 import { DisconnectButton } from "@/components/disconnect-button";
 import { SpotifyDefaultDevice } from "@/components/spotify-default-device";
 import { TadoConnect } from "@/components/tado-connect";
@@ -88,6 +89,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
         <section className="card" aria-label="Spotify">
           <div className="card-head"><span className="name">Spotify</span></div>
           <SpotifyDefaultDevice current={await getSpotifyDefaultDevice()} />
+          <DiagnoseButton provider="spotify" label="Spotify-anslutningen" />
+        </section>
+      )}
+      {oauth.get("sonos")?.status === "ok" && (
+        <section className="card" aria-label="Sonos">
+          <div className="card-head"><span className="name">Sonos</span></div>
+          <DiagnoseButton provider="sonos" label="Sonos-anslutningen" />
         </section>
       )}
       <section className="card" aria-label="Konto">

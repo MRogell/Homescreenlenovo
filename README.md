@@ -6,5 +6,5 @@ Etapp 1: inloggning, databas, hemskärm med demodata för alla åtta tjänster, 
 Etapp 2: Sonos och Spotify med riktig data via OAuth (anslut i Inställningar). Spotify kan styras (spela/pausa/byt låt, byt enhet). Sonos visar alla rum med spela/pausa och nästa per rum.
 Etapp 3 (påbörjad): Škoda via Python-brygga (`skoda_bridge/`, skrivskyddad). Ännu inte driftsatt, se `docs/SKODA.md`. Väder och luftkvalitet från Open-Meteo. Inomhustemperaturer från Tado (anslut i Inställningar). Plejd och Tapo visas inte (Plejd kräver lokal Bluetooth); AEG-diskmaskinen via Electrolux utvecklar-API med fjärrstart/paus/stopp (anslut i Inställningar). Arlo stöds inte. Ingen demodata visas.
 
-Köra lokalt: `docs/LOKALT.md`. Driftsättning (Vercel + Render PostgreSQL): `docs/VERCEL.md`. Tjänsteanslutningar: `docs/DRIFT.md`.
+Sätta upp Sonos och kontrollera Spotify: `docs/SONOS-OCH-SPOTIFY.md`. Köra lokalt: `docs/LOKALT.md`. Driftsättning (Vercel + Render PostgreSQL): `docs/VERCEL.md`. Tjänsteanslutningar: `docs/DRIFT.md`.
 Kontroller: `npm run typecheck && npm run lint && npm test`.
