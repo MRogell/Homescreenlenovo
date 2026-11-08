@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { goalPoint, tadoView } from "./tado-view";
+import { goalPoint, tadoSummary, tadoView } from "./tado-view";
 
 const room = (over: Record<string, unknown> = {}) => ({ name: "Vardagsrum", tempC: 20 as number | null, humidity: 40 as number | null, targetC: 20 as number | null, heating: false, ...over });
 
@@ -51,5 +51,29 @@ describe("goalPoint", () => {
     expect(top.x).toBeCloseTo(40); expect(top.y).toBeCloseTo(10);
     expect(right.x).toBeCloseTo(70); expect(right.y).toBeCloseTo(40);
     expect(bottom.x).toBeCloseTo(40); expect(bottom.y).toBeCloseTo(70);
+  });
+});
+
+describe("tadoSummary", () => {
+  const many = (n: number, over: Record<string, unknown> = {}) => Array.from({ length: n }, (_, i) => room({ name: `R${i}`, tempC: 20 + i, ...over }));
+  it("average over the rooms with a temperature, how many value count and how many are heating", () => {
+    const rooms = [room({ tempC: 20.3 }), room({ tempC: 23, heating: true }), room({ tempC: 22.4, heating: true }), room({ tempC: null })];
+    expect(tadoSummary(rooms)).toMatchObject({ avg: "21,9°", rooms: 3, heating: 2 });
+  });
+  it("the average uses a Swedish decimal and drops a trailing zero", () => {
+    expect(tadoSummary(many(3, { tempC: 21 }))!.avg).toBe("21°");
+    expect(tadoSummary([room({ tempC: 22 }), room({ tempC: 22.5 }), room({ tempC: 22.5 })])!.avg).toBe("22,3°");
+  });
+  it("the tile fills what is left of the last row of three: 8 rooms leave one slot, 7 leave two, 6 leave a whole row", () => {
+    expect(tadoSummary(many(8))!.span).toBe(1);
+    expect(tadoSummary(many(7))!.span).toBe(2);
+    expect(tadoSummary(many(6))!.span).toBe(3);
+    expect(tadoSummary(many(5))!.span).toBe(1);
+    expect(tadoSummary(many(3))!.span).toBe(3);
+  });
+  it("fewer than three rooms, or no known temperature, gives no summary", () => {
+    expect(tadoSummary(many(2))).toBeNull();
+    expect(tadoSummary([])).toBeNull();
+    expect(tadoSummary(many(4, { tempC: null }))).toBeNull();
   });
 });

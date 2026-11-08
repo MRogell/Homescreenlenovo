@@ -10,7 +10,7 @@ import { WeatherIcon } from "./weather-icon";
 import { Droplets, Moon, Snowflake, Sun, Sunrise, Sunset, Wind } from "lucide-react";
 import { SonosNow } from "./sonos-now";
 import { TadoDial } from "./tado-dial";
-import { tadoView } from "./tado-view";
+import { tadoSummary, tadoView } from "./tado-view";
 import { AegControls } from "./aeg-controls";
 import { AegProgram } from "./aeg-program";
 import { SpotifyControls } from "./spotify-controls";
@@ -171,9 +171,20 @@ export const TadoCard = ({ state, now }: P) => (
   <CardShell<TadoData> title="Inomhus" icon="temp" state={as(state)} now={now} render={(d) => {
     const heating = d.rooms.filter((r) => r.heating).length;
     const rooms = tadoView(d.rooms);
+    const sum = tadoSummary(d.rooms);
     return {
       pill: heating > 0 ? { text: `Värmer i ${heating} rum`, tone: "warn" } : { text: "Vilar" },
-      body: rooms.length === 0 ? <p className="mid">Inga rum hittades i Tado.</p> : <div className="ti-dials">{rooms.map((r) => <TadoDial key={r.name} r={r} />)}</div>,
+      body: rooms.length === 0 ? <p className="mid">Inga rum hittades i Tado.</p> : (
+        <div className="ti-dials">
+          {rooms.map((r) => <TadoDial key={r.name} r={r} />)}
+          {sum && (
+            <div className={`ti-sum span-${sum.span}`}>
+              <span className="ti-avg">{sum.avg}</span>
+              <span className="ti-cap">snitt i {sum.rooms} rum<br />{sum.heating > 0 ? <><b>{sum.heating}</b> värmer</> : "alla vilar"}</span>
+            </div>
+          )}
+        </div>
+      ),
     };
   }} />
 );

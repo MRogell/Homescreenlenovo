@@ -37,3 +37,27 @@ export function goalPoint(deg: number): { x: number; y: number } {
   const a = (deg * Math.PI) / 180;
   return { x: 40 + 30 * Math.sin(a), y: 40 - 30 * Math.cos(a) };
 }
+
+export interface TadoSummary {
+  /** Medeltemperatur över rummen som har en temperatur, t.ex. "22,3°". */
+  avg: string;
+  /** Hur många rum snittet bygger på. */
+  rooms: number;
+  heating: number;
+  /** Antal kolumner rutan tar av ringarnas rutnät (3 kolumner): fyller sista radens lediga plats, eller en hel rad. */
+  span: 1 | 2 | 3;
+}
+
+/** Snittrutan i rutnätet. Under tre rum, eller utan en enda känd temperatur, visas ingen. */
+export function tadoSummary(rooms: readonly Room[]): TadoSummary | null {
+  if (rooms.length < 3) return null;
+  const temps = rooms.flatMap((r) => (r.tempC === null ? [] : [r.tempC]));
+  if (temps.length === 0) return null;
+  const left = rooms.length % 3;
+  return {
+    avg: `${formatTempShort(temps.reduce((a, t) => a + t, 0) / temps.length)}°`,
+    rooms: temps.length,
+    heating: rooms.filter((r) => r.heating).length,
+    span: left === 0 ? 3 : ((3 - left) as 1 | 2),
+  };
+}
