@@ -47,6 +47,12 @@ describe("findSonosGroup", () => {
     expect(findSonosGroup(" kök ", sonos)?.id).toBe("GK");
     expect(findSonosGroup("Vardagsrum - Vänster", sonos)?.id).toBe("GV");
   });
+  it("Spotify's group names with '+ N' or a stereo-pair side still match", () => {
+    expect(findSonosGroup("Vardagsrum - Höger + 1", sonos)?.id).toBe("GV");
+    expect(findSonosGroup("Vardagsrum + 2", sonos)?.id).toBe("GV");
+    expect(findSonosGroup("Kök + 1", sonos)?.id).toBe("GK");
+    expect(findSonosGroup("Vardagsrum", sonos)?.id).toBe("GV");
+  });
   it("no match, no device or no Sonos gives null", () => {
     expect(findSonosGroup("WWMIRO", sonos)).toBeNull();
     expect(findSonosGroup(null, sonos)).toBeNull();

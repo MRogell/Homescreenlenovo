@@ -6,7 +6,7 @@ import { CARD_ORDER } from "./card-order";
 import type { SonosInfo } from "./spotify-view";
 import { Clock } from "./clock";
 import { RefreshContext, SpotifyRefreshContext } from "./refresh-context";
-import { AegCard, ArloUnsupportedCard, SkodaCard, SonosCard, SpotifyCard, TadoCard, WeatherCard } from "./cards";
+import { AegCard, SkodaCard, SonosCard, SpotifyCard, TadoCard, WeatherCard } from "./cards";
 
 const POLL_MS = 30_000;
 /** Spotify uppdateras oftare (direkt från Spotify) så att kortet följer vad som spelas utan märkbar fördröjning. */
@@ -74,7 +74,6 @@ export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initi
             case "spotify": return <SpotifyCard key={id} state={states.spotify} now={now} sonos={sonosInfo} />;
             case "aeg": return <AegCard key={id} state={states.aeg} now={now} />;
             case "tado": return <TadoCard key={id} state={states.tado} now={now} />;
-            case "arlo": return <ArloUnsupportedCard key={id} />;
             case "skoda": return <SkodaCard key={id} state={states.skoda} now={now} />;
             case "sonos": return <SonosCard key={id} state={states.sonos} now={now} />;
           }

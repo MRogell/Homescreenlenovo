@@ -94,7 +94,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
               </div>
             );
           }))}
-          <div className="row"><span>Arlo</span><span>Stöds inte</span></div>
         </div>
       </section>
       {oauth.get("spotify")?.status === "ok" && (

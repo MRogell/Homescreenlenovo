@@ -98,14 +98,6 @@ export const AegCard = ({ state, now }: P) => (
   }} />
 );
 
-/** Arlo stöds inte (inget öppet API; inofficiell inloggning blockeras av Arlos Cloudflare-skydd). Ingen påhittad data visas. */
-export const ArloUnsupportedCard = () => (
-  <section className="card off unsupported" aria-label="Arlo">
-    <div className="card-head"><Icon name="cam" /><span className="name">Arlo</span><span className="pill">Stöds inte</span></div>
-    <p className="mid">Arlo har inget öppet gränssnitt, och den inofficiella vägen blockeras av Arlo. Använd Arlo-appen för kamerorna.</p>
-  </section>
-);
-
 export const WeatherCard = ({ state, now }: P) => (
   <CardShell<WeatherData> title="Väder" icon="cloud" state={as(state)} now={now} render={(d) => ({
     pill: d.aqiLabel ? { text: `Luft: ${d.aqiLabel}`, tone: d.aqi !== null && d.aqi <= 40 ? "ok" : d.aqi !== null && d.aqi <= 60 ? undefined : "warn" } : undefined,

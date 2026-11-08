@@ -47,15 +47,21 @@ export type DeviceItem = {
 
 const norm = (s: string) => s.trim().toLocaleLowerCase("sv");
 /** "Vardagsrum - Höger" → "Vardagsrum" (stereopar visas som ett rum). */
-export const roomName = (s: string) => s.replace(/\s+-\s+(höger|vänster|left|right|l|r)$/i, "").trim();
+export const roomName = (s: string) =>
+  s
+    .replace(/\s*\+\s*\d+$/, "") // Spotify: "Vardagsrum - Höger + 1" = rummet plus en ihopkopplad högtalare
+    .replace(/\s+-\s+(höger|vänster|left|right|l|r)$/i, "")
+    .trim();
 
 /** Sonos-gruppen som Spotify spelar i, utifrån enhetens namn (rum, medlem eller högtalare). */
 export function findSonosGroup(device: string | null, sonos: SonosInfo | null): { id: string; volume: number | null } | null {
   if (!device || !sonos) return null;
-  const d = norm(device);
-  const g = sonos.groups.find((x) => norm(x.room) === d || norm(roomName(x.room)) === d || x.members.some((m) => norm(m) === d));
+  // Jämför både exakt namn och rensat rumsnamn (utan "+ 1" och stereosida) på båda sidor.
+  const wanted = new Set([norm(device), norm(roomName(device))]);
+  const hit = (name: string) => wanted.has(norm(name)) || wanted.has(norm(roomName(name)));
+  const g = sonos.groups.find((x) => hit(x.room) || x.members.some(hit));
   if (g) return { id: g.id, volume: g.volume };
-  const p = sonos.players.find((x) => norm(x.name) === d || norm(roomName(x.name)) === d);
+  const p = sonos.players.find((x) => hit(x.name));
   const pg = p?.groupId ? sonos.groups.find((x) => x.id === p.groupId) : undefined;
   return pg ? { id: pg.id, volume: pg.volume } : null;
 }
