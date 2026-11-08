@@ -5,7 +5,7 @@ const API = "https://api.spotify.com/v1";
 export type SpotifyAction = "play" | "pause" | "next" | "previous";
 export const SPOTIFY_ACTIONS: readonly SpotifyAction[] = ["play", "pause", "next", "previous"];
 
-export type ControlErrorCode = "reauth" | "scope" | "premium" | "no_device" | "choose_device" | "rate_limit" | "failed";
+export type ControlErrorCode = "reauth" | "scope" | "premium" | "no_device" | "choose_device" | "restricted_device" | "rate_limit" | "failed";
 
 export interface SpotifyDevice {
   id: string;
@@ -13,6 +13,8 @@ export interface SpotifyDevice {
   type: string;
   /** Sätts av listSpotifyDevices: sant för enheten som spelar nu. */
   active?: boolean;
+  /** Sätts av listSpotifyDevices: Spotify tillåter inte styrning av enheten via sitt API (eller saknar id). */
+  restricted?: boolean;
 }
 
 const MESSAGES: Record<ControlErrorCode, string> = {
@@ -21,6 +23,7 @@ const MESSAGES: Record<ControlErrorCode, string> = {
   premium: "Spotify Premium krävs för att styra uppspelning.",
   no_device: "Spotify hittar ingen enhet. Öppna Spotify-appen på telefonen eller datorn och försök igen.",
   choose_device: "Välj var musiken ska spelas.",
+  restricted_device: "Spotify tillåter inte att den enheten styrs härifrån. Starta uppspelningen i Spotify-appen och välj enheten där.",
   rate_limit: "Spotify begränsar anropen. Försök igen strax.",
   failed: "Spotify kunde inte utföra kommandot.",
 };
@@ -61,6 +64,7 @@ async function toError(res: Response): Promise<ControlError> {
   if (res.status === 404 && (info.reason === "NO_ACTIVE_DEVICE" || info.reason === undefined)) return new ControlError("no_device");
   if (res.status === 403) {
     if (info.reason === "PREMIUM_REQUIRED") return new ControlError("premium");
+    if (info.reason === "RESTRICTED_DEVICE") return new ControlError("restricted_device");
     if (/scope/i.test(info.message ?? "")) return new ControlError("scope");
   }
   return new ControlError("failed");
@@ -85,13 +89,22 @@ async function caller(deps: ControlDeps): Promise<Caller> {
   };
 }
 
-/** Enheter som går att spela på. Begränsade enheter (is_restricted) utesluts. */
-function parseDevices(json: unknown): SpotifyDevice[] {
+/**
+ * Enheter ur Spotifys svar. Utan `includeRestricted` (automatiska reservvägen vid "spela") utesluts begränsade enheter och enheter utan id.
+ * Med `includeRestricted` (listan användaren ser) visas allt Spotify returnerar, och sådant som inte går att styra märks `restricted`.
+ */
+function parseDevices(json: unknown, includeRestricted = false): SpotifyDevice[] {
   const list = (json as { devices?: unknown } | null)?.devices;
   if (!Array.isArray(list)) return [];
-  return list
-    .filter((d): d is { id: string; name: string; type?: unknown; is_restricted?: unknown; is_active?: unknown } => !!d && typeof d.id === "string" && !!d.id && typeof d.name === "string" && d.is_restricted !== true)
-    .map((d) => ({ id: d.id, name: d.name, type: typeof d.type === "string" ? d.type : "Okänd", active: d.is_active === true }));
+  const out: SpotifyDevice[] = [];
+  for (const d of list as Record<string, unknown>[]) {
+    if (!d || typeof d.name !== "string") continue;
+    const id = typeof d.id === "string" ? d.id : "";
+    const restricted = d.is_restricted === true || !id;
+    if (restricted && !includeRestricted) continue;
+    out.push({ id, name: d.name, type: typeof d.type === "string" ? d.type : "Okänd", active: d.is_active === true, restricted });
+  }
+  return out;
 }
 
 async function transferWith(call: Caller, id: string, play: boolean): Promise<void> {
@@ -105,7 +118,7 @@ export async function listSpotifyDevices(deps: ControlDeps): Promise<SpotifyDevi
   const res = await call("GET", "/me/player/devices");
   if (!res.ok) throw await toError(res);
   try {
-    return parseDevices(await res.json());
+    return parseDevices(await res.json(), true);
   } catch {
     return [];
   }

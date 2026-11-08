@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRefresh } from "./refresh-context";
 
 type Action = "play" | "pause" | "next" | "previous";
-type Device = { id: string; name: string; type: string; active?: boolean };
+type Device = { id: string; name: string; type: string; active?: boolean; restricted?: boolean };
 type ApiBody = { error?: string; code?: string; devices?: Device[] };
 // "choose": ingen enhet aktiv när man tryckte spela. "switch": användaren vill byta enhet.
 type Picker = { mode: "choose" | "switch"; devices: Device[] };
@@ -99,11 +99,12 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
         <div className="devices" role="group" aria-label="Välj enhet">
           <p className="mid">{picker.mode === "choose" ? "Välj var musiken ska spelas:" : "Spela på:"}</p>
           {picker.devices.map((d) => (
-            <button key={d.id} type="button" className="device" disabled={busy || d.active} aria-current={d.active ? "true" : undefined} onClick={() => moveTo(d)}>
+            <button key={`${d.id}${d.name}`} type="button" className="device" disabled={busy || d.active || d.restricted} aria-current={d.active ? "true" : undefined} onClick={() => moveTo(d)}>
               {d.name}
-              <span>{d.active ? "Spelar här" : d.type}</span>
+              <span>{d.active ? "Spelar här" : d.restricted ? "Kan inte styras härifrån" : d.type}</span>
             </button>
           ))}
+          {picker.mode === "switch" && <p className="mid small">Spotify visar här bara enheter som Spotify själv känner till just nu. Spotify-appen hittar fler på wifi, men det kan inte den här appen.</p>}
         </div>
       )}
       {error && <p className="err" role="alert">{error}</p>}

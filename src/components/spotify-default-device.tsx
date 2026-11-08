@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type Device = { id: string; name: string; type: string; active?: boolean };
+type Device = { id: string; name: string; type: string; active?: boolean; restricted?: boolean };
 
 /** Val av standardenhet för Spotify (används när man trycker spela och ingen enhet är igång). */
 export function SpotifyDefaultDevice({ current }: { current: { id: string; name: string } | null }) {
@@ -58,9 +58,9 @@ export function SpotifyDefaultDevice({ current }: { current: { id: string; name:
       {devices && (
         <div className="devices" role="group" aria-label="Välj standardenhet">
           {devices.map((d) => (
-            <button key={d.id} type="button" className="device" disabled={busy} aria-current={current?.id === d.id ? "true" : undefined} onClick={() => save({ deviceId: d.id, name: d.name })}>
+            <button key={`${d.id}${d.name}`} type="button" className="device" disabled={busy || d.restricted} aria-current={current?.id === d.id ? "true" : undefined} onClick={() => save({ deviceId: d.id, name: d.name })}>
               {d.name}
-              <span>{current?.id === d.id ? "Standard" : d.type}</span>
+              <span>{current?.id === d.id ? "Standard" : d.restricted ? "Kan inte styras härifrån" : d.type}</span>
             </button>
           ))}
         </div>

@@ -111,7 +111,7 @@ describe("handleControl device switching", () => {
     const f = fetchRec(200, LIST);
     const r = await handleControl({ ...ok, body: { action: "devices" } }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db });
     expect(r.status).toBe(200);
-    expect(r.json).toEqual({ devices: [{ id: "A", name: "WWMIRO", type: "Computer", active: true }, { id: "B", name: "iPhone", type: "Smartphone", active: false }] });
+    expect(r.json).toEqual({ devices: [{ id: "A", name: "WWMIRO", type: "Computer", active: true, restricted: false }, { id: "B", name: "iPhone", type: "Smartphone", active: false, restricted: false }] });
     expect(await db.snapshot.count({ where: { provider: "spotify" } })).toBe(1);
   });
   it("transfer moves playback, keeps the play state and clears the spotify snapshot", async () => {

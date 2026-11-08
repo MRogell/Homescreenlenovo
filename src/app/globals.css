@@ -128,3 +128,5 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .card.off .btn { margin-top: 0; min-height: 44px; padding: 0 14px; flex: none; }
   .card.off .foot { flex-basis: 100%; margin-top: 0; }
 }
+.mid.small { font-size: 13px; }
+.device:disabled { opacity: .6; cursor: default; }

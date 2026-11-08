@@ -41,3 +41,11 @@ Enhet: rätt metod och sökväg per kommando, 200/202/204 som lyckat, felmappnin
 - **Standardenhet:** sparas på Spotify-anslutningen (`connection.settings.defaultDevice = {id, name}`), väljs i Inställningar bland enheterna Spotify ser.
   Vid "spela" utan aktiv enhet används den (matchas på id, annars namn) i stället för listan. Syns den inte för Spotify visas listan som tidigare.
 - **Sonos-rum i Spotify Connect:** Spotify-appen hittar dem lokalt på wifi; Spotifys moln-API visar dem bara om de nyligen spelat. Vägen dit är Sonos-anslutningen.
+
+## Enhetslistan visar allt Spotify returnerar (ägarens önskemål: saknade Connect-enheter)
+- Tidigare dolde appen tyst enheter som Spotify märkt `is_restricted` (och enheter utan id). Nu visas allt `GET /me/player/devices` returnerar.
+  Det som inte går att styra visas nedtonat med "Kan inte styras härifrån", så att man ser *varför* en enhet inte går att välja. Den automatiska reservvägen
+  vid "spela" utan aktiv enhet väljer fortfarande bara styrbara enheter.
+- Flytt till en begränsad enhet ger felet `restricted_device` ("Starta uppspelningen i Spotify-appen och välj enheten där").
+- Enheter som Spotifys moln inte känner till (t.ex. Sonos-högtalare som inte nyligen spelat via Spotify) syns inte alls: Spotify-appen hittar dem lokalt på wifi
+  (Spotify Connect via mDNS), vilket inte går från en webbserver. Listan säger det. Det som ger rumsstyrning är Sonos egen koppling (utvecklarapp hos Sonos).

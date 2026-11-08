@@ -132,17 +132,22 @@ describe("device switching", () => {
   }
   const deps = (f: { fn: typeof fetch }) => ({ getToken: async () => "TOK", fetchFn: f.fn });
 
-  it("listSpotifyDevices returns devices with active flag and skips restricted ones", async () => {
+  it("listSpotifyDevices returns every device Spotify reports, flagging active and restricted ones", async () => {
     const f = one(200, { devices: [
       { id: "A", name: "WWMIRO", type: "Computer", is_active: true, is_restricted: false },
       { id: "B", name: "Mickaels iPhone", type: "Smartphone", is_active: false, is_restricted: false },
-      { id: "C", name: "Låst högtalare", type: "Speaker", is_active: false, is_restricted: true },
+      { id: "C", name: "Kök", type: "Speaker", is_active: false, is_restricted: true },
     ] });
     expect(await listSpotifyDevices(deps(f))).toEqual([
-      { id: "A", name: "WWMIRO", type: "Computer", active: true },
-      { id: "B", name: "Mickaels iPhone", type: "Smartphone", active: false },
+      { id: "A", name: "WWMIRO", type: "Computer", active: true, restricted: false },
+      { id: "B", name: "Mickaels iPhone", type: "Smartphone", active: false, restricted: false },
+      { id: "C", name: "Kök", type: "Speaker", active: false, restricted: true },
     ]);
     expect(f.calls[0]!.key).toBe("GET /me/player/devices");
+  });
+  it("devices without an id (Spotify gives some none) are still listed but can not be chosen", async () => {
+    const f = one(200, { devices: [{ id: null, name: "Vardagsrum", type: "Speaker", is_active: false, is_restricted: false }] });
+    expect(await listSpotifyDevices(deps(f))).toEqual([{ id: "", name: "Vardagsrum", type: "Speaker", active: false, restricted: true }]);
   });
   it("listSpotifyDevices handles an empty or odd response", async () => {
     expect(await listSpotifyDevices(deps(one(200, { devices: [] })))).toEqual([]);
@@ -195,5 +200,29 @@ describe("default device when nothing is active", () => {
     const f = routed(TWO);
     const e = (await controlSpotify("play", deps(f), undefined, { id: "X", name: "Okänd" }).catch((x) => x)) as ControlError;
     expect(e.code).toBe("choose_device");
+  });
+});
+
+describe("restricted devices", () => {
+  it("transfer to a restricted device gives a clear error", async () => {
+    const f = (() => {
+      const fn = (async () => new Response(JSON.stringify({ error: { status: 403, reason: "RESTRICTED_DEVICE", message: "Restricted device" } }), { status: 403 })) as unknown as typeof fetch;
+      return { fn };
+    })();
+    const e = (await transferSpotify("B", true, { getToken: async () => "TOK", fetchFn: f.fn }).catch((x) => x)) as ControlError;
+    expect(e.code).toBe("restricted_device");
+    expect(e.message).toMatch(/Spotify-appen/);
+  });
+  it("the automatic fallback for play still ignores restricted devices", async () => {
+    const calls: string[] = [];
+    const fn = (async (url: string, init: RequestInit) => {
+      const key = `${init.method ?? "GET"} ${url.replace("https://api.spotify.com/v1", "")}`;
+      calls.push(key);
+      if (key === "PUT /me/player/play") return new Response(JSON.stringify({ error: { reason: "NO_ACTIVE_DEVICE" } }), { status: 404 });
+      if (key === "GET /me/player/devices") return new Response(JSON.stringify({ devices: [{ id: "R", name: "Låst", type: "Speaker", is_restricted: true }, { id: "OK", name: "Dator", type: "Computer", is_restricted: false }] }), { status: 200 });
+      return new Response(null, { status: 204 });
+    }) as unknown as typeof fetch;
+    await controlSpotify("play", { getToken: async () => "TOK", fetchFn: fn });
+    expect(calls.at(-1)).toBe("PUT /me/player");
   });
 });
