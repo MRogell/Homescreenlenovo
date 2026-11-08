@@ -26,6 +26,8 @@ export const skodaSchema = z.object({
 });
 export const sonosSchema = z.object({
   groups: z.array(z.object({ id: z.string(), room: z.string(), members: z.array(z.string()), playing: z.boolean(), title: z.string(), artist: z.string(), volume: z.number().nullable() })),
+  /** Alla högtalare i hushållet och vilken grupp de tillhör (null = ingen grupp). Valfritt för äldre cachade svar. */
+  players: z.array(z.object({ id: z.string(), name: z.string(), groupId: z.string().nullable() })).default([]),
 });
 export const spotifySchema = z.object({
   playing: z.boolean(),

@@ -202,6 +202,35 @@ describe("handleControl sonos", () => {
   });
 });
 
+describe("handleControl sonos volume and move", () => {
+  const base = { ...ok, provider: "sonos" };
+  function rec() {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => {
+      calls.push(`${init.method ?? "GET"} ${url} ${init.body ?? ""}`.trim());
+      return new Response(url.endsWith("/households") ? JSON.stringify({ households: [{ id: "HH" }] }) : "{}", { status: 200 });
+    }) as unknown as typeof fetch;
+    return { calls, d: { getToken: async () => "TOK", fetchFn, db } };
+  }
+  it("volume posts groupVolume", async () => {
+    const x = rec();
+    expect((await handleControl({ ...base, body: { action: "volume", groupId: "G1", volume: 40 } }, x.d)).status).toBe(204);
+    expect(x.calls).toEqual([`POST https://api.ws.sonos.com/control/api/v1/groups/G1/groupVolume ${JSON.stringify({ volume: 40 })}`]);
+  });
+  it("move creates a group that takes over the music", async () => {
+    const x = rec();
+    expect((await handleControl({ ...base, body: { action: "move", fromGroupId: "G1", toPlayerId: "RINCON_2" } }, x.d)).status).toBe(204);
+    expect(x.calls.at(-1)).toContain("/households/HH/groups/createGroup");
+  });
+  it("invalid volume or move bodies are 400 without calls", async () => {
+    const x = rec();
+    for (const body of [{ action: "volume", groupId: "G1", volume: 101 }, { action: "volume", groupId: "G1", volume: 2.5 }, { action: "move", fromGroupId: "G1" }, { action: "move", fromGroupId: "G1", toPlayerId: "../x" }, { action: "move", fromGroupId: "G1", toPlayerId: "P", x: 1 }]) {
+      expect((await handleControl({ ...base, body }, x.d)).status, JSON.stringify(body)).toBe(400);
+    }
+    expect(x.calls).toHaveLength(0);
+  });
+});
+
 describe("handleControl aeg", () => {
   const aegReq = { ...ok, provider: "aeg", body: { action: "pause" } };
   function rec(status: number) {

@@ -1,20 +1,24 @@
 "use client";
 import { ChevronDown, Pause, Play, SkipBack, SkipForward, Speaker, Volume1, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useRefreshSpotify } from "./refresh-context";
+import { useRefresh, useRefreshSpotify } from "./refresh-context";
+import { buildDeviceList, findSonosGroup, type DeviceItem, type SonosInfo, type SpotifyDeviceInfo } from "./spotify-view";
 
 type Action = "play" | "pause" | "next" | "previous";
-type Device = { id: string; name: string; type: string; active?: boolean; restricted?: boolean };
-type ApiBody = { error?: string; code?: string; devices?: Device[] };
+type ApiBody = { error?: string; code?: string; devices?: SpotifyDeviceInfo[] };
 // "choose": ingen enhet aktiv när man tryckte spela. "switch": användaren vill byta enhet.
-type Picker = { mode: "choose" | "switch"; devices: Device[] };
+type Picker = { mode: "choose" | "switch"; devices: SpotifyDeviceInfo[] };
 
-/** Styrknappar och enhetsbyte för Spotify. Stora tryckytor (minst 48 px). Fel visas som text under knapparna. */
-export function SpotifyControls({ playing, device, deviceRestricted = false, supportsVolume = false, volume = null }: { playing: boolean; device: string | null; deviceRestricted?: boolean; supportsVolume?: boolean; volume?: number | null }) {
-  const refresh = useRefreshSpotify();
-  // Spotify kan vägra kommandon ("Restricted device") även när enheten inte är märkt som begränsad. Då minns kortet det för enheten.
-  const [refusedDevice, setRefusedDevice] = useState<string | null>(null);
-  const restricted = deviceRestricted || (device !== null && refusedDevice === device);
+const JSON_HEADERS = { "Content-Type": "application/json" };
+
+/**
+ * Styrknappar, volym och enhetsbyte. Spelar Spotify i ett Sonos-rum går knapparna och volymen via Sonos
+ * (Spotify vägrar ofta styra Sonos), och byte mellan Sonos-rum görs av Sonos så att musiken följer med.
+ */
+export function SpotifyControls({ playing, device, supportsVolume = false, volume = null, sonos = null }: { playing: boolean; device: string | null; deviceRestricted?: boolean; supportsVolume?: boolean; volume?: number | null; sonos?: SonosInfo | null }) {
+  const refreshSpotify = useRefreshSpotify();
+  const refreshHome = useRefresh();
+  const sonosGroup = findSonosGroup(device, sonos);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [picker, setPicker] = useState<Picker | null>(null);
@@ -32,18 +36,23 @@ export function SpotifyControls({ playing, device, deviceRestricted = false, sup
     setPicker((p) => (p?.mode === "switch" ? null : p));
   }, [device]);
 
-  // Volym: eget värde medan man drar, skickas en gång när man släppt (efter 300 ms), annars följer reglaget Spotify.
+  const refreshAll = () => Promise.all([Promise.resolve(refreshSpotify()), sonosGroup || sonos ? Promise.resolve(refreshHome()) : null]);
+
+  // Volym: eget värde medan man drar, skickas en gång när man släppt (efter 300 ms), annars följer reglaget Spotify/Sonos.
+  const canVolume = sonosGroup ? sonosGroup.volume !== null : supportsVolume;
+  const serverVolume = sonosGroup ? sonosGroup.volume : volume;
   const [localVolume, setLocalVolume] = useState<number | null>(null);
   const volumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (volumeTimer.current) clearTimeout(volumeTimer.current); }, []);
-  const shownVolume = localVolume ?? volume ?? 0;
+  const shownVolume = localVolume ?? serverVolume ?? 0;
   function changeVolume(v: number) {
     setLocalVolume(v);
     if (volumeTimer.current) clearTimeout(volumeTimer.current);
     volumeTimer.current = setTimeout(async () => {
       setError(null);
       try {
-        const res = await fetch("/api/control/spotify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "volume", volume: v }) });
+        const [url, body] = sonosGroup ? ["/api/control/sonos", { action: "volume", groupId: sonosGroup.id, volume: v }] : ["/api/control/spotify", { action: "volume", volume: v }];
+        const res = await fetch(url as string, { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body) });
         if (!res.ok) {
           const j = (await res.json().catch(() => null)) as { error?: string } | null;
           setError(j?.error ?? "Det gick inte att ändra volymen.");
@@ -51,13 +60,13 @@ export function SpotifyControls({ playing, device, deviceRestricted = false, sup
       } catch {
         setError("Ingen kontakt med servern.");
       }
-      await Promise.resolve(refresh());
+      await refreshAll();
       setLocalVolume(null);
     }, 300);
   }
 
-  async function post(body: Record<string, unknown>): Promise<{ ok: boolean; data: ApiBody | null }> {
-    const res = await fetch("/api/control/spotify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  async function post(url: string, body: Record<string, unknown>): Promise<{ ok: boolean; data: ApiBody | null }> {
+    const res = await fetch(url, { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body) });
     const data = res.status === 204 ? null : ((await res.json().catch(() => null)) as ApiBody | null);
     return { ok: res.ok, data };
   }
@@ -77,47 +86,59 @@ export function SpotifyControls({ playing, device, deviceRestricted = false, sup
 
   function done() {
     setPicker(null);
-    // Knapparna släpps direkt; kortet hämtar ny status i bakgrunden när Spotify hunnit uppdatera sig.
-    // Det tillfälliga läget släpps när servern har svarat, oavsett vad den säger: tog Spotify emot kommandot men inget spelar, ska kortet visa sanningen.
+    // Knapparna släpps direkt; kortet hämtar ny status i bakgrunden när tjänsten hunnit uppdatera sig.
     setTimeout(() => {
-      void Promise.resolve(refresh()).finally(() => setOptimistic(null));
+      void refreshAll().finally(() => setOptimistic(null));
     }, 400);
   }
 
   const send = (action: Action) =>
     run(async () => {
       if (action === "play" || action === "pause") setOptimistic(action === "play");
-      const { ok, data } = await post({ action });
+      const { ok, data } = sonosGroup ? await post("/api/control/sonos", { action, groupId: sonosGroup.id }) : await post("/api/control/spotify", { action });
       if (ok) return done();
       setOptimistic(null);
-      if (data?.code === "restricted_device") { setRefusedDevice(device); return; }
       if (data?.code === "choose_device" && data.devices?.length) return setPicker({ mode: "choose", devices: data.devices });
       setPicker(null);
-      setError(data?.error ?? "Det gick inte att styra Spotify.");
+      setError(data?.code === "restricted_device" ? `${device ?? "Enheten"} går inte att styra härifrån. Välj en annan enhet.` : data?.error ?? "Det gick inte att styra musiken.");
     });
 
   const openSwitcher = () =>
     run(async () => {
       if (picker?.mode === "switch") return setPicker(null);
-      const { ok, data } = await post({ action: "devices" });
-      if (!ok) return setError(data?.error ?? "Det gick inte att hämta enheter.");
-      if (!data?.devices?.length) return setError("Spotify hittar inga enheter just nu. Öppna Spotify på den enhet du vill använda.");
-      setPicker({ mode: "switch", devices: data.devices });
+      const { ok, data } = await post("/api/control/spotify", { action: "devices" });
+      const devices = ok ? data?.devices ?? [] : [];
+      if (!devices.length && !sonos?.players.length) return setError(ok ? "Inga enheter hittades. Öppna Spotify på den enhet du vill använda." : data?.error ?? "Det gick inte att hämta enheter.");
+      setPicker({ mode: "switch", devices });
     });
 
-  const moveTo = (d: Device) =>
+  const moveTo = (d: DeviceItem) =>
     run(async () => {
-      // Vid byte behålls det VERKLIGA läget (spelar/pausad), inte det tillfälliga. Vid "ingen aktiv enhet" ville användaren spela.
-      const { ok, data } = await post({ action: "transfer", deviceId: d.id, play: picker?.mode === "choose" ? true : playing });
-      if (ok) return done();
-      setError(data?.error ?? "Det gick inte att byta enhet.");
+      // Mellan Sonos-rum: Sonos flyttar musiken. Annars Spotify (med det VERKLIGA läget; vid "ingen aktiv enhet" ville användaren spela).
+      const res = d.kind === "sonos" && sonosGroup && d.playerId
+        ? await post("/api/control/sonos", { action: "move", fromGroupId: sonosGroup.id, toPlayerId: d.playerId })
+        : d.spotifyId
+          ? await post("/api/control/spotify", { action: "transfer", deviceId: d.spotifyId, play: picker?.mode === "choose" ? true : playing })
+          : { ok: false, data: null };
+      if (res.ok) return done();
+      setError(res.data?.error ?? "Det gick inte att byta enhet.");
     });
+
+  // Listan stängs vid klick utanför eller Escape.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!picker) return;
+    const onDown = (e: PointerEvent) => { if (!wrapRef.current?.contains(e.target as Node)) setPicker(null); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPicker(null); };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("pointerdown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [picker]);
+
+  const items = picker ? buildDeviceList(picker.devices, sonos, picker.mode === "switch" ? sonosGroup?.id ?? null : null) : [];
 
   return (
     <div className="controls">
-      {restricted ? (
-        <p className="mid restricted-note">Spotify tillåter inte att {device ?? "den här enheten"} styrs från andra appar. Styr den i Spotify-appen, eller flytta musiken till en annan enhet med Byt enhet.</p>
-      ) : (
       <div className="controls-row">
         <button type="button" className="ctl" aria-label="Föregående låt" disabled={busy} onClick={() => send("previous")}><SkipBack aria-hidden="true" /></button>
         <button type="button" className="ctl main" aria-label={shownPlaying ? "Pausa" : "Spela"} disabled={busy} onClick={() => send(shownPlaying ? "pause" : "play")}>
@@ -125,34 +146,32 @@ export function SpotifyControls({ playing, device, deviceRestricted = false, sup
         </button>
         <button type="button" className="ctl" aria-label="Nästa låt" disabled={busy} onClick={() => send("next")}><SkipForward aria-hidden="true" /></button>
       </div>
-      )}
-      {!restricted && device && (supportsVolume ? (
+      {device && canVolume && (
         <label className="volume sp-volume" htmlFor="spotify-volume">
           <Volume1 aria-hidden="true" />
           <span className="sr-only">Volym</span>
           <input id="spotify-volume" type="range" min={0} max={100} step={1} value={shownVolume} aria-valuetext={`${shownVolume} procent`} style={{ "--vol": `${shownVolume}%` } as React.CSSProperties} onChange={(e) => changeVolume(Number(e.target.value))} />
           <Volume2 aria-hidden="true" />
         </label>
-      ) : (
-        <p className="mid small">Volymen ändras på {device} (Spotify tillåter det inte härifrån).</p>
-      ))}
-      <button type="button" className="sp-device" aria-expanded={picker?.mode === "switch"} aria-label={`Byt enhet, nu ${device ?? "ingen aktiv"}`} disabled={busy} onClick={openSwitcher}>
+      )}
+      <div className="sp-device-wrap" ref={wrapRef}>
+      <button type="button" className="sp-device" aria-expanded={!!picker} aria-haspopup="true" aria-label={`Byt enhet, nu ${device ?? "ingen aktiv"}`} disabled={busy} onClick={openSwitcher}>
         <Speaker aria-hidden="true" />
-        <span>{device ?? "Ingen aktiv enhet"}</span>
+        <span>{device ?? "Välj enhet"}</span>
         <ChevronDown aria-hidden="true" className={picker?.mode === "switch" ? "open" : ""} />
       </button>
       {picker && (
-        <div className="devices" role="group" aria-label="Välj enhet">
-          <p className="mid">{picker.mode === "choose" ? "Välj var musiken ska spelas:" : "Spela på:"}</p>
-          {picker.devices.map((d) => (
-            <button key={`${d.id}${d.name}`} type="button" className="device" disabled={busy || d.active || d.restricted} aria-current={d.active ? "true" : undefined} onClick={() => moveTo(d)}>
+        // Öppnas ovanpå kortet: kortets storlek (och därmed hela rutnätet) ändras aldrig.
+        <div className="devices sp-popover" role="group" aria-label="Välj enhet">
+          {items.map((d) => (
+            <button key={d.key} type="button" className="device" disabled={busy || d.active || !d.available} aria-current={d.active ? "true" : undefined} onClick={() => moveTo(d)}>
               {d.name}
-              <span>{d.active ? "Spelar här" : d.restricted ? "Kan inte styras härifrån" : d.type}</span>
+              <span>{d.active ? "Spelar här" : d.type}</span>
             </button>
           ))}
-          {picker.mode === "switch" && <p className="mid small">Spotify visar här bara enheter som Spotify själv känner till just nu. Spotify-appen hittar fler på wifi, men det kan inte den här appen.</p>}
         </div>
       )}
+      </div>
       {error && <p className="err" role="alert">{error}</p>}
     </div>
   );

@@ -75,7 +75,10 @@ export function createSonosProvider(deps: SonosDeps): Provider<SonosData> {
       );
       // Spelande rum först, sedan i bokstavsordning.
       rooms.sort((a, b) => Number(b.playing) - Number(a.playing) || a.room.localeCompare(b.room, "sv"));
-      return { groups: rooms };
+      const groupOf = new Map<string, string>();
+      for (const g of groups) for (const pid of arr(g.playerIds)) groupOf.set(String(pid), String(g.id));
+      const allPlayers = [...players].map(([id, name]) => ({ id, name, groupId: groupOf.get(id) ?? null }));
+      return { groups: rooms, players: allPlayers };
     },
   };
 }

@@ -54,5 +54,18 @@ describe("sonos provider (all rooms)", () => {
   it("no groups gives an empty list, not an error", async () => {
     expect((await make(base([])).p.getSummary()).groups).toEqual([]);
   });
+  it("lists every player with the group it belongs to (for choosing a room)", async () => {
+    const { p } = make({ ...base([G("A", "P3", ["P3"], "PLAYBACK_STATE_PAUSED"), G("B", "P1", ["P1", "P2"], "PLAYBACK_STATE_PLAYING")]), ...meta("A", {}), ...vol("A", 1), ...meta("B", {}), ...vol("B", 2) });
+    const d = await p.getSummary();
+    expect(d.players).toEqual([
+      { id: "P1", name: "Vardagsrum - Höger", groupId: "B" },
+      { id: "P2", name: "Vardagsrum - Vänster", groupId: "B" },
+      { id: "P3", name: "Kök", groupId: "A" },
+      { id: "P4", name: "Barnrum", groupId: null },
+    ]);
+  });
+  it("old cached payloads without players still parse", () => {
+    expect(sonosSchema.parse({ groups: [] }).players).toEqual([]);
+  });
   it("ttl is 30 s", () => expect(make({}).p.ttlSeconds).toBe(30));
 });

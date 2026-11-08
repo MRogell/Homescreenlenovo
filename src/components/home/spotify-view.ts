@@ -25,3 +25,63 @@ export function tintFromPixels(px: Uint8ClampedArray): string | null {
   }
   return n ? `rgb(${Math.round(r / n)}, ${Math.round(g / n)}, ${Math.round(b / n)})` : null;
 }
+
+export type SonosInfo = {
+  groups: { id: string; room: string; members: string[]; volume: number | null }[];
+  players: { id: string; name: string; groupId: string | null }[];
+};
+export type SpotifyDeviceInfo = { id: string; name: string; type: string; active?: boolean; restricted?: boolean };
+export type DeviceItem = {
+  key: string;
+  name: string;
+  kind: "spotify" | "sonos";
+  type: string;
+  active: boolean;
+  /** Kan väljas: Spotify-enhet, Sonos-rum när musiken redan är i Sonos (flytt), eller Sonos-rum som Spotify ser utan begränsning. */
+  available: boolean;
+  spotifyId?: string;
+  playerId?: string;
+};
+
+const norm = (s: string) => s.trim().toLocaleLowerCase("sv");
+/** "Vardagsrum - Höger" → "Vardagsrum" (stereopar visas som ett rum). */
+export const roomName = (s: string) => s.replace(/\s+-\s+(höger|vänster|left|right|l|r)$/i, "").trim();
+
+/** Sonos-gruppen som Spotify spelar i, utifrån enhetens namn (rum, medlem eller högtalare). */
+export function findSonosGroup(device: string | null, sonos: SonosInfo | null): { id: string; volume: number | null } | null {
+  if (!device || !sonos) return null;
+  const d = norm(device);
+  const g = sonos.groups.find((x) => norm(x.room) === d || norm(roomName(x.room)) === d || x.members.some((m) => norm(m) === d));
+  if (g) return { id: g.id, volume: g.volume };
+  const p = sonos.players.find((x) => norm(x.name) === d || norm(roomName(x.name)) === d);
+  const pg = p?.groupId ? sonos.groups.find((x) => x.id === p.groupId) : undefined;
+  return pg ? { id: pg.id, volume: pg.volume } : null;
+}
+
+/** En lista: Spotifys egna enheter först, sedan varje Sonos-rum en gång. Spotify-enheter med samma namn som ett rum slås ihop med rummet. */
+export function buildDeviceList(spotify: SpotifyDeviceInfo[], sonos: SonosInfo | null, currentSonosGroupId: string | null): DeviceItem[] {
+  const rooms: DeviceItem[] = [];
+  const roomKeys = new Set<string>();
+  for (const p of sonos?.players ?? []) {
+    const name = roomName(p.name);
+    const k = norm(name);
+    if (roomKeys.has(k)) {
+      const r = rooms.find((x) => norm(x.name) === k)!;
+      if (currentSonosGroupId && p.groupId === currentSonosGroupId) r.active = true;
+      continue;
+    }
+    roomKeys.add(k);
+    rooms.push({ key: `sonos:${p.id}`, name, kind: "sonos", type: "Sonos", active: !!currentSonosGroupId && p.groupId === currentSonosGroupId, available: !!currentSonosGroupId, playerId: p.id });
+  }
+  const own: DeviceItem[] = [];
+  for (const d of spotify) {
+    const room = rooms.find((r) => norm(r.name) === norm(d.name) || norm(r.name) === norm(roomName(d.name)));
+    if (room) {
+      if (!d.restricted && !room.available) { room.available = true; room.spotifyId = d.id; }
+      if (d.active && !currentSonosGroupId) room.active = true;
+      continue;
+    }
+    own.push({ key: `spotify:${d.id}`, name: d.name, kind: "spotify", type: d.type, active: !!d.active && !currentSonosGroupId, available: !d.restricted, spotifyId: d.id });
+  }
+  return [...own, ...rooms];
+}

@@ -5,7 +5,7 @@ import { sameOrigin } from "./connect-flow";
 import { getAccessToken, ReauthRequired } from "./connections";
 import { db as defaultDb } from "./db";
 import { getSpotifyDefaultDevice, type DefaultDevice } from "./spotify-prefs";
-import { controlSonos, SONOS_ACTIONS, SonosControlError, type SonosAction, type SonosErrorCode } from "./providers/sonos-control";
+import { controlSonos, moveSonos, setSonosVolume, SONOS_ACTIONS, SonosControlError, type SonosAction, type SonosErrorCode } from "./providers/sonos-control";
 import { AEG_ACTIONS, AegControlError, controlAeg, type AegAction, type AegErrorCode } from "./providers/aeg-control";
 import { getAegApiKey } from "./aeg-connect";
 import { getEnv } from "@/lib/env";
@@ -55,7 +55,12 @@ const bodySchema = z.union([
   z.object({ action: z.literal("volume"), volume: z.number().int().min(0).max(100) }).strict(),
 ]);
 
-const sonosBody = z.object({ action: z.enum(SONOS_ACTIONS as unknown as [SonosAction, ...SonosAction[]]), groupId: z.string().regex(/^[A-Za-z0-9:_.-]{1,100}$/) }).strict();
+const sonosId = z.string().regex(/^[A-Za-z0-9:_.-]{1,100}$/);
+const sonosBody = z.union([
+  z.object({ action: z.enum(SONOS_ACTIONS as unknown as [SonosAction, ...SonosAction[]]), groupId: sonosId }).strict(),
+  z.object({ action: z.literal("volume"), groupId: sonosId, volume: z.number().int().min(0).max(100) }).strict(),
+  z.object({ action: z.literal("move"), fromGroupId: sonosId, toPlayerId: sonosId }).strict(),
+]);
 const SONOS_STATUS: Record<SonosErrorCode, number> = { reauth: 409, gone: 409, rate_limit: 429, failed: 502 };
 
 /** Sonos: spela/pausa/nästa/föregående i en grupp (ett eller flera ihopkopplade rum). */
@@ -63,7 +68,11 @@ async function handleSonos(body: unknown, deps: ControlFlowDeps): Promise<Contro
   const parsed = sonosBody.safeParse(body);
   if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
   try {
-    await controlSonos(parsed.data.action, parsed.data.groupId, { getToken: deps.getToken ?? (() => getAccessToken("sonos")), fetchFn: deps.fetchFn });
+    const sonos = { getToken: deps.getToken ?? (() => getAccessToken("sonos")), fetchFn: deps.fetchFn };
+    const b = parsed.data;
+    if (b.action === "volume") await setSonosVolume(b.groupId, b.volume, sonos);
+    else if (b.action === "move") await moveSonos(b.fromGroupId, b.toPlayerId, sonos);
+    else await controlSonos(b.action, b.groupId, sonos);
   } catch (e) {
     const err = e instanceof ReauthRequired ? new SonosControlError("reauth") : e instanceof SonosControlError ? e : new SonosControlError("failed");
     return { status: SONOS_STATUS[err.code], json: { error: err.message, code: err.code } };

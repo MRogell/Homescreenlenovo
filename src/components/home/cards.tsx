@@ -10,6 +10,7 @@ import { AegControls } from "./aeg-controls";
 import { SpotifyControls } from "./spotify-controls";
 import { SpotifyArt } from "./spotify-art";
 import { SpotifyProgress } from "./spotify-progress";
+import type { SonosInfo } from "./spotify-view";
 
 type S<T> = CardState<unknown> | undefined;
 const as = <T,>(s: S<T>) => s as CardState<T> | undefined;
@@ -62,7 +63,7 @@ export const SonosCard = ({ state, now }: P) => (
   }} />
 );
 
-export const SpotifyCard = ({ state, now }: P) => (
+export const SpotifyCard = ({ state, now, sonos = null }: P & { sonos?: SonosInfo | null }) => (
   <CardShell<SpotifyData> title="Spotify" icon="note" state={as(state)} now={now} className="spotify" render={(d) => ({
     pill: { text: d.playing ? "Spelar" : "Pausad", tone: d.playing ? "ok" : undefined },
     body: <>
@@ -75,7 +76,7 @@ export const SpotifyCard = ({ state, now }: P) => (
         </div>
       </div>
       <SpotifyProgress progressMs={d.progressMs} durationMs={d.durationMs} playing={d.playing} fetchedAt={state && "fetchedAt" in state ? state.fetchedAt : null} />
-      <SpotifyControls playing={d.playing} device={d.device} deviceRestricted={d.deviceRestricted} supportsVolume={d.supportsVolume} volume={d.volume} />
+      <SpotifyControls playing={d.playing} device={d.device} deviceRestricted={d.deviceRestricted} supportsVolume={d.supportsVolume} volume={d.volume} sonos={sonos} />
     </>,
   })} />
 );
