@@ -56,3 +56,14 @@ Enhet: rätt metod och sökväg per kommando, 200/202/204 som lyckat, felmappnin
 - **Oförklarat fel (instrumenterat):** "Spotify kunde inte utföra kommandot" döljer Spotifys verkliga svar. Oväntade fel visar nu status, orsaksord och en kort felrad (t.ex. "502, UNKNOWN, Restriction violated")
   och loggas på servern (bara status och orsak). Texten saneras och Spotifys felrad rensas från vår token innan den visas.
 - Nästa steg är att läsa den verkliga orsaken och rätta därefter, inte att gissa.
+
+## Rotorsak hittad: "403 Restricted device" (2026-11-08)
+Instrumenteringen visade Spotifys verkliga svar: `403, Restricted device` för den aktiva enheten (ägarens iPhone). Spotify vägrar kommandon till den enheten;
+det är dokumenterat för Sonos och förekommer för andra enheter. Appen kände bara igen orsaken som kod (`RESTRICTED_DEVICE`), men Spotify skickade den som text.
+- Känns nu igen både som kod och text. "Restriction violated" (t.ex. pausa när redan pausat) får egen text (`not_now`).
+- Spotify-kortet läser `is_restricted`, `supports_volume` och `volume_percent` för den aktiva enheten. Begränsad enhet: inga döda knappar, en förklaring och "Byt enhet".
+  Vägrar Spotify ett kommando trots att enheten inte är märkt, minns kortet det för enheten tills musiken byter enhet.
+- **Volym:** reglage när Spotify tillåter det (`PUT /me/player/volume?volume_percent=`), ett kommando när man släppt (300 ms). Annars en förklaring
+  (iOS och telefonappar tillåter enligt flera rapporter inte fjärrstyrd volym).
+- **Fördröjning:** `GET /api/spotify/now` hämtar läget direkt från Spotify (ingen cache). Kortet frågar var 4:e sekund när skärmen är synlig och 400 ms efter kommandon.
+- **Begränsning som kvarstår:** Sonos-rum syns inte i Spotifys Web API (lokal upptäckt, och Sonos är begränsade). De styrs via Sonos egen koppling.

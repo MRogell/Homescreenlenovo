@@ -1,7 +1,7 @@
 "use client";
 import { Pause, Play, SkipBack, SkipForward, Speaker } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useRefresh } from "./refresh-context";
+import { useEffect, useRef, useState } from "react";
+import { useRefreshSpotify } from "./refresh-context";
 
 type Action = "play" | "pause" | "next" | "previous";
 type Device = { id: string; name: string; type: string; active?: boolean; restricted?: boolean };
@@ -10,8 +10,11 @@ type ApiBody = { error?: string; code?: string; devices?: Device[] };
 type Picker = { mode: "choose" | "switch"; devices: Device[] };
 
 /** Styrknappar och enhetsbyte för Spotify. Stora tryckytor (minst 48 px). Fel visas som text under knapparna. */
-export function SpotifyControls({ playing, device }: { playing: boolean; device: string | null }) {
-  const refresh = useRefresh();
+export function SpotifyControls({ playing, device, deviceRestricted = false, supportsVolume = false, volume = null }: { playing: boolean; device: string | null; deviceRestricted?: boolean; supportsVolume?: boolean; volume?: number | null }) {
+  const refresh = useRefreshSpotify();
+  // Spotify kan vägra kommandon ("Restricted device") även när enheten inte är märkt som begränsad. Då minns kortet det för enheten.
+  const [refusedDevice, setRefusedDevice] = useState<string | null>(null);
+  const restricted = deviceRestricted || (device !== null && refusedDevice === device);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [picker, setPicker] = useState<Picker | null>(null);
@@ -28,6 +31,30 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPicker((p) => (p?.mode === "switch" ? null : p));
   }, [device]);
+
+  // Volym: eget värde medan man drar, skickas en gång när man släppt (efter 300 ms), annars följer reglaget Spotify.
+  const [localVolume, setLocalVolume] = useState<number | null>(null);
+  const volumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (volumeTimer.current) clearTimeout(volumeTimer.current); }, []);
+  const shownVolume = localVolume ?? volume ?? 0;
+  function changeVolume(v: number) {
+    setLocalVolume(v);
+    if (volumeTimer.current) clearTimeout(volumeTimer.current);
+    volumeTimer.current = setTimeout(async () => {
+      setError(null);
+      try {
+        const res = await fetch("/api/control/spotify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "volume", volume: v }) });
+        if (!res.ok) {
+          const j = (await res.json().catch(() => null)) as { error?: string } | null;
+          setError(j?.error ?? "Det gick inte att ändra volymen.");
+        }
+      } catch {
+        setError("Ingen kontakt med servern.");
+      }
+      await Promise.resolve(refresh());
+      setLocalVolume(null);
+    }, 300);
+  }
 
   async function post(body: Record<string, unknown>): Promise<{ ok: boolean; data: ApiBody | null }> {
     const res = await fetch("/api/control/spotify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -54,7 +81,7 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
     // Det tillfälliga läget släpps när servern har svarat, oavsett vad den säger: tog Spotify emot kommandot men inget spelar, ska kortet visa sanningen.
     setTimeout(() => {
       void Promise.resolve(refresh()).finally(() => setOptimistic(null));
-    }, 700);
+    }, 400);
   }
 
   const send = (action: Action) =>
@@ -63,6 +90,7 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
       const { ok, data } = await post({ action });
       if (ok) return done();
       setOptimistic(null);
+      if (data?.code === "restricted_device") { setRefusedDevice(device); return; }
       if (data?.code === "choose_device" && data.devices?.length) return setPicker({ mode: "choose", devices: data.devices });
       setPicker(null);
       setError(data?.error ?? "Det gick inte att styra Spotify.");
@@ -87,6 +115,9 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
 
   return (
     <div className="controls">
+      {restricted ? (
+        <p className="mid restricted-note">Spotify tillåter inte att {device ?? "den här enheten"} styrs från andra appar. Styr den i Spotify-appen, eller flytta musiken till en annan enhet med Byt enhet.</p>
+      ) : (
       <div className="controls-row">
         <button type="button" className="ctl" aria-label="Föregående låt" disabled={busy} onClick={() => send("previous")}><SkipBack aria-hidden="true" /></button>
         <button type="button" className="ctl main" aria-label={shownPlaying ? "Pausa" : "Spela"} disabled={busy} onClick={() => send(shownPlaying ? "pause" : "play")}>
@@ -94,6 +125,16 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
         </button>
         <button type="button" className="ctl" aria-label="Nästa låt" disabled={busy} onClick={() => send("next")}><SkipForward aria-hidden="true" /></button>
       </div>
+      )}
+      {!restricted && device && (supportsVolume ? (
+        <label className="volume" htmlFor="spotify-volume">
+          <span>Volym</span>
+          <input id="spotify-volume" type="range" min={0} max={100} step={1} value={shownVolume} aria-valuetext={`${shownVolume} procent`} onChange={(e) => changeVolume(Number(e.target.value))} />
+          <span className="volume-value">{shownVolume}</span>
+        </label>
+      ) : (
+        <p className="mid small">Volymen ändras på {device} (Spotify tillåter det inte härifrån).</p>
+      ))}
       <button type="button" className="device switch" aria-expanded={picker?.mode === "switch"} disabled={busy} onClick={openSwitcher}>
         <span className="switch-label"><Speaker aria-hidden="true" /> Byt enhet</span>
         <span>{device ?? "Ingen aktiv"}</span>

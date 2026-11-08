@@ -138,3 +138,8 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .diag-steps li { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
 .diag-ok strong { color: var(--ok); }
 .diag-fail strong { color: var(--bad); }
+/* Spotify-volym och begränsad enhet. */
+.volume { display: flex; align-items: center; gap: 12px; min-height: 48px; color: var(--muted); font-weight: 500; }
+.volume input { flex: 1; min-width: 0; height: 32px; accent-color: var(--accent); }
+.volume-value { min-width: 2.5ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); font-weight: 600; }
+.restricted-note { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }

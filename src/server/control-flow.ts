@@ -8,7 +8,7 @@ import { getSpotifyDefaultDevice, type DefaultDevice } from "./spotify-prefs";
 import { controlSonos, SONOS_ACTIONS, SonosControlError, type SonosAction, type SonosErrorCode } from "./providers/sonos-control";
 import { AEG_ACTIONS, AegControlError, controlAeg, type AegAction, type AegErrorCode } from "./providers/aeg-control";
 import { getAegApiKey } from "./aeg-connect";
-import { ControlError, SPOTIFY_ACTIONS, controlSpotify, listSpotifyDevices, transferSpotify, type ControlErrorCode, type SpotifyAction, type SpotifyDevice } from "./providers/spotify-control";
+import { ControlError, SPOTIFY_ACTIONS, controlSpotify, listSpotifyDevices, setSpotifyVolume, transferSpotify, type ControlErrorCode, type SpotifyAction, type SpotifyDevice } from "./providers/spotify-control";
 
 export interface ControlRequest {
   provider: string;
@@ -44,6 +44,7 @@ const bodySchema = z.union([
     .refine((v) => v.deviceId === undefined || v.action === "play"),
   z.object({ action: z.literal("devices") }).strict(),
   z.object({ action: z.literal("transfer"), deviceId, play: z.boolean() }).strict(),
+  z.object({ action: z.literal("volume"), volume: z.number().int().min(0).max(100) }).strict(),
 ]);
 
 const sonosBody = z.object({ action: z.enum(SONOS_ACTIONS as unknown as [SonosAction, ...SonosAction[]]), groupId: z.string().regex(/^[A-Za-z0-9:_.-]{1,100}$/) }).strict();
@@ -92,7 +93,7 @@ async function handleAeg(body: unknown, deps: ControlFlowDeps): Promise<ControlR
   return { status: 204 };
 }
 
-const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, choose_device: 409, restricted_device: 409, premium: 403, rate_limit: 429, failed: 502 };
+const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, choose_device: 409, restricted_device: 409, not_now: 409, volume_disallowed: 409, premium: 403, rate_limit: 429, failed: 502 };
 const GENERIC = new ControlError("failed");
 
 /**
@@ -113,6 +114,7 @@ export async function handleControl(req: ControlRequest, deps: ControlFlowDeps =
   try {
     if (body.action === "devices") return { status: 200, json: { devices: await listSpotifyDevices(spotify) } };
     if (body.action === "transfer") await transferSpotify(body.deviceId, body.play, spotify);
+    else if (body.action === "volume") await setSpotifyVolume(body.volume, spotify);
     else {
       const preferred = body.action === "play" && !body.deviceId ? await (deps.getPreferred ?? (() => getSpotifyDefaultDevice(deps.db ?? defaultDb)))() : null;
       await controlSpotify(body.action, spotify, body.deviceId, preferred);

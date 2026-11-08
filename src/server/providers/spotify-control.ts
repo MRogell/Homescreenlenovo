@@ -5,7 +5,7 @@ const API = "https://api.spotify.com/v1";
 export type SpotifyAction = "play" | "pause" | "next" | "previous";
 export const SPOTIFY_ACTIONS: readonly SpotifyAction[] = ["play", "pause", "next", "previous"];
 
-export type ControlErrorCode = "reauth" | "scope" | "premium" | "no_device" | "choose_device" | "restricted_device" | "rate_limit" | "failed";
+export type ControlErrorCode = "reauth" | "scope" | "premium" | "no_device" | "choose_device" | "restricted_device" | "not_now" | "volume_disallowed" | "rate_limit" | "failed";
 
 export interface SpotifyDevice {
   id: string;
@@ -23,7 +23,9 @@ const MESSAGES: Record<ControlErrorCode, string> = {
   premium: "Spotify Premium krävs för att styra uppspelning.",
   no_device: "Spotify hittar ingen enhet. Öppna Spotify-appen på telefonen eller datorn och försök igen.",
   choose_device: "Välj var musiken ska spelas.",
-  restricted_device: "Spotify tillåter inte att den enheten styrs härifrån. Starta uppspelningen i Spotify-appen och välj enheten där.",
+  restricted_device: "Spotify tillåter inte att den här enheten styrs från andra appar. Styr den i Spotify-appen, eller flytta musiken till en annan enhet med Byt enhet.",
+  not_now: "Spotify tillåter inte det just nu (till exempel är låten redan pausad, eller så finns ingen nästa låt).",
+  volume_disallowed: "Spotify tillåter inte volymstyrning av den här enheten. Ändra volymen på enheten.",
   rate_limit: "Spotify begränsar anropen. Försök igen strax.",
   failed: "Spotify kunde inte utföra kommandot.",
 };
@@ -73,7 +75,10 @@ async function toError(res: Response, secret: string): Promise<ControlError> {
   if (res.status === 404 && (info.reason === "NO_ACTIVE_DEVICE" || info.reason === undefined)) return new ControlError("no_device");
   if (res.status === 403) {
     if (info.reason === "PREMIUM_REQUIRED") return new ControlError("premium");
-    if (info.reason === "RESTRICTED_DEVICE") return new ControlError("restricted_device");
+    // Spotify skickar ibland orsaken som kod, ibland bara som text (t.ex. "Restricted device").
+    if (info.reason === "RESTRICTED_DEVICE" || /restricted device/i.test(info.message ?? "")) return new ControlError("restricted_device");
+    if (info.reason === "VOLUME_CONTROL_DISALLOW" || /control device volume/i.test(info.message ?? "")) return new ControlError("volume_disallowed");
+    if (/restriction violated/i.test(info.message ?? "")) return new ControlError("not_now");
     if (/scope/i.test(info.message ?? "")) return new ControlError("scope");
   }
   const detail = describeFailure(res.status, info, secret);
@@ -176,4 +181,12 @@ export async function controlSpotify(action: SpotifyAction, deps: ControlDeps, d
     if (devices.length > 1) throw new ControlError("choose_device", devices);
   }
   throw err;
+}
+
+/** Volym i procent (0–100) på den aktiva enheten. Kräver att Spotify tillåter volym för enheten (`supports_volume`). */
+export async function setSpotifyVolume(volume: number, deps: ControlDeps): Promise<void> {
+  const call = await caller(deps);
+  const pct = Math.max(0, Math.min(100, Math.round(volume)));
+  const res = await call("PUT", `/me/player/volume?volume_percent=${pct}`);
+  if (!res.ok) throw await call.fail(res);
 }

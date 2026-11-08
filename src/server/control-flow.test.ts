@@ -242,3 +242,24 @@ describe("handleControl aeg", () => {
     expect(f.calls).toHaveLength(0);
   });
 });
+
+describe("handleControl spotify volume", () => {
+  function rec(status: number) {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => { calls.push(`${init.method} ${url}`); return status === 204 ? new Response(null, { status }) : new Response("{}", { status }); }) as unknown as typeof fetch;
+    return { calls, fetchFn };
+  }
+  it("volume 0-100 is sent to Spotify", async () => {
+    const f = rec(204);
+    const r = await handleControl({ ...ok, body: { action: "volume", volume: 37 } }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db, getPreferred: async () => null });
+    expect(r.status).toBe(204);
+    expect(f.calls).toEqual(["PUT https://api.spotify.com/v1/me/player/volume?volume_percent=37"]);
+  });
+  it("invalid volume bodies are 400", async () => {
+    const f = rec(204);
+    for (const body of [{ action: "volume" }, { action: "volume", volume: 101 }, { action: "volume", volume: -1 }, { action: "volume", volume: 12.5 }, { action: "volume", volume: "50" }, { action: "volume", volume: 50, deviceId: "A" }]) {
+      expect((await handleControl({ ...ok, body }, { getToken: async () => "TOK", fetchFn: f.fetchFn, db })).status, JSON.stringify(body)).toBe(400);
+    }
+    expect(f.calls).toHaveLength(0);
+  });
+});

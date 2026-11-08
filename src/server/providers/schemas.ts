@@ -11,7 +11,18 @@ export const skodaSchema = z.object({
 export const sonosSchema = z.object({
   groups: z.array(z.object({ id: z.string(), room: z.string(), members: z.array(z.string()), playing: z.boolean(), title: z.string(), artist: z.string(), volume: z.number().nullable() })),
 });
-export const spotifySchema = z.object({ playing: z.boolean(), title: z.string(), artist: z.string(), device: z.string().nullable(), lastPlayedAt: z.string().nullable() });
+export const spotifySchema = z.object({
+  playing: z.boolean(),
+  title: z.string(),
+  artist: z.string(),
+  device: z.string().nullable(),
+  lastPlayedAt: z.string().nullable(),
+  /** Spotify tar inte emot kommandon till den aktiva enheten (t.ex. vissa telefoner och Sonos). */
+  deviceRestricted: z.boolean(),
+  /** Spotify tillåter volymstyrning av den aktiva enheten. */
+  supportsVolume: z.boolean(),
+  volume: z.number().min(0).max(100).nullable(),
+});
 export const aegSchema = z.object({
   appliance: z.string(),
   state: z.string(),

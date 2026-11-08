@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ControlError, controlSpotify, listSpotifyDevices, transferSpotify } from "./spotify-control";
+import { ControlError, controlSpotify, listSpotifyDevices, setSpotifyVolume, transferSpotify } from "./spotify-control";
 
 type Call = { url: string; method: string; auth: string };
 function make(status: number, body?: unknown, headers?: Record<string, string>) {
@@ -258,5 +258,44 @@ describe("failure details are visible (never the token)", () => {
     const fn = (async () => new Response(JSON.stringify({ error: { status: 404, message: "Device not found", reason: "UNKNOWN" } }), { status: 404 })) as unknown as typeof fetch;
     const e = (await transferSpotify("B", true, { getToken: async () => "TOK", fetchFn: fn }).catch((x) => x)) as ControlError;
     expect(e.message).toContain("Device not found");
+  });
+});
+
+describe("restricted and not-now errors", () => {
+  const err = async (status: number, body: unknown) => {
+    const fn = (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+    return (await controlSpotify("pause", { getToken: async () => "TOK", fetchFn: fn }).catch((e) => e)) as ControlError;
+  };
+  it("'Restricted device' as message (no reason code) is recognised", async () => {
+    expect((await err(403, { error: { status: 403, message: "Restricted device" } })).code).toBe("restricted_device");
+    expect((await err(403, { error: { status: 403, message: "Player command failed: Restricted device" } })).code).toBe("restricted_device");
+  });
+  it("'Restriction violated' (e.g. pausing when already paused) gets its own plain message", async () => {
+    const e = await err(403, { error: { status: 403, message: "Player command failed: Restriction violated", reason: "UNKNOWN" } });
+    expect(e.code).toBe("not_now");
+    expect(e.message).not.toMatch(/403/);
+  });
+});
+
+describe("setSpotifyVolume", () => {
+  function rec(status: number, body?: unknown) {
+    const calls: { url: string; method: string }[] = [];
+    const fn = (async (url: string, init: RequestInit) => { calls.push({ url, method: String(init.method) }); return status === 204 ? new Response(null, { status }) : new Response(JSON.stringify(body ?? {}), { status }); }) as unknown as typeof fetch;
+    return { fn, calls };
+  }
+  it("puts the volume in percent", async () => {
+    const f = rec(204);
+    await setSpotifyVolume(55, { getToken: async () => "TOK", fetchFn: f.fn });
+    expect(f.calls).toEqual([{ url: "https://api.spotify.com/v1/me/player/volume?volume_percent=55", method: "PUT" }]);
+  });
+  it("rounds and clamps", async () => {
+    const f = rec(204);
+    await setSpotifyVolume(101.6, { getToken: async () => "TOK", fetchFn: f.fn });
+    await setSpotifyVolume(-3, { getToken: async () => "TOK", fetchFn: f.fn });
+    expect(f.calls.map((c) => c.url)).toEqual(["https://api.spotify.com/v1/me/player/volume?volume_percent=100", "https://api.spotify.com/v1/me/player/volume?volume_percent=0"]);
+  });
+  it("VOLUME_CONTROL_DISALLOW gives a clear message", async () => {
+    const e = (await setSpotifyVolume(50, { getToken: async () => "TOK", fetchFn: rec(403, { error: { reason: "VOLUME_CONTROL_DISALLOW", message: "Cannot control device volume" } }).fn }).catch((x) => x)) as ControlError;
+    expect(e.code).toBe("volume_disallowed");
   });
 });
