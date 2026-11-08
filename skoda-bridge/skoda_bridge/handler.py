@@ -38,12 +38,15 @@ async def handle_request(
     token = env.get("SKODA_BRIDGE_TOKEN") or env.get("BRIDGE_TOKEN", "")
     # Utan en tillräckligt lång token vägrar bryggan svara alls, även om anroparen skickar samma korta värde.
     if len(token) < 32:
-        return 500, _text("misconfigured")
+        # Orsaken (aldrig värdet) visas, så att fel i Vercels variabler går att hitta utan loggar.
+        reason = "SKODA_BRIDGE_TOKEN saknas" if not token else "SKODA_BRIDGE_TOKEN är kortare än 32 tecken"
+        return 500, {**_text("misconfigured"), "reason": reason}
     if not authorized(auth_header, token):
         return 401, _text("unauthorized")
     email, password = env.get("SKODA_USERNAME", ""), env.get("SKODA_PASSWORD", "")
     if not email or not password:
-        return 500, _text("misconfigured")
+        missing = [k for k, v in (("SKODA_USERNAME", email), ("SKODA_PASSWORD", password)) if not v]
+        return 500, {**_text("misconfigured"), "reason": " och ".join(missing) + " saknas"}
 
     if state.guard.too_soon():
         # Skydd av kontot: ingen ny inloggning, utan senast kända svar om det finns.

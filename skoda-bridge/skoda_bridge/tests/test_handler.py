@@ -121,3 +121,15 @@ def test_old_bridge_token_name_still_works():
     env = {k: v for k, v in ENV.items() if k != "SKODA_BRIDGE_TOKEN"} | {"BRIDGE_TOKEN": TOKEN}
     (status, _), _, _ = run(env=env)
     assert status == 200
+
+
+def test_misconfigured_reason_names_variable_but_never_value():
+    short = {**ENV, "SKODA_BRIDGE_TOKEN": "kort-hemligt"}
+    (_, body), _, _ = run(auth="Bearer kort-hemligt", env=short)
+    assert body["reason"] == "SKODA_BRIDGE_TOKEN är kortare än 32 tecken"
+    assert "kort-hemligt" not in str(body)
+    (_, body), _, _ = run(env={k: v for k, v in ENV.items() if k != "SKODA_BRIDGE_TOKEN"})
+    assert body["reason"] == "SKODA_BRIDGE_TOKEN saknas"
+    (_, body), _, _ = run(env={k: v for k, v in ENV.items() if k != "SKODA_PASSWORD"})
+    assert body["reason"] == "SKODA_PASSWORD saknas"
+    assert ENV["SKODA_USERNAME"] not in str(body)
