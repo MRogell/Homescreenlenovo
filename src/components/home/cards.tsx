@@ -2,7 +2,8 @@ import { formatClock, formatMinutes, formatTemp, formatTempShort } from "@/lib/f
 import type { CardState } from "@/server/providers/types";
 import type { AegData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
-import { Icon } from "./icons";
+import { Icon, type IconName } from "./icons";
+import { skodaView } from "./skoda-view";
 import { SonosRooms } from "./sonos-rooms";
 import { AegControls } from "./aeg-controls";
 import { SpotifyControls } from "./spotify-controls";
@@ -11,19 +12,39 @@ type S<T> = CardState<unknown> | undefined;
 const as = <T,>(s: S<T>) => s as CardState<T> | undefined;
 type P = { state: CardState<unknown> | undefined; now: Date };
 
+const CHECK_ICON: Record<string, IconName> = { Lås: "lock", Dörrar: "door", Fönster: "window", Bagage: "trunk", Motorhuv: "car" };
+
 export const SkodaCard = ({ state, now }: P) => (
-  <CardShell<SkodaData> title="Škoda" icon="car" state={as(state)} now={now} render={(d) => ({
-    pill: d.locked === null ? { text: "Okänt läge" } : { text: d.locked ? "Låst" : "Olåst", tone: d.locked ? "ok" : "warn" },
-    body: <>
-      <div className="big">{d.rangeKm ?? "–"}<small>km</small></div>
-      {d.levelPct !== null && <div className="bar"><i style={{ width: `${d.levelPct}%` }} /></div>}
-      <div className="mid">
-        {d.levelPct !== null && <><strong>{d.levelPct} %</strong> {d.levelKind === "battery" ? "batteri" : "tank"} · </>}
-        {d.charging && "laddar · "}
-        {d.parked ? `parkerad ${d.parked}` : "plats okänd"}
-      </div>
-    </>,
-  })} />
+  <CardShell<SkodaData> title="Škoda" icon="car" state={as(state)} now={now} className="skoda" render={(d) => {
+    const v = skodaView(d, now);
+    return {
+      pill: v.pill,
+      body: <>
+        <div className="skoda-main">
+          <div className="big">{d.rangeKm ?? "–"}<small>km</small></div>
+          {v.levelText && <div className="skoda-level"><strong>{d.levelPct}<small>%</small></strong><span>{d.levelKind === "battery" ? "batteri" : "tank"}</span></div>}
+        </div>
+        {d.levelPct !== null && (
+          <div className={`bar skoda-bar${d.levelPct <= 20 ? " low" : ""}`} role="img" aria-label={v.levelText ?? undefined}>
+            <i style={{ width: `${d.levelPct}%` }} />
+            {v.targetPct !== null && <b className="skoda-target" style={{ left: `${v.targetPct}%` }} aria-hidden="true" />}
+          </div>
+        )}
+        {v.chargeLine && <div className="skoda-charge"><Icon name="bolt" />{v.chargeLine}</div>}
+        {v.checks.length > 0 && (
+          <ul className="skoda-checks" aria-label="Status">
+            {v.checks.map((c) => (
+              <li key={c.label} className={c.tone}><Icon name={CHECK_ICON[c.label] ?? "car"} /><span><strong>{c.value}</strong><small>{c.label}</small></span></li>
+            ))}
+          </ul>
+        )}
+        <div className="skoda-place">
+          <Icon name="pin" />
+          <span><span className="addr">{v.place}</span>{v.reported && <small>{v.reported}</small>}</span>
+        </div>
+      </>,
+    };
+  }} />
 );
 
 export const SonosCard = ({ state, now }: P) => (

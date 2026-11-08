@@ -143,3 +143,28 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .volume input { flex: 1; min-width: 0; height: 32px; accent-color: var(--accent); }
 .volume-value { min-width: 2.5ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); font-weight: 600; }
 .restricted-note { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+
+/* Škoda: räckvidd och nivå överst, stapel med laddmål, statusrutor, plats längst ner. */
+.skoda-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.skoda-level { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.skoda-level strong { font: 600 24px/1 var(--display); font-variant-numeric: tabular-nums; }
+.skoda-level strong small { font-size: .6em; color: var(--muted); margin-left: 2px; font-weight: 500; }
+.skoda-level span { color: var(--muted); font-size: 13px; }
+.skoda-bar { position: relative; overflow: visible; }
+.skoda-bar.low i { background: var(--warn); }
+.skoda-target { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--fg); opacity: .7; }
+.skoda-charge { display: flex; align-items: center; gap: 6px; color: var(--ok); font-weight: 600; font-size: 14px; }
+.skoda-charge svg, .skoda-checks svg, .skoda-place svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.skoda-checks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.skoda-checks li { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 12px; background: var(--surface-2); min-width: 0; }
+.skoda-checks li.ok svg { color: var(--ok); } .skoda-checks li.warn { color: var(--warn); } .skoda-checks li.bad { color: var(--bad); }
+.skoda-checks li span { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.skoda-checks strong { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.skoda-checks li.ok strong { color: var(--fg); }
+.skoda-checks small { font-size: 12px; color: var(--muted); }
+.skoda-place { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); margin-top: auto; }
+.skoda-place > span { display: flex; flex-direction: column; min-width: 0; }
+.skoda-place .addr { color: var(--fg); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skoda-place small { font-size: 12px; }
+.skoda .foot { margin-top: 0; }
+@media (max-width: 560px) { .skoda-checks { grid-template-columns: repeat(4, minmax(0, 1fr)); } .skoda-checks li { flex-direction: column; text-align: center; padding: 8px 4px; gap: 4px; } .skoda-checks li span { align-items: center; } }

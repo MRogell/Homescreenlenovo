@@ -8,6 +8,12 @@ const P = {
   wash: "M6 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM12 9a4.2 4.2 0 1 0 0 8.4A4.2 4.2 0 0 0 12 9zM7 6.5h2",
   cam: "M3 8h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM16 12l5-3v8l-5-3",
   cloud: "M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.1 4.5 4.5 0 0 0 7 18z",
+  lock: "M8 11V8a4 4 0 0 1 8 0v3M6 11h12v9H6zM12 15v2",
+  door: "M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M4 21h16M14 12h1",
+  window: "M5 5h14v14H5zM12 5v14M5 12h14",
+  trunk: "M3 13h18v5H3zM6 13l2-6h8l2 6M7 18v2M17 18v2",
+  pin: "M12 21s-6-5.4-6-11a6 6 0 0 1 12 0c0 5.6-6 11-6 11zM12 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4z",
+  bolt: "M13 3 5 14h6l-1 7 8-11h-6z",
 } as const;
 export type IconName = keyof typeof P;
 

@@ -7,20 +7,31 @@ from myskoda.models.status import Status
 _RM = {"oneX": "", "oneAndHalfX": "", "twoX": "", "threeX": ""}
 
 
-def charging(soc=78, range_m=312_000, state="READY_FOR_CHARGING", battery=True):
+def charging(soc=78, range_m=312_000, state="READY_FOR_CHARGING", battery=True, power_kw=None, minutes_left=None, target=None):
     status = {"battery": {"stateOfChargeInPercent": soc, "remainingCruisingRangeInMeters": range_m}, "state": state} if battery else None
-    data = {"errors": [], "settings": {"availableChargeModes": []}, "isVehicleInSavedLocation": True}
+    if status is not None:
+        if power_kw is not None:
+            status["chargePowerInKw"] = power_kw
+        if minutes_left is not None:
+            status["remainingTimeToFullyChargedInMinutes"] = minutes_left
+    settings = {"availableChargeModes": []}
+    if target is not None:
+        settings["targetStateOfChargeInPercent"] = target
+    data = {"errors": [], "settings": settings, "isVehicleInSavedLocation": True}
     if status:
         data["status"] = status
     return Charging.from_dict(data)
 
 
-def status(locked="YES"):
-    return Status.from_dict({
-        "detail": {"bonnet": "CLOSED", "sunroof": "CLOSED", "trunk": "CLOSED"},
-        "overall": {"doors": "CLOSED", "doorsLocked": locked, "lights": "OFF", "locked": locked, "windows": "CLOSED"},
+def status(locked="YES", doors="CLOSED", windows="CLOSED", trunk="CLOSED", bonnet="CLOSED", captured=None):
+    data = {
+        "detail": {"bonnet": bonnet, "sunroof": "CLOSED", "trunk": trunk},
+        "overall": {"doors": doors, "doorsLocked": locked, "lights": "OFF", "locked": locked, "windows": windows},
         "renders": {"lightMode": _RM, "darkMode": _RM},
-    })
+    }
+    if captured is not None:
+        data["carCapturedTimestamp"] = captured
+    return Status.from_dict(data)
 
 
 def parking(address="Storgatan 1, Stockholm"):

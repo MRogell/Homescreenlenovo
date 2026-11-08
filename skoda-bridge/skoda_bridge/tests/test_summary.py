@@ -4,7 +4,9 @@ from conftest import charging, driving_range, parking, status
 
 def test_electric_car_full_data():
     r = summarize(charging(), status(), parking(), driving_range())
-    assert r == {"rangeKm": 312, "levelPct": 78, "levelKind": "battery", "locked": True, "charging": False, "parked": "Storgatan 1, Stockholm"}
+    assert r == {"rangeKm": 312, "levelPct": 78, "levelKind": "battery", "locked": True, "charging": False, "parked": "Storgatan 1, Stockholm",
+                 "chargeMinutesLeft": None, "chargeKw": None, "chargeTargetPct": None,
+                 "doorsOpen": False, "windowsOpen": False, "trunkOpen": False, "bonnetOpen": False, "capturedAt": None}
 
 
 def test_charging_state_sets_charging_flag():
@@ -42,7 +44,8 @@ def test_unknown_lock_state_is_none_not_false():
 
 
 def test_everything_missing_gives_nulls():
-    assert summarize(None, None, None, None) == {"rangeKm": None, "levelPct": None, "levelKind": "fuel", "locked": None, "charging": False, "parked": None}
+    assert summarize(None, None, None, None) == {"rangeKm": None, "levelPct": None, "levelKind": "fuel", "locked": None, "charging": False, "parked": None,
+                                                 "chargeMinutesLeft": None, "chargeKw": None, "chargeTargetPct": None, "doorsOpen": None, "windowsOpen": None, "trunkOpen": None, "bonnetOpen": None, "capturedAt": None}
 
 
 def test_partial_failure_keeps_the_other_fields():
@@ -52,3 +55,34 @@ def test_partial_failure_keeps_the_other_fields():
 
 def test_blank_address_becomes_none():
     assert summarize(None, None, parking(address="  "), None)["parked"] is None
+
+
+def test_charging_details_while_charging():
+    r = summarize(charging(state="CHARGING", power_kw=11.04, minutes_left=95, target=80), status(), None, None)
+    assert r["chargeMinutesLeft"] == 95 and r["chargeKw"] == 11.0 and r["chargeTargetPct"] == 80
+
+
+def test_charge_time_and_power_are_hidden_when_not_charging_but_target_is_kept():
+    r = summarize(charging(power_kw=0.0, minutes_left=0, target=80), status(), None, None)
+    assert r["chargeMinutesLeft"] is None and r["chargeKw"] is None and r["chargeTargetPct"] == 80
+
+
+def test_open_doors_windows_trunk_and_bonnet():
+    r = summarize(None, status(doors="OPEN", windows="OPEN", trunk="OPEN", bonnet="OPEN"), None, None)
+    assert (r["doorsOpen"], r["windowsOpen"], r["trunkOpen"], r["bonnetOpen"]) == (True, True, True, True)
+
+
+def test_unsupported_or_unknown_openings_are_none_never_closed():
+    r = summarize(None, status(doors="UNKNOWN", windows="UNSUPPORTED", trunk="UNKNOWN", bonnet="UNSUPPORTED"), None, None)
+    assert (r["doorsOpen"], r["windowsOpen"], r["trunkOpen"], r["bonnetOpen"]) == (None, None, None, None)
+
+
+def test_captured_at_is_iso_with_timezone():
+    r = summarize(None, status(captured="2026-11-08T13:32:10.000Z"), None, None)
+    assert r["capturedAt"].startswith("2026-11-08T13:32:10") and r["capturedAt"].endswith("+00:00")
+
+
+def test_captured_at_falls_back_to_charging_timestamp():
+    c = charging()
+    c.car_captured_timestamp = status(captured="2026-11-08T12:00:00Z").car_captured_timestamp
+    assert summarize(c, None, None, None)["capturedAt"].startswith("2026-11-08T12:00:00")

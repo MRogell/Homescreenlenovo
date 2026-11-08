@@ -7,6 +7,16 @@ export const skodaSchema = z.object({
   locked: z.boolean().nullable(),
   charging: z.boolean(),
   parked: z.string().nullable(),
+  // Tillkom senare: valfria, så att äldre svar från bryggan fortfarande godtas. null = bilen rapporterar inte värdet.
+  chargeMinutesLeft: z.number().min(0).nullable().default(null),
+  chargeKw: z.number().min(0).nullable().default(null),
+  chargeTargetPct: z.number().min(0).max(100).nullable().default(null),
+  doorsOpen: z.boolean().nullable().default(null),
+  windowsOpen: z.boolean().nullable().default(null),
+  trunkOpen: z.boolean().nullable().default(null),
+  bonnetOpen: z.boolean().nullable().default(null),
+  /** Bilens egen rapporttid (ISO), inte när appen hämtade. */
+  capturedAt: z.string().nullable().default(null),
 });
 export const sonosSchema = z.object({
   groups: z.array(z.object({ id: z.string(), room: z.string(), members: z.array(z.string()), playing: z.boolean(), title: z.string(), artist: z.string(), volume: z.number().nullable() })),
