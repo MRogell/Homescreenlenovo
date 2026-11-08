@@ -16,6 +16,30 @@ export interface SkodaView {
   /** Hela adressen (för title), eller null om platsen är okänd. */
   placeFull: string | null;
   reported: string | null;
+  /** Klimatisering: text bara när den är på ("Klimat på · 21 °C · varm ca 07:45"). */
+  climate: { on: boolean | null; targetC: number | null; text: string | null };
+}
+
+export const MIN_TEMP_C = 16;
+export const MAX_TEMP_C = 29.5;
+
+/** Avrundar till halva grader inom 16–29,5 °C (samma gränser som servern och bryggan). Ogiltigt värde ger 21. */
+export function clampTemp(t: number): number {
+  if (!Number.isFinite(t)) return 21;
+  return Math.min(MAX_TEMP_C, Math.max(MIN_TEMP_C, Math.round(t * 2) / 2));
+}
+
+export const formatTempC = (t: number) => `${String(t).replace(".", ",")}\u00a0°C`;
+
+function climateText(d: SkodaData): string | null {
+  if (!d.climateOn) return null;
+  const parts = ["Klimat på"];
+  if (d.climateTargetC !== null) parts.push(formatTempC(d.climateTargetC));
+  if (d.climateReadyAt) {
+    const at = new Date(d.climateReadyAt);
+    if (!Number.isNaN(at.getTime())) parts.push(`varm ca\u00a0${clock(at)}`);
+  }
+  return parts.join(" · ");
 }
 
 // Fast tidszon: samma text på servern (UTC) och i plattan, så att sidan inte ritas om vid hydrering.
@@ -85,5 +109,6 @@ export function skodaView(d: SkodaData, now: Date): SkodaView {
     place: d.parked ? shortAddress(d.parked) : "Plats okänd",
     placeFull: d.parked,
     reported: reportedText(d.capturedAt, now),
+    climate: { on: d.climateOn, targetC: d.climateTargetC, text: climateText(d) },
   };
 }

@@ -28,6 +28,12 @@ Hemskärmens projekt (`homescreenlenovo`) → Settings → Environment Variables
 - Ta bort `SKODA_USERNAME` och `SKODA_PASSWORD` från hemskärmens projekt om de ligger kvar: de behövs bara i bryggan.
 Gör **Redeploy**. Inställningar visar "Ansluten via brygga", och kortet hämtar data var 15:e minut, eller var 2:a minut när bilen laddar.
 
+## Klimatisering
+Škoda-kortet kan starta och stoppa bilens klimatisering (16–29,5 °C i steg om 0,5). Hemskärmen skickar kommandot till bryggan
+(`POST /api/skoda` med `{"climate":"start","temperatureC":21}` eller `{"climate":"stop"}`), och bryggan loggar in, skickar
+kommandot och läser av bilen i samma inloggning. Högst ett kommando per 30 s. Medan klimatiseringen är på hämtas data var 2:a minut.
+Bilen kan ta en stund att reagera; rätt läge visas senast vid nästa avläsning. Senast vald temperatur sparas i webbläsaren.
+
 ## Risker
 - **Inofficiellt API:** Škoda kan ändra det utan förvarning. Ett konto kan låsas vid många misslyckade inloggningar; bryggan loggar därför in högst
   var 100:e sekund, och hemskärmen frågar var 15:e minut (var 2:a minut under laddning). Fel och loggar visar aldrig inloggningsuppgifter.

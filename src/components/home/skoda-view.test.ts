@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { skodaSchema, type SkodaData } from "@/server/providers/schemas";
-import { shortAddress, skodaView } from "./skoda-view";
+import { clampTemp, shortAddress, skodaView } from "./skoda-view";
 
 const NOW = new Date("2026-11-08T18:00:00+01:00");
 const base: SkodaData = skodaSchema.parse({ rangeKm: 312, levelPct: 78, levelKind: "battery", locked: true, charging: false, parked: "Storgatan 1", doorsOpen: false, windowsOpen: false, trunkOpen: false, bonnetOpen: false });
@@ -98,5 +98,30 @@ describe("shortAddress", () => {
     const r = skodaView({ ...base, parked: "Storgatan 1, 972 31 Luleå" }, NOW);
     expect(r.place).toBe("Storgatan 1, Luleå");
     expect(r.placeFull).toBe("Storgatan 1, 972 31 Luleå");
+  });
+});
+
+describe("skodaView climate", () => {
+  it("on with target and ready time", () => {
+    const c = v({ climateOn: true, climateTargetC: 21, climateReadyAt: "2026-11-08T18:45:00+01:00" }).climate;
+    expect(c).toEqual({ on: true, targetC: 21, text: "Klimat på · 21\u00a0°C · varm ca\u00a018:45" });
+  });
+  it("on without ready time and half degrees with Swedish decimal", () => {
+    expect(v({ climateOn: true, climateTargetC: 21.5 }).climate.text).toBe("Klimat på · 21,5\u00a0°C");
+    expect(v({ climateOn: true }).climate.text).toBe("Klimat på");
+  });
+  it("off or unknown has no text", () => {
+    expect(v({ climateOn: false, climateTargetC: 22 }).climate).toEqual({ on: false, targetC: 22, text: null });
+    expect(v({ climateOn: null }).climate).toEqual({ on: null, targetC: null, text: null });
+  });
+});
+
+describe("clampTemp", () => {
+  it("rounds to half degrees within 16–29.5", () => {
+    expect(clampTemp(15)).toBe(16);
+    expect(clampTemp(30)).toBe(29.5);
+    expect(clampTemp(21.3)).toBe(21.5);
+    expect(clampTemp(21.2)).toBe(21);
+    expect(clampTemp(Number.NaN)).toBe(21);
   });
 });

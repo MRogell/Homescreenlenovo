@@ -169,3 +169,17 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 /* Platsen ligger direkt under rutorna; bara "Uppdaterad" står längst ner, som i övriga kort. */
 .skoda .foot { margin-top: auto; }
 @media (max-width: 560px) { .skoda-checks { grid-template-columns: repeat(4, minmax(0, 1fr)); } .skoda-checks li { flex-direction: column; text-align: center; padding: 8px 4px; gap: 4px; } .skoda-checks li span { align-items: center; } }
+
+/* Škoda: klimatisering. */
+.skoda-climate { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }
+.skoda-climate-head { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 500; font-size: 14px; }
+.skoda-climate.on .skoda-climate-head { color: var(--ok); font-weight: 600; }
+.skoda-climate-head svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.skoda-climate-controls { display: flex; align-items: center; gap: 10px; }
+.skoda-climate-controls .btn { margin-top: 0; flex: 1; min-width: 0; }
+.skoda-temp { display: flex; align-items: center; gap: 4px; }
+.skoda-temp button { width: 48px; height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 600 22px/1 var(--body); cursor: pointer; }
+.skoda-temp button:disabled { opacity: .4; cursor: default; }
+.skoda-temp button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.skoda-temp output { min-width: 6.5ch; text-align: center; font: 600 18px var(--display); font-variant-numeric: tabular-nums; }
+.skoda-climate-error { color: var(--bad); margin: 0; }

@@ -4,6 +4,7 @@ import type { AegData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData 
 import { CardShell } from "./card-shell";
 import { Icon, type IconName } from "./icons";
 import { skodaView } from "./skoda-view";
+import { SkodaClimate } from "./skoda-climate";
 import { SonosRooms } from "./sonos-rooms";
 import { AegControls } from "./aeg-controls";
 import { SpotifyControls } from "./spotify-controls";
@@ -38,6 +39,7 @@ export const SkodaCard = ({ state, now }: P) => (
             ))}
           </ul>
         )}
+        <SkodaClimate on={v.climate.on} targetC={v.climate.targetC} text={v.climate.text} />
         <div className="skoda-place">
           <Icon name="pin" />
           <span><span className="addr" title={v.placeFull ?? undefined}>{v.place}</span>{v.reported && <small>{v.reported}</small>}</span>
