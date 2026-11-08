@@ -10,6 +10,7 @@ import { WeatherIcon } from "./weather-icon";
 import { Droplets, Moon, Snowflake, Sun, Sunrise, Sunset, Wind } from "lucide-react";
 import { SonosRooms } from "./sonos-rooms";
 import { AegControls } from "./aeg-controls";
+import { AegProgram } from "./aeg-program";
 import { SpotifyControls } from "./spotify-controls";
 import { SpotifyArt } from "./spotify-art";
 import { SpotifyProgress } from "./spotify-progress";
@@ -94,7 +95,7 @@ export const AegCard = ({ state, now }: P) => (
         {active && d.minutesLeft !== null
           ? <div className="big">{formatMinutes(d.minutesLeft)}<small>kvar</small></div>
           : <div className="big text">{d.stateText}</div>}
-        <div className="mid">{d.appliance}{d.program && <> · <strong>{d.program}</strong></>}{d.phase && active && ` · ${d.phase}`}{d.doneAt && ` · klar ca ${formatClock(d.doneAt)}`}</div>
+        <div className="mid">{d.appliance}{d.program && <> · <AegProgram label={d.program} currentUid={d.programUid} programs={d.programs} canChange={d.connected && (d.state === "READY_TO_START" || d.state === "IDLE") && (d.remoteControl === null || d.remoteControl === "ENABLED")} /></>}{d.phase && active && ` · ${d.phase}`}{d.doneAt && ` · klar ca ${formatClock(d.doneAt)}`}</div>
         {d.connected && <AegControls state={d.state} remoteControl={d.remoteControl} />}
       </>,
     };

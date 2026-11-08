@@ -247,6 +247,40 @@ describe("handleControl aeg", () => {
     expect(f.calls).toEqual(['PUT https://api.developer.electrolux.one/api/v1/appliances/DW1/command {"executeCommand":"PAUSE"}']);
     expect((await db.snapshot.findMany()).map((x) => x.provider).sort()).toEqual(["spotify", "tado"]);
   });
+  describe("program", () => {
+    const progReq = (program: unknown) => ({ ...ok, provider: "aeg", body: { action: "program", program } });
+    const dp = (f: { fetchFn: typeof fetch }, programs: string[] | null = ["ECO", "QUICK_30"]) => ({ ...d(f), getAegPrograms: async () => programs });
+    it("a program from the appliance's own list is sent as a userSelection and the aeg snapshot is cleared", async () => {
+      await db.snapshot.create({ data: { provider: "aeg", payload: {}, fetchedAt: new Date() } });
+      const f = rec(200);
+      expect((await handleControl(progReq("QUICK_30"), dp(f))).status).toBe(204);
+      expect(f.calls).toEqual(['PUT https://api.developer.electrolux.one/api/v1/appliances/DW1/command {"userSelections":{"programUID":"QUICK_30"}}']);
+      expect((await db.snapshot.findMany()).map((x) => x.provider).sort()).toEqual(["spotify", "tado"]);
+    });
+    it("a program that is not in the stored list is 400 and nothing is sent", async () => {
+      const f = rec(200);
+      for (const program of ["GLASS", "../x", "ECO ", "", 5, null]) expect((await handleControl(progReq(program), dp(f))).status, String(program)).toBe(400);
+      expect(f.calls).toHaveLength(0);
+    });
+    it("no stored list yet is 409", async () => {
+      const f = rec(200);
+      const r = await handleControl(progReq("ECO"), dp(f, null));
+      expect(r).toMatchObject({ status: 409, json: { code: "no_programs" } });
+      expect(f.calls).toHaveLength(0);
+    });
+    it("extra fields are 400, session and origin are checked first", async () => {
+      const f = rec(200);
+      expect((await handleControl({ ...progReq("ECO"), body: { action: "program", program: "ECO", x: 1 } }, dp(f))).status).toBe(400);
+      expect((await handleControl({ ...progReq("ECO"), userId: null }, dp(f))).status).toBe(401);
+      expect((await handleControl({ ...progReq("ECO"), origin: "https://ond.example.com" }, dp(f))).status).toBe(403);
+      expect(f.calls).toHaveLength(0);
+    });
+    it("the appliance refusing gives 409 program_locked with Swedish text", async () => {
+      const r = await handleControl(progReq("ECO"), dp(rec(409)));
+      expect(r).toMatchObject({ status: 409, json: { code: "program_locked" } });
+      expect(r.json?.error).toMatch(/Programmet/);
+    });
+  });
   it("the client cannot choose the appliance; extra fields are 400", async () => {
     const f = rec(200);
     for (const body of [{ action: "pause", applianceId: "ANNAN" }, { action: "tvätta" }, {}, { action: "start", extra: 1 }]) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AegControlError, controlAeg } from "./aeg-control";
+import { AegControlError, controlAeg, setAegProgram } from "./aeg-control";
 
 function rec(status: number) {
   const calls: { url: string; method: string; headers: Record<string, string>; body: unknown }[] = [];
@@ -32,6 +32,32 @@ describe("controlAeg", () => {
   it("missing api key gives reauth without calling Electrolux", async () => {
     const f = rec(200);
     const e = (await controlAeg("start", "DW1", { ...deps(f), getApiKey: async () => null }).catch((x) => x)) as AegControlError;
+    expect(e.code).toBe("reauth");
+    expect(f.calls).toHaveLength(0);
+  });
+});
+
+describe("setAegProgram", () => {
+  it("sends the program as a userSelection with token and api key", async () => {
+    const f = rec(200);
+    await setAegProgram("QUICK_30", "DW1", deps(f));
+    expect(f.calls).toEqual([{ url: "https://api.developer.electrolux.one/api/v1/appliances/DW1/command", method: "PUT", headers: expect.objectContaining({ Authorization: "Bearer TOK", "x-api-key": "KEY" }), body: { userSelections: { programUID: "QUICK_30" } } }]);
+  });
+  it("wraps the command for DAM appliances", async () => {
+    const f = rec(200);
+    await setAegProgram("ECO", "1:ABC", deps(f));
+    expect(f.calls[0]!.body).toEqual({ commands: [{ userSelections: { programUID: "ECO" } }] });
+  });
+  it.each([[401, "reauth"], [403, "program_locked"], [406, "program_locked"], [409, "program_locked"], [422, "program_locked"], [429, "rate_limit"], [500, "failed"]])("status %i gives %s", async (status, code) => {
+    const e = (await setAegProgram("ECO", "DW1", deps(rec(status))).catch((x) => x)) as AegControlError;
+    expect(e).toBeInstanceOf(AegControlError);
+    expect(e.code).toBe(code);
+    expect(e.message).not.toContain("TOK");
+    expect(e.message).not.toContain("KEY");
+  });
+  it("missing api key gives reauth without calling Electrolux", async () => {
+    const f = rec(200);
+    const e = (await setAegProgram("ECO", "DW1", { ...deps(f), getApiKey: async () => null }).catch((x) => x)) as AegControlError;
     expect(e.code).toBe("reauth");
     expect(f.calls).toHaveLength(0);
   });

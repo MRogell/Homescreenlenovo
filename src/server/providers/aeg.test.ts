@@ -22,12 +22,12 @@ function setup(routes: Record<string, { status: number; body?: unknown }>, cache
 describe("aeg provider", () => {
   it("finds the dishwasher, caches it and maps a running cycle", async () => {
     const t = setup({ "/appliances": { status: 200, body: APPLIANCES }, "/appliances/DW1/state": { status: 200, body: state({ applianceState: "RUNNING", timeToEnd: 2520, cyclePhase: "MAINWASH", userSelections: { programUID: "ECO" } }) } });
-    expect(await t.p.getSummary()).toEqual({ appliance: "Diskmaskin", state: "RUNNING", stateText: "Pågår", program: "Eco", phase: "Mainwash", minutesLeft: 42, doneAt: new Date(NOW + 2_520_000).toISOString(), connected: true, remoteControl: null });
-    expect(t.calls).toEqual(["/appliances Bearer TOK KEY", "/appliances/DW1/state Bearer TOK KEY"]);
-    expect(t.saved()).toEqual({ id: "DW1", name: "Diskmaskin", fetchedAt: NOW });
+    expect(await t.p.getSummary()).toEqual({ appliance: "Diskmaskin", state: "RUNNING", stateText: "Pågår", program: "Eco", programUid: "ECO", programs: [], phase: "Mainwash", minutesLeft: 42, doneAt: new Date(NOW + 2_520_000).toISOString(), connected: true, remoteControl: null });
+    expect(t.calls).toEqual(["/appliances Bearer TOK KEY", "/appliances/DW1/info Bearer TOK KEY", "/appliances/DW1/state Bearer TOK KEY"]);
+    expect(t.saved()).toEqual({ id: "DW1", name: "Diskmaskin", fetchedAt: NOW }); // /info svarade inte här: ingen programlista sparas, nästa gång försöks det igen
   });
   it("with a fresh cache only the state is fetched", async () => {
-    const t = setup({ "/appliances/DW1/state": { status: 200, body: state({ applianceState: "END_OF_CYCLE", timeToEnd: 0 }) } }, { id: "DW1", name: "Diskmaskin", fetchedAt: NOW - 3_600_000 });
+    const t = setup({ "/appliances/DW1/state": { status: 200, body: state({ applianceState: "END_OF_CYCLE", timeToEnd: 0 }) } }, { id: "DW1", name: "Diskmaskin", fetchedAt: NOW - 3_600_000, programs: ["ECO"] });
     expect(await t.p.getSummary()).toMatchObject({ state: "END_OF_CYCLE", stateText: "Klar", minutesLeft: null, doneAt: null });
     expect(t.calls).toHaveLength(1);
   });
@@ -55,5 +55,30 @@ describe("aeg provider", () => {
     expect((await safeSummary(t.p)).status).toBe("ok");
     expect(t.p.ttlSeconds).toBe(60);
     expect(t.p.id).toBe("aeg");
+  });
+});
+
+describe("aeg provider programs", () => {
+  const INFO = { capabilities: { "userSelections/programUID": { type: "string", values: { ECO: {}, QUICK_30: {}, GLASS: { disabled: true } } } } };
+  const ST = { status: 200, body: state({ applianceState: "READY_TO_START", userSelections: { programUID: "QUICK_30" } }) };
+  it("reads the supported programs from /info once, caches them and reports the current program", async () => {
+    const t = setup({ "/appliances": { status: 200, body: APPLIANCES }, "/appliances/DW1/info": { status: 200, body: INFO }, "/appliances/DW1/state": ST });
+    expect(await t.p.getSummary()).toMatchObject({ programs: ["ECO", "QUICK_30"], programUid: "QUICK_30", program: "Snabb 30" });
+    expect(t.saved()).toEqual({ id: "DW1", name: "Diskmaskin", fetchedAt: NOW, programs: ["ECO", "QUICK_30"] });
+  });
+  it("a fresh cache with programs needs no /info call", async () => {
+    const t = setup({ "/appliances/DW1/state": ST }, { id: "DW1", name: "Diskmaskin", fetchedAt: NOW - 1000, programs: ["ECO"] });
+    expect((await t.p.getSummary()).programs).toEqual(["ECO"]);
+    expect(t.calls).toHaveLength(1);
+  });
+  it("an old cache without programs fetches /info once", async () => {
+    const t = setup({ "/appliances/DW1/info": { status: 200, body: INFO }, "/appliances/DW1/state": ST }, { id: "DW1", name: "Diskmaskin", fetchedAt: NOW - 1000 });
+    expect((await t.p.getSummary()).programs).toEqual(["ECO", "QUICK_30"]);
+    expect(t.calls.map((c) => c.split(" ")[0])).toEqual(["/appliances/DW1/info", "/appliances/DW1/state"]);
+  });
+  it("/info failing does not break the card and is retried next time", async () => {
+    const t = setup({ "/appliances": { status: 200, body: APPLIANCES }, "/appliances/DW1/info": { status: 500 }, "/appliances/DW1/state": ST });
+    expect((await t.p.getSummary()).programs).toEqual([]);
+    expect(t.saved()).toEqual({ id: "DW1", name: "Diskmaskin", fetchedAt: NOW });
   });
 });

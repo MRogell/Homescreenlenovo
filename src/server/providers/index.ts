@@ -55,7 +55,8 @@ const aeg = createAegProvider({
   loadCache: async () => {
     const row = await db.connection.findFirst({ where: { provider: "aeg", status: "ok" }, select: { settings: true } });
     const c = (row?.settings as { appliance?: AegCache } | null)?.appliance;
-    return c && typeof c.id === "string" && typeof c.name === "string" && typeof c.fetchedAt === "number" ? c : null;
+    if (!c || typeof c.id !== "string" || typeof c.name !== "string" || typeof c.fetchedAt !== "number") return null;
+    return { ...c, programs: Array.isArray(c.programs) ? c.programs.filter((p): p is string => typeof p === "string") : undefined };
   },
   saveCache: (appliance) => updateSettings("aeg", { appliance }),
 });

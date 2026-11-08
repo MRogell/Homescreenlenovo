@@ -1,4 +1,4 @@
-import { aegStateText, programName } from "@/lib/aeg";
+import { aegStateText, parsePrograms, programLabel, programName } from "@/lib/aeg";
 import { AEG_API } from "@/lib/aeg-auth";
 import { aegSchema, type AegData } from "./schemas";
 import type { Provider } from "./types";
@@ -10,6 +10,8 @@ export interface AegCache {
   id: string;
   name: string;
   fetchedAt: number;
+  /** Programmen maskinen stöder (ur `/info`). Saknas = inte hämtade än. */
+  programs?: string[];
 }
 
 export interface AegDeps {
@@ -42,14 +44,33 @@ export function createAegProvider(deps: AegDeps): Provider<AegData> {
     }
   }
 
+  /** Programlistan är en extra: misslyckas hämtningen visas kortet ändå, och nästa gång försöks det igen. */
+  async function programsOf(id: string, token: string, apiKey: string): Promise<string[] | null> {
+    try {
+      return parsePrograms(await get(`/appliances/${encodeURIComponent(id)}/info`, token, apiKey));
+    } catch {
+      return null;
+    }
+  }
+
   async function appliance(token: string, apiKey: string): Promise<AegCache> {
     const cached = await deps.loadCache();
-    if (cached && now() - cached.fetchedAt < CACHE_MAX_AGE_MS) return cached;
+    if (cached && now() - cached.fetchedAt < CACHE_MAX_AGE_MS) {
+      if (cached.programs) return cached;
+      // Äldre cache utan programlista: hämta den en gång.
+      const programs = await programsOf(cached.id, token, apiKey);
+      if (!programs) return cached;
+      const upgraded = { ...cached, programs };
+      await deps.saveCache(upgraded);
+      return upgraded;
+    }
     const list = await get("/appliances", token, apiKey);
     const items = (Array.isArray(list) ? list : []).map(obj).filter((a): a is Json => !!a && !!str(a.applianceId));
     const chosen = items.find((a) => a.applianceType === "DW") ?? items[0];
     if (!chosen) throw new Error("Hittar ingen AEG-apparat på kontot");
-    const fresh = { id: String(chosen.applianceId), name: str(chosen.applianceName) ?? "AEG", fetchedAt: now() };
+    const id = String(chosen.applianceId);
+    const programs = await programsOf(id, token, apiKey);
+    const fresh: AegCache = { id, name: str(chosen.applianceName) ?? "AEG", fetchedAt: now(), ...(programs ? { programs } : {}) };
     await deps.saveCache(fresh);
     return fresh;
   }
@@ -72,7 +93,9 @@ export function createAegProvider(deps: AegDeps): Provider<AegData> {
         appliance: a.name,
         state,
         stateText: aegStateText(state),
-        program: programName(str(obj(reported.userSelections)?.programUID)),
+        program: programLabel(str(obj(reported.userSelections)?.programUID)),
+        programUid: str(obj(reported.userSelections)?.programUID) ?? null,
+        programs: a.programs ?? [],
         phase: programName(str(reported.cyclePhase)),
         minutesLeft: active && seconds !== null ? Math.round(seconds / 60) : null,
         doneAt: active && seconds !== null ? new Date(now() + seconds * 1000).toISOString() : null,

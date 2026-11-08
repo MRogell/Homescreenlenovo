@@ -61,6 +61,9 @@ export const aegSchema = z.object({
   connected: z.boolean(),
   /** Electrolux `remoteControl`, t.ex. "ENABLED" (fjärrstart tillåten). Null om okänt. */
   remoteControl: z.string().nullable(),
+  /** Valt program (Electrolux-id, t.ex. "ECO") och programmen maskinen stöder. Valfria för äldre cache. */
+  programUid: z.string().nullable().default(null),
+  programs: z.array(z.string()).default([]),
 });
 
 export type SkodaData = z.infer<typeof skodaSchema>;

@@ -6,7 +6,7 @@ import { getAccessToken, ReauthRequired } from "./connections";
 import { db as defaultDb } from "./db";
 import { getSpotifyDefaultDevice, type DefaultDevice } from "./spotify-prefs";
 import { controlSonos, moveSonos, setSonosVolume, SONOS_ACTIONS, SonosControlError, type SonosAction, type SonosErrorCode } from "./providers/sonos-control";
-import { AEG_ACTIONS, AegControlError, controlAeg, type AegAction, type AegErrorCode } from "./providers/aeg-control";
+import { AEG_ACTIONS, AegControlError, controlAeg, setAegProgram, type AegAction, type AegErrorCode } from "./providers/aeg-control";
 import { getAegApiKey } from "./aeg-connect";
 import { getEnv } from "@/lib/env";
 import { skodaConfigFromEnv } from "./providers/skoda-config";
@@ -38,6 +38,8 @@ export interface ControlFlowDeps {
   getApiKey?: () => Promise<string | null>;
   /** AEG: apparaten tas från servern (sparad vid senaste hämtning), aldrig från anroparen. */
   getAegApplianceId?: () => Promise<string | null>;
+  /** AEG: programmen maskinen stöder (sparade vid senaste hämtning). Programval kontrolleras mot den, aldrig mot klientens ord. */
+  getAegPrograms?: () => Promise<string[] | null>;
   /** Škoda: bryggans adress och token (standard: från miljön). */
   skodaConfig?: () => SkodaBridgeConfig | null;
 }
@@ -83,8 +85,17 @@ async function handleSonos(body: unknown, deps: ControlFlowDeps): Promise<Contro
   return { status: 204 };
 }
 
-const aegBody = z.object({ action: z.enum(AEG_ACTIONS as unknown as [AegAction, ...AegAction[]]) }).strict();
-const AEG_STATUS: Record<AegErrorCode, number> = { reauth: 409, not_allowed: 409, rate_limit: 429, failed: 502 };
+const aegBody = z.union([
+  z.object({ action: z.enum(AEG_ACTIONS as unknown as [AegAction, ...AegAction[]]) }).strict(),
+  z.object({ action: z.literal("program"), program: z.string().regex(/^[A-Za-z0-9_]{1,64}$/) }).strict(),
+]);
+const AEG_STATUS: Record<AegErrorCode, number> = { reauth: 409, not_allowed: 409, program_locked: 409, rate_limit: 429, failed: 502 };
+
+async function storedAegPrograms(db: PrismaClient): Promise<string[] | null> {
+  const row = await db.connection.findFirst({ where: { provider: "aeg", status: "ok" }, select: { settings: true } });
+  const list = (row?.settings as { appliance?: { programs?: unknown } } | null)?.appliance?.programs;
+  return Array.isArray(list) ? list.filter((p): p is string => typeof p === "string") : null;
+}
 
 async function storedAegApplianceId(db: PrismaClient): Promise<string | null> {
   const row = await db.connection.findFirst({ where: { provider: "aeg", status: "ok" }, select: { settings: true } });
@@ -99,8 +110,16 @@ async function handleAeg(body: unknown, deps: ControlFlowDeps): Promise<ControlR
   const db = deps.db ?? defaultDb;
   const applianceId = await (deps.getAegApplianceId ?? (() => storedAegApplianceId(db)))();
   if (!applianceId) return { status: 409, json: { error: "Diskmaskinen är inte hämtad än. Vänta på nästa uppdatering.", code: "no_appliance" } };
+  const aeg = { getToken: deps.getToken ?? (() => getAccessToken("aeg")), getApiKey: deps.getApiKey ?? (() => getAegApiKey(db)), fetchFn: deps.fetchFn };
   try {
-    await controlAeg(parsed.data.action, applianceId, { getToken: deps.getToken ?? (() => getAccessToken("aeg")), getApiKey: deps.getApiKey ?? (() => getAegApiKey(db)), fetchFn: deps.fetchFn });
+    if (parsed.data.action === "program") {
+      const programs = await (deps.getAegPrograms ?? (() => storedAegPrograms(db)))();
+      if (!programs) return { status: 409, json: { error: "Programlistan är inte hämtad än. Vänta på nästa uppdatering.", code: "no_programs" } };
+      if (!programs.includes(parsed.data.program)) return { status: 400, json: { error: "Ogiltigt program", code: "invalid" } };
+      await setAegProgram(parsed.data.program, applianceId, aeg);
+    } else {
+      await controlAeg(parsed.data.action, applianceId, aeg);
+    }
   } catch (e) {
     const err = e instanceof ReauthRequired ? new AegControlError("reauth") : e instanceof AegControlError ? e : new AegControlError("failed");
     return { status: AEG_STATUS[err.code], json: { error: err.message, code: err.code } };
