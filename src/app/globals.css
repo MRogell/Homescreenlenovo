@@ -174,6 +174,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .skoda-climate { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }
 .skoda-climate-head { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 500; font-size: 14px; }
 .skoda-climate.on .skoda-climate-head { color: var(--ok); font-weight: 600; }
+.skoda-climate.pending .skoda-climate-head { color: var(--warn); font-weight: 600; }
 .skoda-climate-head svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .skoda-climate-controls { display: flex; align-items: center; gap: 10px; }
 .skoda-climate-controls .btn { margin-top: 0; flex: 1; min-width: 0; }

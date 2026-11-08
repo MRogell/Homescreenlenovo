@@ -104,15 +104,14 @@ describe("shortAddress", () => {
 describe("skodaView climate", () => {
   it("on with target and ready time", () => {
     const c = v({ climateOn: true, climateTargetC: 21, climateReadyAt: "2026-11-08T18:45:00+01:00" }).climate;
-    expect(c).toEqual({ on: true, targetC: 21, text: "Klimat på · 21\u00a0°C · varm ca\u00a018:45" });
+    expect(c).toEqual({ on: true, targetC: 21, text: "Klimat på · 21\u00a0°C · varm ca\u00a018:45", pending: false });
   });
   it("on without ready time and half degrees with Swedish decimal", () => {
     expect(v({ climateOn: true, climateTargetC: 21.5 }).climate.text).toBe("Klimat på · 21,5\u00a0°C");
     expect(v({ climateOn: true }).climate.text).toBe("Klimat på");
   });
-  it("off or unknown has no text", () => {
-    expect(v({ climateOn: false, climateTargetC: 22 }).climate).toEqual({ on: false, targetC: 22, text: null });
-    expect(v({ climateOn: null }).climate).toEqual({ on: null, targetC: null, text: null });
+  it("off has no text", () => {
+    expect(v({ climateOn: false, climateTargetC: 22 }).climate).toEqual({ on: false, targetC: 22, text: null, pending: false });
   });
 });
 
@@ -123,5 +122,25 @@ describe("clampTemp", () => {
     expect(clampTemp(21.3)).toBe(21.5);
     expect(clampTemp(21.2)).toBe(21);
     expect(clampTemp(Number.NaN)).toBe(21);
+  });
+});
+
+describe("skodaView climate pending and unknown", () => {
+  const at = new Date(NOW.getTime() - 30_000).toISOString();
+  it("start sent but car still reports off shows waiting and counts as on", () => {
+    expect(v({ climateOn: false, climateTargetC: 22, climateRequested: { action: "start", at } }).climate).toEqual({ on: true, targetC: 22, text: "Skickat · väntar på bilen", pending: true });
+  });
+  it("stop sent but car still reports on shows waiting and counts as off", () => {
+    expect(v({ climateOn: true, climateTargetC: 22, climateRequested: { action: "stop", at } }).climate).toMatchObject({ on: false, text: "Stoppar · väntar på bilen", pending: true });
+  });
+  it("request older than 10 minutes is ignored", () => {
+    const old = new Date(NOW.getTime() - 11 * 60_000).toISOString();
+    expect(v({ climateOn: false, climateRequested: { action: "start", at: old } }).climate).toMatchObject({ on: false, pending: false, text: null });
+  });
+  it("request the car already follows is not pending", () => {
+    expect(v({ climateOn: true, climateTargetC: 21, climateRequested: { action: "start", at } }).climate).toMatchObject({ on: true, pending: false, text: "Klimat på · 21\u00a0°C" });
+  });
+  it("unknown state says so instead of looking off", () => {
+    expect(v({ climateOn: null }).climate).toMatchObject({ on: null, pending: false, text: "Klimat · läge okänt" });
   });
 });

@@ -21,6 +21,8 @@ export const skodaSchema = z.object({
   climateTargetC: z.number().min(10).max(35).nullable().default(null),
   /** Beräknad tid då kupén når måltemperaturen (ISO), bara när klimatiseringen är på. */
   climateReadyAt: z.string().nullable().default(null),
+  /** Satt av hemskärmen när ett klimatkommando skickats men bilen ännu inte bekräftat det (bryggan väntar inte på bilen). */
+  climateRequested: z.object({ action: z.enum(["start", "stop"]), at: z.string() }).nullable().default(null),
 });
 export const sonosSchema = z.object({
   groups: z.array(z.object({ id: z.string(), room: z.string(), members: z.array(z.string()), playing: z.boolean(), title: z.string(), artist: z.string(), volume: z.number().nullable() })),

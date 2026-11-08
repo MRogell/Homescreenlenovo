@@ -23,7 +23,7 @@ function storeTemp(t: number) {
 }
 
 /** Starta/stoppa bilens klimatisering med vald temperatur. Ingen bekräftelse: ofarligt och lätt att stoppa. */
-export function SkodaClimate({ on, targetC, text }: { on: boolean | null; targetC: number | null; text: string | null }) {
+export function SkodaClimate({ on, targetC, text, pending }: { on: boolean | null; targetC: number | null; text: string | null; pending: boolean }) {
   const refresh = useRefresh();
   // Vald temperatur: det du valt nu, annars senast valda i den här webbläsaren, annars bilens måltemperatur, annars 21.
   const stored = useSyncExternalStore(noSubscribe, readStored, () => null);
@@ -59,7 +59,7 @@ export function SkodaClimate({ on, targetC, text }: { on: boolean | null; target
   }
 
   return (
-    <div className={`skoda-climate${on ? " on" : ""}`}>
+    <div className={`skoda-climate${on && !pending ? " on" : ""}${pending ? " pending" : ""}`}>
       <div className="skoda-climate-head">
         <Icon name="temp" />
         <span>{text ?? "Klimat"}</span>

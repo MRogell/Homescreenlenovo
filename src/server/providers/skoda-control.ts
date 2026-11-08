@@ -38,7 +38,12 @@ export async function sendSkodaClimate(cmd: SkodaClimateCommand, deps: { getConf
     throw new SkodaControlError("failed");
   }
   if (res.status === 429) throw new SkodaControlError("throttled");
-  if (res.status === 401 || res.status === 403 || res.status === 500) throw new SkodaControlError("config");
+  if (res.status === 401 || res.status === 403) throw new SkodaControlError("config");
+  if (res.status === 500) {
+    // Bara bryggans eget "inte konfigurerad" betyder konfigurationsfel; annat 500 (t.ex. en krasch) är ett vanligt fel.
+    const j = (await res.json().catch(() => null)) as { error?: unknown } | null;
+    throw new SkodaControlError(j?.error === "Bryggan är inte konfigurerad" ? "config" : "failed");
+  }
   if (!res.ok) throw new SkodaControlError("failed");
   let json: unknown;
   try {

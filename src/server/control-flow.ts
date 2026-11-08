@@ -120,8 +120,12 @@ async function handleSkoda(body: unknown, deps: ControlFlowDeps): Promise<Contro
     const err = e instanceof SkodaControlError ? e : new SkodaControlError("failed");
     return { status: SKODA_STATUS[err.code], json: { error: err.message, code: err.code } };
   }
-  const db = deps.db ?? defaultDb;
   const fetchedAt = new Date();
+  // Bryggan väntar inte på bilen: stämmer läget inte än, märks kommandot så att kortet visar "väntar på bilen" och hämtar tätare.
+  const wanted = parsed.data.action === "climate_start";
+  if (data.climateOn !== wanted) data = { ...data, climateRequested: { action: wanted ? "start" : "stop", at: fetchedAt.toISOString() } };
+  else data = { ...data, climateRequested: null };
+  const db = deps.db ?? defaultDb;
   await db.$transaction([
     db.snapshot.deleteMany({ where: { provider: "skoda" } }),
     db.snapshot.create({ data: { provider: "skoda", payload: data as never, fetchedAt } }),

@@ -17,6 +17,18 @@ export interface SkodaDeps {
 // Bryggan loggar in hos Škoda vid behov, vilket kan ta flera sekunder.
 const TIMEOUT_MS = 25_000;
 
+/** Hur länge ett obekräftat klimatkommando räknas som väntande. */
+export const CLIMATE_PENDING_MS = 10 * 60_000;
+
+/** Sant när ett klimatkommando skickats nyligen och bilens rapporterade läge ännu inte stämmer med det. */
+export function climatePending(d: SkodaData, now: Date): boolean {
+  const r = d.climateRequested;
+  if (!r) return false;
+  const age = now.getTime() - new Date(r.at).getTime();
+  if (!(age >= 0 && age < CLIMATE_PENDING_MS)) return false;
+  return r.action === "start" ? d.climateOn !== true : d.climateOn !== false;
+}
+
 export function createSkodaProvider(deps: SkodaDeps): Provider<SkodaData> {
   const fetchFn = deps.fetchFn ?? fetch;
   return {
@@ -24,7 +36,7 @@ export function createSkodaProvider(deps: SkodaDeps): Provider<SkodaData> {
     // Låg frekvens skyddar Škoda-kontot mot för många inloggningar.
     // Var 15:e minut normalt, var 2:a minut under laddning eller klimatisering (läget ändras snabbt). Bryggan loggar in högst var 100:e sekund.
     ttlSeconds: 900,
-    ttlFor: (d) => (d.charging || d.climateOn ? 120 : 900),
+    ttlFor: (d) => (d.charging || d.climateOn || climatePending(d, new Date()) ? 120 : 900),
     timeoutMs: TIMEOUT_MS,
     schema: skodaSchema,
     isConnected: async () => deps.getConfig() !== null,

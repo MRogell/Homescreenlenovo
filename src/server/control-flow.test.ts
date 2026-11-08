@@ -301,6 +301,18 @@ describe("handleControl skoda", () => {
     expect(rows).toHaveLength(1);
     expect((rows[0]?.payload as { climateOn: boolean }).climateOn).toBe(true);
   });
+  it("start that the car has not confirmed yet is stored with a pending marker", async () => {
+    const x = bridge(200, { ...SUMMARY, climateOn: false });
+    const r = await handleControl(req, x.d);
+    const data = (r.json?.state as { data: { climateRequested: { action: string; at: string } | null } }).data;
+    expect(data.climateRequested?.action).toBe("start");
+    const rows = await db.snapshot.findMany({ where: { provider: "skoda" } });
+    expect((rows[0]?.payload as { climateRequested: { action: string } }).climateRequested.action).toBe("start");
+  });
+  it("a command the car already follows stores no marker", async () => {
+    const r = await handleControl(req, bridge(200).d);
+    expect((r.json?.state as { data: { climateRequested: unknown } }).data.climateRequested).toBeNull();
+  });
   it("bridge failure leaves the snapshot untouched and returns 502 failed", async () => {
     const x = bridge(502, { error: "x" });
     const r = await handleControl({ ...req, body: { action: "climate_stop" } }, x.d);

@@ -39,7 +39,7 @@ export const SkodaCard = ({ state, now }: P) => (
             ))}
           </ul>
         )}
-        <SkodaClimate on={v.climate.on} targetC={v.climate.targetC} text={v.climate.text} />
+        <SkodaClimate on={v.climate.on} targetC={v.climate.targetC} text={v.climate.text} pending={v.climate.pending} />
         <div className="skoda-place">
           <Icon name="pin" />
           <span><span className="addr" title={v.placeFull ?? undefined}>{v.place}</span>{v.reported && <small>{v.reported}</small>}</span>

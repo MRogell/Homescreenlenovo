@@ -1,4 +1,5 @@
 import type { SkodaData } from "@/server/providers/schemas";
+import { climatePending } from "@/server/providers/skoda";
 
 export type Tone = "ok" | "warn" | "bad";
 export interface SkodaCheck { label: string; value: string; tone: Tone }
@@ -17,7 +18,7 @@ export interface SkodaView {
   placeFull: string | null;
   reported: string | null;
   /** Klimatisering: text bara när den är på ("Klimat på · 21 °C · varm ca 07:45"). */
-  climate: { on: boolean | null; targetC: number | null; text: string | null };
+  climate: { on: boolean | null; targetC: number | null; text: string | null; pending: boolean };
 }
 
 export const MIN_TEMP_C = 16;
@@ -30,6 +31,15 @@ export function clampTemp(t: number): number {
 }
 
 export const formatTempC = (t: number) => `${String(t).replace(".", ",")}\u00a0°C`;
+
+function climateView(d: SkodaData, now: Date): SkodaView["climate"] {
+  if (climatePending(d, now)) {
+    const start = d.climateRequested!.action === "start";
+    return { on: start, targetC: d.climateTargetC, text: start ? "Skickat · väntar på bilen" : "Stoppar · väntar på bilen", pending: true };
+  }
+  const text = d.climateOn === null ? "Klimat · läge okänt" : climateText(d);
+  return { on: d.climateOn, targetC: d.climateTargetC, text, pending: false };
+}
 
 function climateText(d: SkodaData): string | null {
   if (!d.climateOn) return null;
@@ -109,6 +119,6 @@ export function skodaView(d: SkodaData, now: Date): SkodaView {
     place: d.parked ? shortAddress(d.parked) : "Plats okänd",
     placeFull: d.parked,
     reported: reportedText(d.capturedAt, now),
-    climate: { on: d.climateOn, targetC: d.climateTargetC, text: climateText(d) },
+    climate: climateView(d, now),
   };
 }

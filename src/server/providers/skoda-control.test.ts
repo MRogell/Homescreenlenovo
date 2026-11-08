@@ -44,8 +44,9 @@ describe("sendSkodaClimate", () => {
     expect(await code(sendSkodaClimate({ action: "climate_stop" }, { getConfig: () => null, fetchFn: f.fetchFn }))).toBe("config");
     expect(f.calls).toHaveLength(0);
   });
-  it("401 and 500 from the bridge are config", async () => {
+  it("401 and the bridge's own misconfigured 500 are config; any other 500 (crash) is failed", async () => {
     expect(await code(sendSkodaClimate({ action: "climate_stop" }, { getConfig: () => CFG, fetchFn: fake(401, {}).fetchFn }))).toBe("config");
-    expect(await code(sendSkodaClimate({ action: "climate_stop" }, { getConfig: () => CFG, fetchFn: fake(500, {}).fetchFn }))).toBe("config");
+    expect(await code(sendSkodaClimate({ action: "climate_stop" }, { getConfig: () => CFG, fetchFn: fake(500, { error: "Bryggan är inte konfigurerad" }).fetchFn }))).toBe("config");
+    expect(await code(sendSkodaClimate({ action: "climate_stop" }, { getConfig: () => CFG, fetchFn: fake(500, "FUNCTION_INVOCATION_FAILED").fetchFn }))).toBe("failed");
   });
 });
