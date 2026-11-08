@@ -211,7 +211,7 @@ describe("restricted devices", () => {
     })();
     const e = (await transferSpotify("B", true, { getToken: async () => "TOK", fetchFn: f.fn }).catch((x) => x)) as ControlError;
     expect(e.code).toBe("restricted_device");
-    expect(e.message).toMatch(/Spotify-appen/);
+    expect(e.message).toMatch(/Välj en annan enhet/);
   });
   it("the automatic fallback for play still ignores restricted devices", async () => {
     const calls: string[] = [];
@@ -255,9 +255,13 @@ describe("failure details are visible (never the token)", () => {
     expect((await fail(429, {})()).message).not.toMatch(/429/);
   });
   it("transfer failures show details too", async () => {
-    const fn = (async () => new Response(JSON.stringify({ error: { status: 404, message: "Device not found", reason: "UNKNOWN" } }), { status: 404 })) as unknown as typeof fetch;
+    const fn = (async () => new Response(JSON.stringify({ error: { status: 400, message: "Bad device", reason: "UNKNOWN" } }), { status: 400 })) as unknown as typeof fetch;
     const e = (await transferSpotify("B", true, { getToken: async () => "TOK", fetchFn: fn }).catch((x) => x)) as ControlError;
-    expect(e.message).toContain("Device not found");
+    expect(e.message).toContain("Bad device");
+  });
+  it("transfer to a device Spotify cannot find gives device_offline", async () => {
+    const fn = (async () => new Response(JSON.stringify({ error: { status: 404, message: "Device not found" } }), { status: 404 })) as unknown as typeof fetch;
+    expect(((await transferSpotify("B", true, { getToken: async () => "TOK", fetchFn: fn }).catch((x) => x)) as ControlError).code).toBe("device_offline");
   });
 });
 
@@ -297,5 +301,14 @@ describe("setSpotifyVolume", () => {
   it("VOLUME_CONTROL_DISALLOW gives a clear message", async () => {
     const e = (await setSpotifyVolume(50, { getToken: async () => "TOK", fetchFn: rec(403, { error: { reason: "VOLUME_CONTROL_DISALLOW", message: "Cannot control device volume" } }).fn }).catch((x) => x)) as ControlError;
     expect(e.code).toBe("volume_disallowed");
+  });
+});
+
+describe("transfer to a device that does not answer", () => {
+  it.each([500, 502, 503, 404])("status %i gives device_offline", async (status) => {
+    const fetchFn = (async () => new Response(JSON.stringify({ error: { status, message: "Server error." } }), { status })) as unknown as typeof fetch;
+    const e = await transferSpotify("D1", true, { getToken: async () => "TOK", fetchFn }).catch((x) => x);
+    expect(e).toBeInstanceOf(ControlError);
+    expect(e.code).toBe("device_offline");
   });
 });

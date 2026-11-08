@@ -41,6 +41,8 @@ export type DeviceItem = {
   available: boolean;
   spotifyId?: string;
   playerId?: string;
+  /** Rummets Sonos-grupp: startas via Sonos när Spotify inte ser rummet. */
+  sonosGroupId?: string;
 };
 
 const norm = (s: string) => s.trim().toLocaleLowerCase("sv");
@@ -71,13 +73,14 @@ export function buildDeviceList(spotify: SpotifyDeviceInfo[], sonos: SonosInfo |
       continue;
     }
     roomKeys.add(k);
-    rooms.push({ key: `sonos:${p.id}`, name, kind: "sonos", type: "Sonos", active: !!currentSonosGroupId && p.groupId === currentSonosGroupId, available: !!currentSonosGroupId, playerId: p.id });
+    rooms.push({ key: `sonos:${p.id}`, name, kind: "sonos", type: "Sonos", active: !!currentSonosGroupId && p.groupId === currentSonosGroupId, available: !!currentSonosGroupId || !!p.groupId, playerId: p.id, ...(p.groupId ? { sonosGroupId: p.groupId } : {}) });
   }
   const own: DeviceItem[] = [];
   for (const d of spotify) {
     const room = rooms.find((r) => norm(r.name) === norm(d.name) || norm(r.name) === norm(roomName(d.name)));
     if (room) {
-      if (!d.restricted && !room.available) { room.available = true; room.spotifyId = d.id; }
+      // Spotify kan flytta musiken hit direkt: då används Spotify i stället för att starta rummets egen kö.
+      if (!d.restricted && !currentSonosGroupId) { room.available = true; room.spotifyId = d.id; delete room.sonosGroupId; }
       if (d.active && !currentSonosGroupId) room.active = true;
       continue;
     }

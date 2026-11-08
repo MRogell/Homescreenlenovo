@@ -72,14 +72,17 @@ describe("buildDeviceList", () => {
     ]);
     expect(list.find((d) => d.name === "Vardagsrum")?.playerId).toBe("PV1");
   });
-  it("playing elsewhere: a room is only reachable if Spotify sees it unrestricted", () => {
+  it("playing elsewhere: a room Spotify sees is moved by Spotify, other rooms are started by Sonos", () => {
     const list = buildDeviceList([{ id: "S1", name: "WWMIRO", type: "Computer", active: true }, { id: "S4", name: "Barnrum", type: "Speaker", active: false }], sonos, null);
-    expect(list.map((d) => [d.name, d.kind, d.active, d.available, d.spotifyId ?? null])).toEqual([
-      ["WWMIRO", "spotify", true, true, "S1"],
-      ["Kök", "sonos", false, false, null],
-      ["Vardagsrum", "sonos", false, false, null],
-      ["Barnrum", "sonos", false, true, "S4"],
+    expect(list.map((d) => [d.name, d.kind, d.active, d.available, d.spotifyId ?? null, d.sonosGroupId ?? null])).toEqual([
+      ["WWMIRO", "spotify", true, true, "S1", null],
+      ["Kök", "sonos", false, true, null, "GK"],
+      ["Vardagsrum", "sonos", false, true, null, "GV"],
+      ["Barnrum", "sonos", false, true, "S4", null],
     ]);
+  });
+  it("a room without a group that Spotify cannot see is not selectable", () => {
+    expect(buildDeviceList([], sonos, null).find((d) => d.name === "Barnrum")).toMatchObject({ available: false });
   });
   it("without Sonos it is just the Spotify list", () => {
     expect(buildDeviceList(spotify, null, null).map((d) => d.name)).toEqual(["WWMIRO", "iPhone", "Kök"]);

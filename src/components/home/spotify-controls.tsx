@@ -92,6 +92,15 @@ export function SpotifyControls({ playing, device, supportsVolume = false, volum
     }, 400);
   }
 
+  // Ingen aktiv enhet: spela öppnar enhetslistan (Spotify-enheter och alla Sonos-rum) i stället för att gissa.
+  const chooseAndPlay = () =>
+    run(async () => {
+      const { ok, data } = await post("/api/control/spotify", { action: "devices" });
+      const devices = ok ? (data?.devices ?? []).filter((d) => !d.restricted) : [];
+      if (!devices.length && !sonos?.players.length) return setError(ok ? "Inga enheter hittades. Öppna Spotify på den enhet du vill använda." : data?.error ?? "Det gick inte att hämta enheter.");
+      setPicker({ mode: "choose", devices });
+    });
+
   const send = (action: Action) =>
     run(async () => {
       if (action === "play" || action === "pause") setOptimistic(action === "play");
@@ -115,13 +124,16 @@ export function SpotifyControls({ playing, device, supportsVolume = false, volum
   const moveTo = (d: DeviceItem) =>
     run(async () => {
       // Mellan Sonos-rum: Sonos flyttar musiken. Annars Spotify (med det VERKLIGA läget; vid "ingen aktiv enhet" ville användaren spela).
+      // Sonos-rum som Spotify inte ser: Sonos startar rummet (det som senast spelades där).
       const res = d.kind === "sonos" && sonosGroup && d.playerId
         ? await post("/api/control/sonos", { action: "move", fromGroupId: sonosGroup.id, toPlayerId: d.playerId })
         : d.spotifyId
           ? await post("/api/control/spotify", { action: "transfer", deviceId: d.spotifyId, play: picker?.mode === "choose" ? true : playing })
-          : { ok: false, data: null };
+          : d.sonosGroupId
+            ? await post("/api/control/sonos", { action: "play", groupId: d.sonosGroupId })
+            : { ok: false, data: null };
       if (res.ok) return done();
-      setError(res.data?.error ?? "Det gick inte att byta enhet.");
+      setError(res.data?.code === "device_offline" ? `${d.name} svarar inte. Öppna Spotify där och försök igen.` : res.data?.error ?? "Det gick inte att byta enhet.");
     });
 
   // Listan stängs vid klick utanför eller Escape.
@@ -140,11 +152,11 @@ export function SpotifyControls({ playing, device, supportsVolume = false, volum
   return (
     <div className="controls">
       <div className="controls-row">
-        <button type="button" className="ctl" aria-label="Föregående låt" disabled={busy} onClick={() => send("previous")}><SkipBack aria-hidden="true" /></button>
-        <button type="button" className="ctl main" aria-label={shownPlaying ? "Pausa" : "Spela"} disabled={busy} onClick={() => send(shownPlaying ? "pause" : "play")}>
+        <button type="button" className="ctl" aria-label="Föregående låt" disabled={busy || !device} onClick={() => send("previous")}><SkipBack aria-hidden="true" /></button>
+        <button type="button" className="ctl main" aria-label={shownPlaying ? "Pausa" : device ? "Spela" : "Välj enhet och spela"} disabled={busy} onClick={() => (!device && !shownPlaying ? chooseAndPlay() : send(shownPlaying ? "pause" : "play"))}>
           {shownPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
         </button>
-        <button type="button" className="ctl" aria-label="Nästa låt" disabled={busy} onClick={() => send("next")}><SkipForward aria-hidden="true" /></button>
+        <button type="button" className="ctl" aria-label="Nästa låt" disabled={busy || !device} onClick={() => send("next")}><SkipForward aria-hidden="true" /></button>
       </div>
       {device && canVolume && (
         <label className="volume sp-volume" htmlFor="spotify-volume">

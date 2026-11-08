@@ -5,7 +5,7 @@ const API = "https://api.spotify.com/v1";
 export type SpotifyAction = "play" | "pause" | "next" | "previous";
 export const SPOTIFY_ACTIONS: readonly SpotifyAction[] = ["play", "pause", "next", "previous"];
 
-export type ControlErrorCode = "reauth" | "scope" | "premium" | "no_device" | "choose_device" | "restricted_device" | "not_now" | "volume_disallowed" | "rate_limit" | "failed";
+export type ControlErrorCode = "reauth" | "scope" | "premium" | "no_device" | "device_offline" | "choose_device" | "restricted_device" | "not_now" | "volume_disallowed" | "rate_limit" | "failed";
 
 export interface SpotifyDevice {
   id: string;
@@ -22,9 +22,10 @@ const MESSAGES: Record<ControlErrorCode, string> = {
   scope: "Anslut Spotify igen i Inställningar för att kunna styra uppspelning.",
   premium: "Spotify Premium krävs för att styra uppspelning.",
   no_device: "Spotify hittar ingen enhet. Öppna Spotify-appen på telefonen eller datorn och försök igen.",
+  device_offline: "Enheten svarar inte. Öppna Spotify på den och försök igen.",
   choose_device: "Välj var musiken ska spelas.",
-  restricted_device: "Spotify tillåter inte att den här enheten styrs från andra appar. Styr den i Spotify-appen, eller flytta musiken till en annan enhet med Byt enhet.",
-  not_now: "Spotify tillåter inte det just nu (till exempel är låten redan pausad, eller så finns ingen nästa låt).",
+  restricted_device: "Enheten går inte att styra härifrån. Välj en annan enhet.",
+  not_now: "Det går inte just nu.",
   volume_disallowed: "Spotify tillåter inte volymstyrning av den här enheten. Ändra volymen på enheten.",
   rate_limit: "Spotify begränsar anropen. Försök igen strax.",
   failed: "Spotify kunde inte utföra kommandot.",
@@ -128,7 +129,11 @@ function parseDevices(json: unknown, includeRestricted = false): SpotifyDevice[]
 
 async function transferWith(call: Caller, id: string, play: boolean): Promise<void> {
   const res = await call("PUT", "/me/player", { device_ids: [id], play });
-  if (!res.ok) throw await call.fail(res);
+  if (res.ok) return;
+  // Spotify svarar 404/5xx när enheten sover eller inte längre är nåbar (t.ex. en dator där Spotify stängts).
+  if (res.status >= 500) throw new ControlError("device_offline");
+  if (res.status === 404 && (await errorInfo(res.clone())).reason !== "NO_ACTIVE_DEVICE") throw new ControlError("device_offline");
+  throw await call.fail(res);
 }
 
 /** Alla tillgängliga enheter. Fel visas (till skillnad från reservvägen i controlSpotify, som tyst ger en tom lista). */

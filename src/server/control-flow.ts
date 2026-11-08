@@ -143,7 +143,7 @@ async function handleSkoda(body: unknown, deps: ControlFlowDeps): Promise<Contro
   return { status: 200, json: { state: { status: "ok", data, fetchedAt: fetchedAt.toISOString() } } };
 }
 
-const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, choose_device: 409, restricted_device: 409, not_now: 409, volume_disallowed: 409, premium: 403, rate_limit: 429, failed: 502 };
+const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, device_offline: 409, choose_device: 409, restricted_device: 409, not_now: 409, volume_disallowed: 409, premium: 403, rate_limit: 429, failed: 502 };
 const GENERIC = new ControlError("failed");
 
 /**
