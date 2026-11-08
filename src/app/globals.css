@@ -170,17 +170,33 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .skoda .foot { margin-top: auto; }
 @media (max-width: 560px) { .skoda-checks { grid-template-columns: repeat(4, minmax(0, 1fr)); } .skoda-checks li { flex-direction: column; text-align: center; padding: 8px 4px; gap: 4px; } .skoda-checks li span { align-items: center; } }
 
-/* Škoda: klimatisering. */
-.skoda-climate { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }
-.skoda-climate-head { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 500; font-size: 14px; }
-.skoda-climate.on .skoda-climate-head { color: var(--ok); font-weight: 600; }
-.skoda-climate.pending .skoda-climate-head { color: var(--warn); font-weight: 600; }
-.skoda-climate-head svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-.skoda-climate-controls { display: flex; align-items: center; gap: 10px; }
-.skoda-climate-controls .btn { margin-top: 0; flex: 1; min-width: 0; }
-.skoda-temp { display: flex; align-items: center; gap: 4px; }
-.skoda-temp button { width: 48px; height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 600 22px/1 var(--body); cursor: pointer; }
-.skoda-temp button:disabled { opacity: .4; cursor: default; }
-.skoda-temp button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
-.skoda-temp output { min-width: 6.5ch; text-align: center; font: 600 18px var(--display); font-variant-numeric: tabular-nums; }
-.skoda-climate-error { color: var(--bad); margin: 0; }
+/* Škoda: klimatisering. Båge kallt→varmt med markör, temperatur i mitten, bred rundad knapp. */
+:root { --dial-cold: #6fa8f0; --dial-mid: #b49ad8; --dial-warm: #ef7a6e; }
+.skoda-climate { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 12px 14px; border-radius: 18px; background: var(--surface-2); }
+.skoda-climate.on { background: linear-gradient(180deg, color-mix(in srgb, var(--dial-warm) 14%, var(--surface-2)), var(--surface-2) 70%); }
+.skoda-climate-status { align-self: stretch; display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.skoda-climate.on .skoda-climate-status { color: var(--ok); }
+.skoda-climate.pending .skoda-climate-status { color: var(--warn); }
+.skoda-climate-status svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.skoda-dial { position: relative; width: min(100%, 250px); aspect-ratio: 200 / 172; }
+.skoda-dial svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.skoda-dial .track { fill: none; stroke: url(#skoda-dial-grad); stroke-width: 14; stroke-linecap: round; }
+.skoda-climate:not(.on):not(.pending) .skoda-dial .track { opacity: .75; }
+.skoda-dial .marker { stroke: var(--fg); stroke-width: 3.5; stroke-linecap: round; transition: all .2s ease; }
+.skoda-climate.pending .skoda-dial .marker { animation: skoda-pulse 1.6s ease-in-out infinite; }
+@keyframes skoda-pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .skoda-dial .marker { transition: none; } .skoda-climate.pending .skoda-dial .marker { animation: none; } }
+.skoda-dial-center { position: absolute; inset: 24% 12% auto; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.skoda-dial-center .label { color: var(--muted); font-size: 13px; font-weight: 600; }
+.skoda-dial-value { display: flex; align-items: center; justify-content: center; gap: 2px; width: 100%; }
+.skoda-dial-value output { min-width: 2.6ch; text-align: center; font: 600 clamp(36px, 3.4vw, 44px)/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.skoda-dial-value button { width: 48px; height: 48px; flex: none; border-radius: 50%; border: 0; background: color-mix(in srgb, var(--fg) 8%, transparent); font: 500 26px/1 var(--body); cursor: pointer; display: grid; place-items: center; padding: 0 0 2px; }
+.skoda-dial-value .minus { color: var(--dial-cold); } .skoda-dial-value .plus { color: var(--dial-warm); }
+.skoda-dial-value button:disabled { opacity: .35; cursor: default; }
+.skoda-dial-value button:focus-visible, .skoda-climate-btn:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.skoda-climate-btn { width: 100%; min-height: 48px; margin-top: 2px; border-radius: 99px; font: 600 16px var(--body); cursor: pointer; border: 0; }
+.skoda-climate-btn.start { background: var(--ok); color: #0c1a12; }
+@media (prefers-color-scheme: light) { .skoda-climate-btn.start { color: #fff; } }
+.skoda-climate-btn.stop { background: transparent; color: var(--fg); border: 1.5px solid var(--line); }
+.skoda-climate-btn:disabled { opacity: .7; cursor: default; }
+.skoda-climate-error { color: var(--bad); margin: 0; align-self: stretch; text-align: center; }

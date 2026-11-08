@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { skodaSchema, type SkodaData } from "@/server/providers/schemas";
-import { clampTemp, shortAddress, skodaView } from "./skoda-view";
+import { clampTemp, dialAngle, shortAddress, skodaView } from "./skoda-view";
 
 const NOW = new Date("2026-11-08T18:00:00+01:00");
 const base: SkodaData = skodaSchema.parse({ rangeKm: 312, levelPct: 78, levelKind: "battery", locked: true, charging: false, parked: "Storgatan 1", doorsOpen: false, windowsOpen: false, trunkOpen: false, bonnetOpen: false });
@@ -142,5 +142,15 @@ describe("skodaView climate pending and unknown", () => {
   });
   it("unknown state says so instead of looking off", () => {
     expect(v({ climateOn: null }).climate).toMatchObject({ on: null, pending: false, text: "Klimat · läge okänt" });
+  });
+});
+
+describe("dialAngle", () => {
+  it("maps 16–29.5 °C onto a 270° arc with 0° at the top", () => {
+    expect(dialAngle(16)).toBe(-135);
+    expect(dialAngle(29.5)).toBe(135);
+    expect(dialAngle(22.75)).toBe(0);
+    expect(dialAngle(10)).toBe(-135);
+    expect(dialAngle(40)).toBe(135);
   });
 });

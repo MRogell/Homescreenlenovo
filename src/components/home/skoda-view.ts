@@ -30,6 +30,12 @@ export function clampTemp(t: number): number {
   return Math.min(MAX_TEMP_C, Math.max(MIN_TEMP_C, Math.round(t * 2) / 2));
 }
 
+/** Vinkel på temperaturbågen: 16 °C längst ner till vänster (−135°), 29,5 °C längst ner till höger (135°), 0° rakt upp. */
+export function dialAngle(t: number): number {
+  const f = (Math.min(MAX_TEMP_C, Math.max(MIN_TEMP_C, t)) - MIN_TEMP_C) / (MAX_TEMP_C - MIN_TEMP_C);
+  return Math.round((f * 270 - 135) * 100) / 100;
+}
+
 export const formatTempC = (t: number) => `${String(t).replace(".", ",")}\u00a0°C`;
 
 function climateView(d: SkodaData, now: Date): SkodaView["climate"] {
