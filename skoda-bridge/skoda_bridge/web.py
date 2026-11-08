@@ -9,10 +9,11 @@ from http.server import BaseHTTPRequestHandler
 from typing import Any, Mapping
 
 from skoda_bridge.guard import RateGuard
-from skoda_bridge.handler import BridgeState, Fetch, handle_request
+from skoda_bridge.handler import BridgeState, Fetch, handle_command, handle_request
 
 # Hemskärmen frågar var 2:a minut när bilen laddar, annars var 15:e. Spärren ligger strax under 2 min så att den inte krockar.
 MIN_LOGIN_INTERVAL_S = 100
+MAX_BODY_BYTES = 4096
 
 
 def _now() -> str:
@@ -35,6 +36,22 @@ def build_handler(state: BridgeState, fetch: Fetch, env: Mapping[str, str]) -> t
                 return self._send(404, {"error": "Hittas inte"})
             status, body = asyncio.run(handle_request(self.headers.get("Authorization"), env, state, fetch, _now))
             self._send(status, body)
+
+        def do_POST(self) -> None:  # noqa: N802
+            if self.path.split("?")[0] != "/api/skoda":
+                return self._send(404, {"error": "Hittas inte"})
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = -1
+            if not 0 < length <= MAX_BODY_BYTES:
+                return self._send(400, {"error": "Ogiltigt kommando"})
+            try:
+                body: Any = json.loads(self.rfile.read(length))
+            except (ValueError, UnicodeDecodeError):
+                return self._send(400, {"error": "Ogiltigt kommando"})
+            status, result = asyncio.run(handle_command(self.headers.get("Authorization"), env, state, fetch, _now, body))
+            self._send(status, result)
 
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
             pass  # inga förfrågningsrader i loggen

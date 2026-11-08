@@ -1,4 +1,4 @@
-"""Vercel-funktion: GET /api/skoda. All logik ligger i skoda_bridge/ (testad).
+"""Vercel-funktion: GET /api/skoda (avläsning) och POST /api/skoda (klimatkommando). All logik ligger i skoda_bridge/ (testad).
 
 Vercel kräver en klass som heter `handler` direkt i filen (den läser filen innan den körs), därför definieras den här.
 Kräver Python 3.13 (myskoda). Miljövariabler: SKODA_BRIDGE_TOKEN, SKODA_USERNAME, SKODA_PASSWORD, valfri SKODA_VIN.

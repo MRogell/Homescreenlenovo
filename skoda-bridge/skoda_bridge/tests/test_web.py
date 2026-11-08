@@ -19,7 +19,7 @@ def serve(fetch):
     return srv, f"http://127.0.0.1:{srv.server_address[1]}"
 
 
-async def ok_fetch(email, password, vin):
+async def ok_fetch(email, password, vin, command=None):
     return {"rangeKm": 1, "levelPct": 2, "levelKind": "battery", "locked": None, "charging": False, "parked": None}
 
 
@@ -62,5 +62,54 @@ def test_unknown_path_is_404_without_calling_skoda():
     try:
         assert get(base + "/annat", TOKEN)[0] == 404
         assert calls == []
+    finally:
+        srv.shutdown()
+
+
+def post(url, data, token=TOKEN, ctype="application/json"):
+    req = urllib.request.Request(url, data=data, method="POST", headers={"Authorization": f"Bearer {token}", "Content-Type": ctype})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.status, json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read())
+
+
+def test_post_command_round_trip():
+    seen = []
+
+    async def fetch(email, password, vin, command=None):
+        seen.append(command)
+        return await ok_fetch(email, password, vin)
+
+    srv, base = serve(fetch)
+    try:
+        status, body = post(base + "/api/skoda", json.dumps({"climate": "start", "temperatureC": 21}).encode())
+        assert status == 200 and body["levelPct"] == 2 and seen == [{"climate": "start", "temperatureC": 21.0}]
+    finally:
+        srv.shutdown()
+
+
+def test_post_non_json_is_400():
+    srv, base = serve(ok_fetch)
+    try:
+        assert post(base + "/api/skoda", b"inte json")[0] == 400
+    finally:
+        srv.shutdown()
+
+
+def test_post_body_over_4kb_is_400():
+    srv, base = serve(ok_fetch)
+    try:
+        big = json.dumps({"climate": "stop", "pad": "x" * 5000}).encode()
+        assert post(base + "/api/skoda", big)[0] == 400
+    finally:
+        srv.shutdown()
+
+
+def test_post_other_path_is_404():
+    srv, base = serve(ok_fetch)
+    try:
+        assert post(base + "/api/annat", b"{}")[0] == 404
     finally:
         srv.shutdown()

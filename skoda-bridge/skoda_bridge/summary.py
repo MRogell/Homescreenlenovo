@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import UTC
 from typing import Any
 
+from myskoda.models.air_conditioning import AirConditioningState
 from myskoda.models.charging import ChargingState
 from myskoda.models.common import DoorLockedState, OpenState
 
@@ -35,8 +36,22 @@ def _captured_at(*parts: Any) -> str | None:
     return max(times).isoformat() if times else None
 
 
-def summarize(charging: Any, status: Any, parking: Any, driving_range: Any) -> dict[str, Any]:
-    """Alla fyra argument får vara None (anropet misslyckades eller bilen saknar funktionen)."""
+_CLIMATE_ON = {AirConditioningState.ON, AirConditioningState.HEATING, AirConditioningState.COOLING, AirConditioningState.VENTILATION, AirConditioningState.HEATING_AUXILIARY}
+
+
+def _climate(air: Any) -> dict[str, Any]:
+    """Klimatläge. INVALID eller saknat svar blir None, aldrig "av"."""
+    state = air.state if air is not None else None
+    on = True if state in _CLIMATE_ON else False if state == AirConditioningState.OFF else None
+    target = air.target_temperature.temperature_value if air is not None and air.target_temperature is not None else None
+    ready = air.estimated_date_time_to_reach_target_temperature if on and air is not None else None
+    if ready is not None and ready.tzinfo is None:
+        ready = ready.replace(tzinfo=UTC)
+    return {"climateOn": on, "climateTargetC": target, "climateReadyAt": ready.isoformat() if ready else None}
+
+
+def summarize(charging: Any, status: Any, parking: Any, driving_range: Any, air: Any = None) -> dict[str, Any]:
+    """Alla argument får vara None (anropet misslyckades eller bilen saknar funktionen)."""
     battery = charging.status.battery if charging is not None and charging.status is not None else None
 
     level: int | None = None
@@ -77,5 +92,6 @@ def summarize(charging: Any, status: Any, parking: Any, driving_range: Any) -> d
         "windowsOpen": _open(overall.windows) if overall is not None else None,
         "trunkOpen": _open(detail.trunk) if detail is not None else None,
         "bonnetOpen": _open(detail.bonnet) if detail is not None else None,
-        "capturedAt": _captured_at(status, charging),
+        "capturedAt": _captured_at(status, charging, air),
+        **_climate(air),
     }

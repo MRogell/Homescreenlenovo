@@ -40,3 +40,15 @@ def parking(address="Storgatan 1, Stockholm"):
 
 def driving_range(total=312, fuel_pct=78, engine="electric"):
     return DrivingRange.from_dict({"primaryEngineRange": {"engineType": engine, "currentFuelLevelInPercent": fuel_pct, "remainingRangeInKm": total}, "totalRangeInKm": total, "carType": engine})
+
+
+def air_conditioning(state="OFF", target=21.0, ready_at=None, captured=None):
+    from myskoda.models.air_conditioning import AirConditioning
+    data = {"timers": [], "errors": [], "state": state}
+    if target is not None:
+        data["targetTemperature"] = {"temperatureValue": target, "unitInCar": "CELSIUS"}
+    if ready_at is not None:
+        data["estimatedDateTimeToReachTargetTemperature"] = ready_at
+    if captured is not None:
+        data["carCapturedTimestamp"] = captured
+    return AirConditioning.from_dict(data)

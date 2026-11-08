@@ -1,12 +1,13 @@
 from skoda_bridge.summary import summarize
-from conftest import charging, driving_range, parking, status
+from conftest import air_conditioning, charging, driving_range, parking, status
 
 
 def test_electric_car_full_data():
     r = summarize(charging(), status(), parking(), driving_range())
     assert r == {"rangeKm": 312, "levelPct": 78, "levelKind": "battery", "locked": True, "charging": False, "parked": "Storgatan 1, Stockholm",
                  "chargeMinutesLeft": None, "chargeKw": None, "chargeTargetPct": None,
-                 "doorsOpen": False, "windowsOpen": False, "trunkOpen": False, "bonnetOpen": False, "capturedAt": None}
+                 "doorsOpen": False, "windowsOpen": False, "trunkOpen": False, "bonnetOpen": False, "capturedAt": None,
+                 "climateOn": None, "climateTargetC": None, "climateReadyAt": None}
 
 
 def test_charging_state_sets_charging_flag():
@@ -45,7 +46,7 @@ def test_unknown_lock_state_is_none_not_false():
 
 def test_everything_missing_gives_nulls():
     assert summarize(None, None, None, None) == {"rangeKm": None, "levelPct": None, "levelKind": "fuel", "locked": None, "charging": False, "parked": None,
-                                                 "chargeMinutesLeft": None, "chargeKw": None, "chargeTargetPct": None, "doorsOpen": None, "windowsOpen": None, "trunkOpen": None, "bonnetOpen": None, "capturedAt": None}
+                                                 "chargeMinutesLeft": None, "chargeKw": None, "chargeTargetPct": None, "doorsOpen": None, "windowsOpen": None, "trunkOpen": None, "bonnetOpen": None, "capturedAt": None, "climateOn": None, "climateTargetC": None, "climateReadyAt": None}
 
 
 def test_partial_failure_keeps_the_other_fields():
@@ -86,3 +87,22 @@ def test_captured_at_falls_back_to_charging_timestamp():
     c = charging()
     c.car_captured_timestamp = status(captured="2026-11-08T12:00:00Z").car_captured_timestamp
     assert summarize(c, None, None, None)["capturedAt"].startswith("2026-11-08T12:00:00")
+
+
+def test_climate_states():
+    for st in ("ON", "HEATING", "COOLING", "VENTILATION", "HEATING_AUXILIARY"):
+        assert summarize(None, None, None, None, air_conditioning(st))["climateOn"] is True
+    assert summarize(None, None, None, None, air_conditioning("OFF"))["climateOn"] is False
+    assert summarize(None, None, None, None, air_conditioning("INVALID"))["climateOn"] is None
+    assert summarize(None, None, None, None, None)["climateOn"] is None
+
+
+def test_climate_target_and_ready_at():
+    r = summarize(None, None, None, None, air_conditioning("HEATING", target=21.5, ready_at="2026-11-08T06:45:00Z"))
+    assert r["climateTargetC"] == 21.5
+    assert r["climateReadyAt"].startswith("2026-11-08T06:45:00") and r["climateReadyAt"].endswith("+00:00")
+
+
+def test_ready_at_hidden_when_climate_off():
+    r = summarize(None, None, None, None, air_conditioning("OFF", ready_at="2026-11-08T06:45:00Z"))
+    assert r["climateReadyAt"] is None and r["climateTargetC"] == 21.0

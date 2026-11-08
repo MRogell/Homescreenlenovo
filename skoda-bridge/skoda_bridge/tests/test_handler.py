@@ -1,7 +1,7 @@
 import asyncio
 
 from skoda_bridge.guard import RateGuard
-from skoda_bridge.handler import BridgeState, handle_request
+from skoda_bridge.handler import BridgeState, handle_command, handle_request, parse_command
 
 TOKEN = "t" * 40
 ENV = {"SKODA_BRIDGE_TOKEN": TOKEN, "SKODA_USERNAME": "anna@example.com", "SKODA_PASSWORD": "hemligt-lösen-123", "SKODA_VIN": "TMBXXX"}
@@ -14,8 +14,8 @@ class Fetch:
         self.calls = []
         self.result, self.error = result, error
 
-    async def __call__(self, email, password, vin):
-        self.calls.append((email, password, vin))
+    async def __call__(self, email, password, vin, command=None):
+        self.calls.append((email, password, vin) if command is None else (email, password, vin, command))
         if self.error:
             raise self.error
         return dict(self.result)
@@ -133,3 +133,77 @@ def test_misconfigured_reason_names_variable_but_never_value():
     (_, body), _, _ = run(env={k: v for k, v in ENV.items() if k != "SKODA_PASSWORD"})
     assert body["reason"] == "SKODA_PASSWORD saknas"
     assert ENV["SKODA_USERNAME"] not in str(body)
+
+
+def cmd(body, auth=AUTH, env=ENV, state=None, fetch=None):
+    state = state or BridgeState(RateGuard(100, lambda: 0.0), commands=RateGuard(30, lambda: 0.0))
+    fetch = fetch or Fetch(RESULT)
+    return asyncio.run(handle_command(auth, env, state, fetch, lambda: "2026-11-08T07:00:00+00:00", body)), fetch, state
+
+
+START = {"climate": "start", "temperatureC": 21.5}
+
+
+def test_parse_command_accepts_start_and_stop():
+    assert parse_command(START) == START
+    assert parse_command({"climate": "start", "temperatureC": 16}) == {"climate": "start", "temperatureC": 16.0}
+    assert parse_command({"climate": "stop"}) == {"climate": "stop"}
+
+
+def test_parse_command_rejects():
+    bad = [{"climate": "start", "temperatureC": t} for t in (15.5, 30, 21.3, "21", True, None, float("nan"))]
+    bad += [{"climate": "stop", "x": 1}, {"climate": "start"}, {"climate": "heat", "temperatureC": 21}, [], "stop", None, {"climate": "start", "temperatureC": 21, "x": 1}]
+    for b in bad:
+        assert parse_command(b) is None, b
+
+
+def test_command_passes_command_to_fetch_and_returns_summary():
+    (status, body), fetch, state = cmd(START)
+    assert status == 200 and body == {**RESULT, "fetchedAt": "2026-11-08T07:00:00+00:00"}
+    assert fetch.calls == [("anna@example.com", "hemligt-lösen-123", "TMBXXX", START)]
+    assert state.last == body
+
+
+def test_invalid_command_is_400_without_fetch():
+    (status, body), fetch, _ = cmd({"climate": "start", "temperatureC": 40})
+    assert status == 400 and fetch.calls == [] and body == {"error": "Ogiltigt kommando"}
+
+
+def test_command_unauthorized_401_without_fetch():
+    (status, _), fetch, _ = cmd(START, auth="Bearer fel")
+    assert status == 401 and fetch.calls == []
+
+
+def test_second_command_within_30s_is_429():
+    now = [0.0]
+    state = BridgeState(RateGuard(100, lambda: now[0]), commands=RateGuard(30, lambda: now[0]))
+    fetch = Fetch(RESULT)
+    cmd(START, state=state, fetch=fetch)
+    now[0] = 29.0
+    (status, body), _, _ = cmd({"climate": "stop"}, state=state, fetch=fetch)
+    assert status == 429 and body == {"error": "Vänta en halv minut och försök igen"} and len(fetch.calls) == 1
+    now[0] = 31.0
+    (status, _), _, _ = cmd({"climate": "stop"}, state=state, fetch=fetch)
+    assert status == 200 and len(fetch.calls) == 2
+
+
+def test_command_allowed_right_after_read():
+    state = BridgeState(RateGuard(100, lambda: 0.0), commands=RateGuard(30, lambda: 0.0))
+    fetch = Fetch(RESULT)
+    asyncio.run(handle_request(AUTH, ENV, state, fetch, lambda: "t"))
+    (status, _), _, _ = cmd(START, state=state, fetch=fetch)
+    assert status == 200 and len(fetch.calls) == 2
+
+
+def test_command_marks_read_guard():
+    state = BridgeState(RateGuard(100, lambda: 0.0), commands=RateGuard(30, lambda: 0.0))
+    fetch = Fetch(RESULT)
+    cmd(START, state=state, fetch=fetch)
+    status, body = asyncio.run(handle_request(AUTH, ENV, state, fetch, lambda: "t"))
+    assert status == 200 and body["fetchedAt"] == "2026-11-08T07:00:00+00:00" and len(fetch.calls) == 1
+
+
+def test_command_failure_is_502_without_secrets():
+    (status, body), _, state = cmd(START, fetch=Fetch(error=RuntimeError("login hemligt-lösen-123 failed")))
+    assert status == 502 and body == {"error": "Bilen tog inte emot kommandot"}
+    assert "hemligt" not in str(body)
