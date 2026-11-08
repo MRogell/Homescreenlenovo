@@ -315,3 +315,38 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .aeg-program-item[aria-current="true"] { border-color: var(--ok); cursor: default; }
 .aeg-program-item small { color: var(--ok); font-weight: 500; font-size: 13px; }
 .aeg-program-item:disabled { opacity: .6; cursor: progress; }
+
+/* Nattläge: dämpar sidan, släpper igenom tryck. */
+.night-veil { position: fixed; inset: 0; z-index: 50; pointer-events: none; background: rgb(0 0 0 / .6); transition: opacity .6s; }
+/* Kugghjul uppe vid klockan: alltid en väg till Inställningar, även om alla kort är dolda. */
+.settings-link { align-self: flex-start; display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; color: var(--muted); border: 1px solid var(--line); background: var(--surface); }
+.settings-link svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.settings-link:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.empty-note { text-align: center; padding: 24px 0; }
+.top-right { display: flex; align-items: flex-start; gap: 16px; }
+@media (max-width: 560px) { .top-right { width: 100%; justify-content: space-between; } }
+
+/* Inställningar: Utseende. Alla tryckytor minst 48 px. */
+.appearance { gap: 12px; }
+.ap-h { font: 600 15px var(--display); color: var(--muted); margin: 8px 0 0; }
+.ap-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ap-cards li { display: flex; align-items: center; gap: 8px; }
+.ap-show { flex: 1; display: flex; align-items: center; gap: 12px; min-height: 48px; cursor: pointer; }
+.ap-show input { width: 44px; height: 26px; accent-color: var(--ok); flex: none; cursor: pointer; }
+.ap-move { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); cursor: pointer; }
+.ap-move svg { width: 20px; height: 20px; }
+.ap-move:disabled { opacity: .35; cursor: default; }
+.ap-move:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.ap-search { display: flex; gap: 8px; }
+.ap-search input { flex: 1; min-width: 0; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); padding: 0 12px; font: 16px var(--body); }
+.ap-search .btn { margin-top: 0; gap: 6px; }
+.ap-search .btn svg { width: 18px; height: 18px; }
+.ap-hits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ap-hits .device { width: 100%; }
+.ap-inline { margin-top: 0; align-self: flex-start; }
+.ap-times { display: flex; gap: 12px; flex-wrap: wrap; }
+.ap-times label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-weight: 500; }
+.ap-times input { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); padding: 0 12px; font: 16px var(--body); }
+.ap-times input:disabled { opacity: .5; }
+.ap-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.ap-foot .btn { margin-top: 0; }

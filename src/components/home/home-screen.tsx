@@ -2,7 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { HomeStates } from "@/server/snapshots";
-import { CARD_ORDER } from "./card-order";
+import { resolveCards, type AppSettings } from "@/lib/settings";
+import { NightVeil } from "./night-veil";
+import { Settings as SettingsIcon } from "lucide-react";
 import { attentionLine } from "./attention";
 import type { SonosInfo } from "./spotify-view";
 import { Clock } from "./clock";
@@ -13,8 +15,9 @@ const POLL_MS = 30_000;
 /** Spotify uppdateras oftare (direkt från Spotify) så att kortet följer vad som spelas utan märkbar fördröjning. */
 const SPOTIFY_POLL_MS = 4_000;
 
-export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initialNow: string }) {
+export function HomeScreen({ initial, initialNow, initialSettings }: { initial: HomeStates; initialNow: string; initialSettings: AppSettings }) {
   const [states, setStates] = useState(initial);
+  const [settings, setSettings] = useState(initialSettings);
   const [now, setNow] = useState(new Date(initialNow));
   const [offline, setOffline] = useState(false);
   const router = useRouter();
@@ -24,8 +27,9 @@ export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initi
       const res = await fetch("/api/home", { cache: "no-store" });
       if (res.status === 401) return router.replace("/logga-in");
       if (!res.ok) throw new Error(String(res.status));
-      const json = (await res.json()) as { states: HomeStates; now: string };
+      const json = (await res.json()) as { states: HomeStates; now: string; settings?: AppSettings };
       setStates(json.states);
+      if (json.settings) setSettings(json.settings);
       setNow(new Date(json.now));
       setOffline(false);
     } catch {
@@ -59,6 +63,7 @@ export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initi
   }, [refresh]);
 
   // Sonos-rummen till Spotify-kortet: knappar och enhetsbyte går via Sonos när musiken spelar där.
+  const visible = resolveCards(settings);
   const sonosState = states.sonos;
   const sonosInfo = sonosState && (sonosState.status === "ok" || sonosState.status === "stale") ? (sonosState.data as SonosInfo) : null;
 
@@ -66,10 +71,14 @@ export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initi
     <RefreshContext.Provider value={refresh}>
     <SpotifyRefreshContext.Provider value={refreshSpotify}>
     <div className="wrap">
-      <header className="top-bar"><Clock note={attentionLine(states)} /></header>
+      <NightVeil night={settings.night} />
+      <header className="top-bar">
+        <Clock note={attentionLine(states)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
+      </header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
+      {visible.length === 0 && <p className="mid empty-note">Alla kort är dolda. Slå på något under Inställningar.</p>}
       <main className="grid">
-        {CARD_ORDER.map((id) => {
+        {visible.map((id) => {
           switch (id) {
             case "weather": return <WeatherCard key={id} state={states.weather} now={now} />;
             case "spotify": return <SpotifyCard key={id} state={states.spotify} now={now} sonos={sonosInfo} />;

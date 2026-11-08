@@ -134,3 +134,15 @@ describe("day and night temperatures from the hourly forecast", () => {
     expect(parseForecast(json).daily[2]).toMatchObject({ dayC: null, nightC: null });
   });
 });
+
+describe("weather provider place", () => {
+  it("accepts an async place (read from settings) and asks for exactly that place", async () => {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string) => { calls.push(url); return new Response(JSON.stringify(url.includes("air-quality") ? AIR : FORECAST), { status: 200 }); }) as unknown as typeof fetch;
+    const p = createWeatherProvider({ getPlace: async () => ({ name: "Umeå", lat: 63.8284, lon: 20.2597 }), fetchFn });
+    expect((await p.getSummary()).place).toBe("Umeå");
+    const f = new URL(calls.find((u) => u.includes("api.open-meteo.com/v1/forecast"))!);
+    expect(f.searchParams.get("latitude")).toBe("63.8284");
+    expect(f.searchParams.get("longitude")).toBe("20.2597");
+  });
+});

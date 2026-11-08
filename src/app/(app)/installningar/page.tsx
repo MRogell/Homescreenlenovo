@@ -12,6 +12,8 @@ import { TadoConnect } from "@/components/tado-connect";
 import { AegConnect } from "@/components/aeg-connect";
 import { getSpotifyDefaultDevice } from "@/server/spotify-prefs";
 import { SignOutButton } from "@/components/sign-out-button";
+import { AppearanceSettings } from "@/components/appearance-settings";
+import { getSettings } from "@/server/settings";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Inställningar" };
@@ -109,6 +111,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           <DiagnoseButton provider="sonos" label="Sonos-anslutningen" />
         </section>
       )}
+      <AppearanceSettings initial={await getSettings()} defaultPlace={getEnv().WEATHER_PLACE} />
       <section className="card" aria-label="Konto">
         <div className="card-head"><span className="name">Konto</span></div>
         <SignOutButton />

@@ -47,3 +47,11 @@ vid fel eller slut kvot väntar appen 10 minuter. Gäller den äldre generatione
 Kortet uppdateras varje minut: läge (Av, Pågår, Klar …), program och tid kvar.
 **Fjärrstyrning:** Starta, Pausa, Återuppta och Stoppa på kortet (Starta och Stoppa kräver ett extra tryck). För att kunna starta härifrån måste
 fjärrstart vara påslaget på diskmaskinen (knapp/inställning på maskinen) och luckan stängd.
+
+## Utseende (inställningar i appen)
+Kortens ordning, vilka kort som visas, väderplats och nattläge sparas i databasen (tabellen `app_setting`) och ändras under Inställningar → Utseende.
+Det kräver inget nytt bygge och inga miljövariabler. Saknas en inställning gäller grundvärdet (standardordning, `WEATHER_PLACE` med flera, nattläge av).
+- **Migrering:** tabellen skapas av `npx prisma migrate deploy`, som körs automatiskt i bygget på Production (`scripts/migrate-on-deploy.mjs`). Preview-bygge rör aldrig databasen.
+- **Väderplats:** sökningen använder Open-Meteos öppna ortssökning (utan nyckel). Miljövariablerna är reserv när ingen plats är vald.
+- **Nattläge:** dämpar bilden med ett mörkt lager efter enhetens klocka. Skärmens riktiga ljusstyrka kan en webbapp inte ändra.
+- **Kugghjulet** uppe vid klockan leder alltid till Inställningar, även om alla kort är dolda.

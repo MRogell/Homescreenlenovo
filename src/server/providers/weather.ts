@@ -14,7 +14,8 @@ export interface WeatherPlace {
 }
 
 export interface WeatherDeps {
-  getPlace: () => WeatherPlace;
+  /** Platsen kan läsas asynkront (sparad i inställningarna). */
+  getPlace: () => WeatherPlace | Promise<WeatherPlace>;
   fetchFn?: typeof fetch;
 }
 
@@ -100,7 +101,7 @@ export function createWeatherProvider(deps: WeatherDeps): Provider<WeatherData> 
     ttlSeconds: 900,
     schema: weatherSchema,
     async getSummary() {
-      const place = deps.getPlace();
+      const place = await deps.getPlace();
       const forecastUrl = new URL(FORECAST);
       forecastUrl.searchParams.set("latitude", String(place.lat));
       forecastUrl.searchParams.set("longitude", String(place.lon));

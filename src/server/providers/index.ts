@@ -1,6 +1,7 @@
 import { getAccessToken, getConnectionStatus } from "../connections";
 import { getEnv } from "@/lib/env";
 import { createSkodaProvider } from "./skoda";
+import { getSettings } from "../settings";
 import { skodaConfigFromEnv } from "./skoda-config";
 import { createSonosProvider } from "./sonos";
 import { createWeatherProvider } from "./weather";
@@ -17,7 +18,10 @@ const spotify = createSpotifyProvider({ getToken: () => getAccessToken("spotify"
 const skoda = createSkodaProvider({ getConfig: () => skodaConfigFromEnv(getEnv()) });
 
 const weather = createWeatherProvider({
-  getPlace: () => {
+  // Ortens namn och koordinater: den ägaren valt i Inställningar, annars miljövariablerna (reserv).
+  getPlace: async () => {
+    const saved = (await getSettings()).place;
+    if (saved) return saved;
     const env = getEnv();
     return { name: env.WEATHER_PLACE, lat: env.WEATHER_LAT, lon: env.WEATHER_LON };
   },

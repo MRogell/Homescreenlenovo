@@ -1,3 +1,5 @@
-/** Kortens ordning på hemskärmen. Fungerande kort först; det som inte fungerar (än) ligger sist. */
-export const CARD_ORDER = ["weather", "skoda", "spotify", "sonos", "aeg", "tado"] as const;
-export type CardId = (typeof CARD_ORDER)[number];
+import { CARD_IDS, type CardId } from "@/lib/settings";
+
+/** Standardordning på hemskärmen. Ägarens egen ordning och dolda kort sparas i inställningarna (lib/settings.ts). */
+export const CARD_ORDER = CARD_IDS;
+export type { CardId };

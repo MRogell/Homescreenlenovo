@@ -109,3 +109,12 @@ model ProviderBackoff {
 
   @@map("provider_backoff")
 }
+
+/// Inställningar som ägaren ändrar i appen (kortordning, väderplats, nattläge). En rad per nyckel; saknas raden gäller grundvärdet.
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@map("app_setting")
+}
