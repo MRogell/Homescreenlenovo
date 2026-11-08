@@ -8,6 +8,12 @@ Etapp 3, första delen. Skrivskyddad: visar bilens status, styr ingenting (ägar
 ## Varför en brygga
 Škoda har inget öppet API. Det finns ett inofficiellt Python-bibliotek, `myskoda`, som loggar in med e-post och lösenord. Biblioteket kräver **Python ≥ 3.13**, och hemskärmen är TypeScript på Vercel. Därför läser appen från en **separat liten tjänst** (`skoda-bridge/`, eget Vercel-projekt eller annan Python-värd) som anropar biblioteket.
 
+## Byggfel i eget projekt: rotorsak (2026-11-08)
+`vercel build` (CLI 65.11.0) lokalt återskapade felet. Utan `functions`-blocket byggdes projektet som statisk webbplats (bara `@vercel/static`); med uttrycklig
+`@vercel/python` kom det verkliga felet: `PYTHON_ENTRYPOINT_NOT_FOUND: Could not find a top-level "app", "application", or "handler"`. Vercel läser filen
+statiskt och känner inte igen `handler = default_handler()`. Rättning: `class handler(...)` direkt i `api/skoda.py`. Bygget skapar då `api/skoda` med
+runtime `python3.13` och tar med `skoda_bridge/` och beroenden (myskoda, aiohttp).
+
 ## Slutlig placering (2026-11-08)
 Bryggan ligger i `skoda-bridge/` som eget Vercel-projekt (Root Directory `skoda-bridge`, Framework Other, Python 3.13 via `.python-version`;
 Vercel stöder 3.12–3.14). Hemskärmen kräver `SKODA_BRIDGE_URL` och `SKODA_BRIDGE_TOKEN`; utan båda visas Škoda som ej ansluten.

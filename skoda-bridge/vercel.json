@@ -1,13 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "regions": [
-    "fra1"
-  ],
+  "regions": ["fra1"],
   "functions": {
-    "api/skoda.py": {
-      "maxDuration": 60,
-      "includeFiles": "skoda_bridge/*.py"
-    }
+    "api/skoda.py": { "maxDuration": 60 }
   }
 }
