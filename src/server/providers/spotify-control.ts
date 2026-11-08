@@ -30,10 +30,19 @@ const MESSAGES: Record<ControlErrorCode, string> = {
 
 /** Fel med en färdig, användarvänlig svensk text. Innehåller aldrig token eller tjänstens svarskropp. */
 export class ControlError extends Error {
-  constructor(public code: ControlErrorCode, public devices?: SpotifyDevice[]) {
-    super(MESSAGES[code]);
+  /** `detail`: teknisk text (status och Spotifys orsak) som läggs efter den vanliga texten, bara för oväntade fel. */
+  constructor(public code: ControlErrorCode, public devices?: SpotifyDevice[], detail?: string) {
+    super(detail ? `${MESSAGES[code]} (${detail})` : MESSAGES[code]);
     this.name = "ControlError";
   }
+}
+
+/** Kort, säker beskrivning av ett Spotify-fel: bara statuskod, orsaksord och en kort felrad. Aldrig token. */
+function describeFailure(status: number, info: { reason?: string; message?: string }, secret: string): string {
+  const clean = (t: string | undefined, max: number) => (t ?? "").split(secret).join("***").replace(/[^\p{L}\p{N} :.,_'-]/gu, " ").replace(/\s+/g, " ").trim().slice(0, max);
+  const reason = clean(info.reason, 40);
+  const message = clean(info.message, 90);
+  return [String(status), reason, message].filter(Boolean).join(", ");
 }
 
 const REQUESTS: Record<SpotifyAction, { method: "PUT" | "POST"; path: string }> = {
@@ -57,7 +66,7 @@ async function errorInfo(res: Response): Promise<{ reason?: string; message?: st
   }
 }
 
-async function toError(res: Response): Promise<ControlError> {
+async function toError(res: Response, secret: string): Promise<ControlError> {
   if (res.status === 401) return new ControlError("reauth");
   if (res.status === 429) return new ControlError("rate_limit");
   const info = await errorInfo(res);
@@ -67,15 +76,18 @@ async function toError(res: Response): Promise<ControlError> {
     if (info.reason === "RESTRICTED_DEVICE") return new ControlError("restricted_device");
     if (/scope/i.test(info.message ?? "")) return new ControlError("scope");
   }
-  return new ControlError("failed");
+  const detail = describeFailure(res.status, info, secret);
+  // Loggas på servern (syns i Vercels loggar): bara status och orsak, aldrig token.
+  console.error(`[spotify] oväntat svar: ${detail}`);
+  return new ControlError("failed", undefined, detail);
 }
 
-type Caller = (method: string, path: string, body?: unknown) => Promise<Response>;
+type Caller = ((method: string, path: string, body?: unknown) => Promise<Response>) & { fail: (res: Response) => Promise<ControlError> };
 
 async function caller(deps: ControlDeps): Promise<Caller> {
   const token = await deps.getToken();
   const fetchFn = deps.fetchFn ?? fetch;
-  return async (method, path, body) => {
+  const call = async (method: string, path: string, body?: unknown) => {
     try {
       return await fetchFn(`${API}${path}`, {
         method,
@@ -87,6 +99,8 @@ async function caller(deps: ControlDeps): Promise<Caller> {
       throw new ControlError("failed");
     }
   };
+  // Felbeskrivningen får aldrig innehålla token, så anropsfunktionen som äger token gör också felet.
+  return Object.assign(call, { fail: (res: Response) => toError(res, token) });
 }
 
 /**
@@ -109,14 +123,14 @@ function parseDevices(json: unknown, includeRestricted = false): SpotifyDevice[]
 
 async function transferWith(call: Caller, id: string, play: boolean): Promise<void> {
   const res = await call("PUT", "/me/player", { device_ids: [id], play });
-  if (!res.ok) throw await toError(res);
+  if (!res.ok) throw await call.fail(res);
 }
 
 /** Alla tillgängliga enheter. Fel visas (till skillnad från reservvägen i controlSpotify, som tyst ger en tom lista). */
 export async function listSpotifyDevices(deps: ControlDeps): Promise<SpotifyDevice[]> {
   const call = await caller(deps);
   const res = await call("GET", "/me/player/devices");
-  if (!res.ok) throw await toError(res);
+  if (!res.ok) throw await call.fail(res);
   try {
     return parseDevices(await res.json(), true);
   } catch {
@@ -148,7 +162,7 @@ export async function controlSpotify(action: SpotifyAction, deps: ControlDeps, d
   const { method, path } = REQUESTS[action];
   const res = await call(method, path);
   if (res.ok) return;
-  const err = await toError(res);
+  const err = await call.fail(res);
   // Ingen aktiv enhet (t.ex. Spotify pausad i bakgrunden på telefonen): väck en tillgänglig enhet i stället.
   if (action === "play" && err.code === "no_device") {
     const devices = await availableDevices();

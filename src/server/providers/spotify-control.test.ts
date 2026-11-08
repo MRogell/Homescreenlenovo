@@ -226,3 +226,37 @@ describe("restricted devices", () => {
     expect(calls.at(-1)).toBe("PUT /me/player");
   });
 });
+
+describe("failure details are visible (never the token)", () => {
+  const fail = (status: number, body: unknown) => async () => {
+    const fn = (async () => new Response(typeof body === "string" ? body : JSON.stringify(body), { status })) as unknown as typeof fetch;
+    return (await controlSpotify("pause", { getToken: async () => "SUPERHEMLIG", fetchFn: fn }).catch((e) => e)) as ControlError;
+  };
+  it("an unexpected Spotify error shows status and reason", async () => {
+    const e = await fail(502, { error: { status: 502, message: "Player command failed: Restriction violated", reason: "UNKNOWN" } })();
+    expect(e.code).toBe("failed");
+    expect(e.message).toContain("Spotify kunde inte utföra kommandot");
+    expect(e.message).toContain("502");
+    expect(e.message).toContain("UNKNOWN");
+    expect(e.message).toContain("Restriction violated");
+  });
+  it("works when Spotify sends no JSON, and still shows the status", async () => {
+    const e = await fail(500, "<html>fel</html>")();
+    expect(e.message).toContain("500");
+  });
+  it("never contains the token, control characters, or an overlong message", async () => {
+    const e = await fail(500, { error: { reason: "x", message: `SUPERHEMLIG ${"ö".repeat(500)}\n\t` } })();
+    expect(e.message).not.toContain("SUPERHEMLIG");
+    expect(e.message).not.toMatch(/[\n\t]/);
+    expect(e.message.length).toBeLessThan(220);
+  });
+  it("known errors keep their plain Swedish text without technical details", async () => {
+    expect((await fail(404, { error: { reason: "NO_ACTIVE_DEVICE" } })()).message).not.toMatch(/404/);
+    expect((await fail(429, {})()).message).not.toMatch(/429/);
+  });
+  it("transfer failures show details too", async () => {
+    const fn = (async () => new Response(JSON.stringify({ error: { status: 404, message: "Device not found", reason: "UNKNOWN" } }), { status: 404 })) as unknown as typeof fetch;
+    const e = (await transferSpotify("B", true, { getToken: async () => "TOK", fetchFn: fn }).catch((x) => x)) as ControlError;
+    expect(e.message).toContain("Device not found");
+  });
+});

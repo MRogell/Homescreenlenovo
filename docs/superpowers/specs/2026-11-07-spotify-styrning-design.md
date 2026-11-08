@@ -49,3 +49,10 @@ Enhet: rätt metod och sökväg per kommando, 200/202/204 som lyckat, felmappnin
 - Flytt till en begränsad enhet ger felet `restricted_device` ("Starta uppspelningen i Spotify-appen och välj enheten där").
 - Enheter som Spotifys moln inte känner till (t.ex. Sonos-högtalare som inte nyligen spelat via Spotify) syns inte alls: Spotify-appen hittar dem lokalt på wifi
   (Spotify Connect via mDNS), vilket inte går från en webbserver. Listan säger det. Det som ger rumsstyrning är Sonos egen koppling (utvecklarapp hos Sonos).
+
+## Felsökning: spela fungerar inte (2026-11-08)
+- **Bevisat fel i appen (rättat):** efter ett tryck på spela/pausa visades det tillfälliga läget tills servern *ändrade* läge. Tog Spotify emot kommandot utan att något började spela
+  stod knappen kvar på "Pausa" medan pillret sa "Pausad". Nu släpps det tillfälliga läget när servern har svarat, oavsett svar. Enhetsbyte använder det verkliga läget (`playing`), inte det tillfälliga.
+- **Oförklarat fel (instrumenterat):** "Spotify kunde inte utföra kommandot" döljer Spotifys verkliga svar. Oväntade fel visar nu status, orsaksord och en kort felrad (t.ex. "502, UNKNOWN, Restriction violated")
+  och loggas på servern (bara status och orsak). Texten saneras och Spotifys felrad rensas från vår token innan den visas.
+- Nästa steg är att läsa den verkliga orsaken och rätta därefter, inte att gissa.

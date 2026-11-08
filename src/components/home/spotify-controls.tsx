@@ -51,7 +51,10 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
   function done() {
     setPicker(null);
     // Knapparna släpps direkt; kortet hämtar ny status i bakgrunden när Spotify hunnit uppdatera sig.
-    setTimeout(() => void refresh(), 700);
+    // Det tillfälliga läget släpps när servern har svarat, oavsett vad den säger: tog Spotify emot kommandot men inget spelar, ska kortet visa sanningen.
+    setTimeout(() => {
+      void Promise.resolve(refresh()).finally(() => setOptimistic(null));
+    }, 700);
   }
 
   const send = (action: Action) =>
@@ -76,8 +79,8 @@ export function SpotifyControls({ playing, device }: { playing: boolean; device:
 
   const moveTo = (d: Device) =>
     run(async () => {
-      // Vid byte behålls läget (spelar/pausad). Vid "ingen aktiv enhet" ville användaren spela.
-      const { ok, data } = await post({ action: "transfer", deviceId: d.id, play: picker?.mode === "choose" ? true : shownPlaying });
+      // Vid byte behålls det VERKLIGA läget (spelar/pausad), inte det tillfälliga. Vid "ingen aktiv enhet" ville användaren spela.
+      const { ok, data } = await post({ action: "transfer", deviceId: d.id, play: picker?.mode === "choose" ? true : playing });
       if (ok) return done();
       setError(data?.error ?? "Det gick inte att byta enhet.");
     });
