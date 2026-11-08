@@ -67,6 +67,8 @@ describe("skoda provider", () => {
     expect(p.ttlSeconds).toBe(900);
     expect(p.ttlFor?.({ ...GOOD, charging: true } as never)).toBe(120);
     expect(p.ttlFor?.({ ...GOOD, charging: false } as never)).toBe(900);
+    expect(p.ttlFor?.({ ...GOOD, charging: false, climateOn: true } as never)).toBe(120);
+    expect(p.ttlFor?.({ ...GOOD, charging: false, climateOn: false } as never)).toBe(900);
     expect(p.timeoutMs).toBeGreaterThanOrEqual(20_000);
   });
   it("schema accepts the bridge shape", () => expect(skodaSchema.safeParse(GOOD).success).toBe(true));

@@ -263,3 +263,54 @@ describe("handleControl spotify volume", () => {
     expect(f.calls).toHaveLength(0);
   });
 });
+
+describe("handleControl skoda", () => {
+  const TOKEN = "t".repeat(40);
+  const SUMMARY = { rangeKm: 300, levelPct: 70, levelKind: "battery", locked: true, charging: false, parked: "Hemma", climateOn: true, climateTargetC: 21, climateReadyAt: null };
+  const req: ControlRequest = { ...ok, provider: "skoda", body: { action: "climate_start", temperatureC: 21 } };
+  function bridge(status: number, body: unknown = SUMMARY) {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => { calls.push(`${init.method} ${url} ${init.body}`); return new Response(JSON.stringify(body), { status }); }) as unknown as typeof fetch;
+    return { calls, d: { fetchFn, db, skodaConfig: () => ({ url: "https://bridge.example.com", token: TOKEN }) } };
+  }
+  beforeEach(async () => {
+    await db.snapshot.deleteMany({ where: { provider: "skoda" } });
+    await db.snapshot.create({ data: { provider: "skoda", payload: { ...SUMMARY, climateOn: false }, fetchedAt: new Date("2026-11-08T06:00:00Z") } });
+  });
+  it("without session or with other origin nothing reaches the bridge", async () => {
+    const x = bridge(200);
+    expect((await handleControl({ ...req, userId: null }, x.d)).status).toBe(401);
+    expect((await handleControl({ ...req, origin: "https://ond.example.com" }, x.d)).status).toBe(403);
+    expect(x.calls).toHaveLength(0);
+  });
+  it("invalid temperature or body is 400 without a bridge call", async () => {
+    const x = bridge(200);
+    for (const body of [{ action: "climate_start", temperatureC: 21.3 }, { action: "climate_start", temperatureC: 15 }, { action: "climate_start", temperatureC: 30 },
+      { action: "climate_start", temperatureC: "21" }, { action: "climate_start" }, { action: "climate_stop", x: 1 }, { action: "climate_start", temperatureC: 21, x: 1 }, null]) {
+      expect((await handleControl({ ...req, body }, x.d)).status, JSON.stringify(body)).toBe(400);
+    }
+    expect(x.calls).toHaveLength(0);
+  });
+  it("successful command stores the bridge reply as the new snapshot and returns ok state", async () => {
+    const x = bridge(200);
+    const r = await handleControl(req, x.d);
+    expect(r.status).toBe(200);
+    expect(r.json).toMatchObject({ state: { status: "ok", data: { climateOn: true } } });
+    expect(x.calls).toEqual([`POST https://bridge.example.com/api/skoda ${JSON.stringify({ climate: "start", temperatureC: 21 })}`]);
+    const rows = await db.snapshot.findMany({ where: { provider: "skoda" } });
+    expect(rows).toHaveLength(1);
+    expect((rows[0]?.payload as { climateOn: boolean }).climateOn).toBe(true);
+  });
+  it("bridge failure leaves the snapshot untouched and returns 502 failed", async () => {
+    const x = bridge(502, { error: "x" });
+    const r = await handleControl({ ...req, body: { action: "climate_stop" } }, x.d);
+    expect(r).toMatchObject({ status: 502, json: { code: "failed", error: "Bilen tog inte emot kommandot" } });
+    const rows = await db.snapshot.findMany({ where: { provider: "skoda" } });
+    expect(rows).toHaveLength(1);
+    expect((rows[0]?.payload as { climateOn: boolean }).climateOn).toBe(false);
+  });
+  it("throttled is 429 and missing config is 409", async () => {
+    expect((await handleControl(req, bridge(429, {}).d)).status).toBe(429);
+    expect((await handleControl(req, { ...bridge(200).d, skodaConfig: () => null })).status).toBe(409);
+  });
+});

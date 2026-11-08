@@ -8,6 +8,12 @@ import { getSpotifyDefaultDevice, type DefaultDevice } from "./spotify-prefs";
 import { controlSonos, SONOS_ACTIONS, SonosControlError, type SonosAction, type SonosErrorCode } from "./providers/sonos-control";
 import { AEG_ACTIONS, AegControlError, controlAeg, type AegAction, type AegErrorCode } from "./providers/aeg-control";
 import { getAegApiKey } from "./aeg-connect";
+import { getEnv } from "@/lib/env";
+import { skodaConfigFromEnv } from "./providers/skoda-config";
+import type { SkodaBridgeConfig } from "./providers/skoda";
+import type { SkodaData } from "./providers/schemas";
+import type { CardState } from "./providers/types";
+import { SkodaControlError, sendSkodaClimate, type SkodaControlErrorCode } from "./providers/skoda-control";
 import { ControlError, SPOTIFY_ACTIONS, controlSpotify, listSpotifyDevices, setSpotifyVolume, transferSpotify, type ControlErrorCode, type SpotifyAction, type SpotifyDevice } from "./providers/spotify-control";
 
 export interface ControlRequest {
@@ -21,7 +27,7 @@ export interface ControlRequest {
 
 export interface ControlResult {
   status: number;
-  json?: { error?: string; code?: string; devices?: SpotifyDevice[] };
+  json?: { error?: string; code?: string; devices?: SpotifyDevice[]; state?: CardState<SkodaData> };
 }
 
 export interface ControlFlowDeps {
@@ -32,6 +38,8 @@ export interface ControlFlowDeps {
   getApiKey?: () => Promise<string | null>;
   /** AEG: apparaten tas från servern (sparad vid senaste hämtning), aldrig från anroparen. */
   getAegApplianceId?: () => Promise<string | null>;
+  /** Škoda: bryggans adress och token (standard: från miljön). */
+  skodaConfig?: () => SkodaBridgeConfig | null;
 }
 
 // Spotifys enhets-id: bara bokstäver och siffror.
@@ -93,6 +101,35 @@ async function handleAeg(body: unknown, deps: ControlFlowDeps): Promise<ControlR
   return { status: 204 };
 }
 
+// 16–29,5 °C i steg om 0,5 (samma gränser som bryggan).
+const skodaTemp = z.number().min(16).max(29.5).refine((t) => Number.isInteger(t * 2));
+const skodaBody = z.union([
+  z.object({ action: z.literal("climate_start"), temperatureC: skodaTemp }).strict(),
+  z.object({ action: z.literal("climate_stop") }).strict(),
+]);
+const SKODA_STATUS: Record<SkodaControlErrorCode, number> = { throttled: 429, config: 409, failed: 502 };
+
+/** Škoda: starta/stoppa klimatisering. Bryggans svar (ny avläsning) sparas direkt som snapshot. */
+async function handleSkoda(body: unknown, deps: ControlFlowDeps): Promise<ControlResult> {
+  const parsed = skodaBody.safeParse(body);
+  if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
+  let data: SkodaData;
+  try {
+    data = await sendSkodaClimate(parsed.data, { getConfig: deps.skodaConfig ?? (() => skodaConfigFromEnv(getEnv())), fetchFn: deps.fetchFn });
+  } catch (e) {
+    const err = e instanceof SkodaControlError ? e : new SkodaControlError("failed");
+    return { status: SKODA_STATUS[err.code], json: { error: err.message, code: err.code } };
+  }
+  const db = deps.db ?? defaultDb;
+  const fetchedAt = new Date();
+  await db.$transaction([
+    db.snapshot.deleteMany({ where: { provider: "skoda" } }),
+    db.snapshot.create({ data: { provider: "skoda", payload: data as never, fetchedAt } }),
+    db.providerBackoff.deleteMany({ where: { provider: "skoda" } }),
+  ]);
+  return { status: 200, json: { state: { status: "ok", data, fetchedAt: fetchedAt.toISOString() } } };
+}
+
 const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, choose_device: 409, restricted_device: 409, not_now: 409, volume_disallowed: 409, premium: 403, rate_limit: 429, failed: 502 };
 const GENERIC = new ControlError("failed");
 
@@ -101,11 +138,12 @@ const GENERIC = new ControlError("failed");
  * Etapp: bara Spotify. Efter ett lyckat kommando rensas tjänstens cache så att nästa hämtning ger färsk status.
  */
 export async function handleControl(req: ControlRequest, deps: ControlFlowDeps = {}): Promise<ControlResult> {
-  if (req.provider !== "spotify" && req.provider !== "sonos" && req.provider !== "aeg") return { status: 404, json: { error: "Okänd tjänst", code: "unknown" } };
+  if (req.provider !== "spotify" && req.provider !== "sonos" && req.provider !== "aeg" && req.provider !== "skoda") return { status: 404, json: { error: "Okänd tjänst", code: "unknown" } };
   if (!req.userId) return { status: 401, json: { error: "Inte inloggad", code: "unauthenticated" } };
   if (!sameOrigin(req.origin, req.host)) return { status: 403, json: { error: "Ogiltigt ursprung", code: "origin" } };
   if (req.provider === "sonos") return handleSonos(req.body, deps);
   if (req.provider === "aeg") return handleAeg(req.body, deps);
+  if (req.provider === "skoda") return handleSkoda(req.body, deps);
   const parsed = bodySchema.safeParse(req.body);
   if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
 

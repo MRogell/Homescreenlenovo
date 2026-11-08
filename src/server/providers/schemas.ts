@@ -17,6 +17,10 @@ export const skodaSchema = z.object({
   bonnetOpen: z.boolean().nullable().default(null),
   /** Bilens egen rapporttid (ISO), inte när appen hämtade. */
   capturedAt: z.string().nullable().default(null),
+  climateOn: z.boolean().nullable().default(null),
+  climateTargetC: z.number().min(10).max(35).nullable().default(null),
+  /** Beräknad tid då kupén når måltemperaturen (ISO), bara när klimatiseringen är på. */
+  climateReadyAt: z.string().nullable().default(null),
 });
 export const sonosSchema = z.object({
   groups: z.array(z.object({ id: z.string(), room: z.string(), members: z.array(z.string()), playing: z.boolean(), title: z.string(), artist: z.string(), volume: z.number().nullable() })),
