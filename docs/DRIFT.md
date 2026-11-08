@@ -32,7 +32,7 @@ Om en tjänst återkallar åtkomsten visas "Anslut igen". *Koppla från* raderar
 under bygget, så första riktiga körningen kan kräva små justeringar (se spec för etapp 2).
 
 ## Škoda (etapp 3)
-Škoda läses via en Python-funktion i samma Vercel-projekt (`api/skoda.py`). Steg-för-steg och risker: `docs/SKODA.md`.
+Škoda läses via en Python-brygga i ett eget Vercel-projekt (`skoda-bridge/`). Steg-för-steg och risker: `docs/SKODA.md`.
 
 ## Tado (inomhustemperaturer)
 Inga nycklar eller utvecklarappar behövs. Inställningar → Tado (inomhus) → **Anslut** → **Godkänn hos Tado** (öppnar Tados sida, logga in och godkänn koden).

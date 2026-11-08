@@ -19,8 +19,8 @@ const schema = z.object({
   WEATHER_PLACE: z.preprocess((v) => (v === "" ? undefined : v), z.string().trim().min(1).max(60).default("Luleå")),
   WEATHER_LAT: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().min(-90).max(90).default(65.5848)),
   WEATHER_LON: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().min(-180).max(180).default(22.1547)),
-  // Škoda-bryggan (api/skoda.py i samma projekt): delad token (minst 32 tecken). Utan token visas Škoda som ej ansluten.
-  // SKODA_BRIDGE_URL behövs bara om bryggan körs på annan adress än appen.
+  // Škoda-bryggan (skoda-bridge/, eget Vercel-projekt): adress och delad token (minst 32 tecken). Utan båda visas Škoda som ej ansluten.
+  // SKODA_BRIDGE_URL är bryggans egen adress, t.ex. https://hemskarm-skoda.vercel.app.
   SKODA_BRIDGE_URL: z.preprocess((v) => (v === "" ? undefined : v), z.url().optional()),
   SKODA_BRIDGE_TOKEN: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(32, "SKODA_BRIDGE_TOKEN måste vara minst 32 tecken").optional()),
 });

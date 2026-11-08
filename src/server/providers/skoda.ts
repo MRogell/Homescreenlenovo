@@ -1,7 +1,7 @@
 import { skodaSchema, type SkodaData } from "./schemas";
 import type { Provider } from "./types";
 
-// Škoda har inget öppet API. Appen läser från en liten Python-brygga (api/skoda.py + skoda_bridge/, samma Vercel-projekt)
+// Škoda har inget öppet API. Appen läser från en liten Python-brygga (skoda-bridge/, eget Vercel-projekt)
 // som använder det inofficiella biblioteket myskoda. Se docs/superpowers/specs/2026-11-07-skoda-brygga-design.md.
 
 export interface SkodaBridgeConfig {

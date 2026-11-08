@@ -1,29 +1,43 @@
 # Škoda på hemskärmen
-Škoda har inget öppet API. Hemskärmen läser bilens status via en liten Python-funktion, `api/skoda.py`, som ligger i **samma Vercel-projekt**
-och använder det inofficiella biblioteket [myskoda](https://pypi.org/project/myskoda/) (pinnat till 2.17.2, kräver Python 3.13).
-Kortet är skrivskyddat: det visar batteri eller tank, räckvidd, låst/olåst, laddning och parkeringsplats, men styr ingenting.
+Škoda har inget öppet API. Bilens status läses av en liten Python-tjänst, **Škoda-bryggan** (mappen `skoda-bridge/`), som använder det inofficiella
+biblioteket [myskoda](https://pypi.org/project/myskoda/) (2.17.2, kräver Python 3.13). Bryggan är ett **eget Vercel-projekt**: Vercel bygger inte
+Python-funktioner i ett Next.js-projekt. Kortet är skrivskyddat: batteri eller tank, räckvidd, låst/olåst, laddning och parkeringsplats.
 
-## Status: fungerar inte i samma Vercel-projekt
-Första bygget visade att Vercel **inte** bygger Python-funktioner i `api/` när projektet är ett Next.js-projekt
-("The pattern api/skoda.py defined in functions doesn't match any Serverless Functions"). Konfigurationen är därför borttagen och
-Škoda är **inte påslaget**. Lägg inte in `SKODA_*`-variablerna i hemskärmens projekt förrän bryggan körs någon annanstans:
-då pekar `SKODA_BRIDGE_URL` på den värden. Koden i `skoda_bridge/` är oförändrad och kan köras som egen tjänst (se nedan).
+## 1. Skapa bryggans Vercel-projekt
+1. Vercel → **Add New → Project** → välj samma repo (`Homescreenlenovo`).
+2. **Project Name:** t.ex. `hemskarm-skoda`.
+3. **Root Directory:** klicka **Edit** och välj mappen **`skoda-bridge`**.
+4. **Framework Preset:** **Other**. Build/Output: lämna som det är.
+5. **Environment Variables** (Production):
 
-## Risker och begränsningar
-- **Inofficiellt API:** Škoda kan ändra det utan förvarning. Ett konto kan låsas vid många misslyckade inloggningar.
-  Därför loggar funktionen in högst en gång per 10 minuter och hemskärmen frågar högst var 30:e minut.
-- **Lösenordet** finns bara som miljövariabel i Vercel, aldrig i databasen eller koden. Fel och loggar visar aldrig inloggningsuppgifter.
-- **Overifierat:** inget är provat mot ett riktigt Škoda-konto, och det är inte provat att Vercel kör Python 3.13 i ett Next.js-projekt.
-  Misslyckas bygget eller visar kortet "Ej tillgänglig", titta i Vercel → **Logs** (filtrera på `/api/skoda`).
+   | Key | Value |
+   |---|---|
+   | `SKODA_USERNAME` | e-post till ditt MySkoda-konto |
+   | `SKODA_PASSWORD` | lösenordet till MySkoda (Sensitive) |
+   | `SKODA_BRIDGE_TOKEN` | slumpad hemlighet, minst 32 tecken (Sensitive) |
+   | `SKODA_VIN` | valfritt: chassinummer om kontot har flera bilar |
 
-## Köra bryggan som egen tjänst
-Kör samma kod på en annan värd (t.ex. Render Web Service): build `pip install -r requirements.txt`, start `python -m skoda_bridge` (lyssnar på `$PORT`),
-samma miljövariabler. Lägg sedan `SKODA_BRIDGE_URL` (värdens adress) och samma `SKODA_BRIDGE_TOKEN` i hemskärmens projekt.
+   Skapa token i PowerShell: `$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)`
+6. **Deploy.** Bygget installerar `myskoda` och använder Python 3.13 (`.python-version`).
+7. Kontroll: öppna `https://<bryggans-adress>/api/skoda` → `{"error": "Ej behörig"}` betyder att bryggan körs.
 
-## Lokalt
+## 2. Koppla hemskärmen till bryggan
+Hemskärmens projekt (`homescreenlenovo`) → Settings → Environment Variables (Production):
+- `SKODA_BRIDGE_URL` = bryggans adress, t.ex. `https://hemskarm-skoda.vercel.app` (utan `/api/skoda`)
+- `SKODA_BRIDGE_TOKEN` = **samma** värde som i bryggan (Sensitive)
+- Ta bort `SKODA_USERNAME` och `SKODA_PASSWORD` från hemskärmens projekt om de ligger kvar: de behövs bara i bryggan.
+Gör **Redeploy**. Inställningar visar "Ansluten via brygga", och kortet hämtar data högst var 30:e minut.
+
+## Risker
+- **Inofficiellt API:** Škoda kan ändra det utan förvarning. Ett konto kan låsas vid många misslyckade inloggningar; bryggan loggar därför in högst
+  en gång per 10 minuter och hemskärmen frågar högst var 30:e minut. Fel och loggar visar aldrig inloggningsuppgifter.
+- **Overifierat:** inget är provat mot ett riktigt Škoda-konto. Bryggan är skriven mot bibliotekets verkliga modeller och testad med byggda svar.
+  Visar kortet "Ej tillgänglig": titta i bryggans Vercel-projekt → Logs.
+
+## Lokalt (för utveckling)
 ```bash
+cd skoda-bridge
 python3.13 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
-.venv/bin/pytest                                      # bryggans tester
-SKODA_BRIDGE_TOKEN=... SKODA_USERNAME=... SKODA_PASSWORD=... .venv/bin/python -m skoda_bridge
-# I appens .env: SKODA_BRIDGE_URL="http://127.0.0.1:8080" och samma SKODA_BRIDGE_TOKEN
+.venv/bin/pytest
+SKODA_BRIDGE_TOKEN=... SKODA_USERNAME=... SKODA_PASSWORD=... .venv/bin/python -m skoda_bridge   # http://127.0.0.1:8080/api/skoda
 ```
