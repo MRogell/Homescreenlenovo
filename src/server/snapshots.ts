@@ -24,7 +24,8 @@ async function resolveOne(p: Provider<unknown>, now: Date, db: PrismaClient): Pr
   if (last) {
     const ageMs = now.getTime() - last.fetchedAt.getTime();
     // Färsk endast om 0 <= ålder < ttl. Framtida tidsstämpel (klockskev) och exakt ttl hämtas om.
-    if (ageMs >= 0 && ageMs < p.ttlSeconds * 1000) return { status: "ok", data: last.data, fetchedAt: last.fetchedAt.toISOString() };
+    const ttlSeconds = p.ttlFor ? p.ttlFor(last.data) : p.ttlSeconds;
+    if (ageMs >= 0 && ageMs < ttlSeconds * 1000) return { status: "ok", data: last.data, fetchedAt: last.fetchedAt.toISOString() };
   }
   const lastIso = last ? { data: last.data, fetchedAt: last.fetchedAt.toISOString() } : undefined;
 

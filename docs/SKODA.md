@@ -26,11 +26,11 @@ Hemskärmens projekt (`homescreenlenovo`) → Settings → Environment Variables
 - `SKODA_BRIDGE_URL` = bryggans adress, t.ex. `https://hemskarm-skoda.vercel.app` (utan `/api/skoda`)
 - `SKODA_BRIDGE_TOKEN` = **samma** värde som i bryggan (Sensitive)
 - Ta bort `SKODA_USERNAME` och `SKODA_PASSWORD` från hemskärmens projekt om de ligger kvar: de behövs bara i bryggan.
-Gör **Redeploy**. Inställningar visar "Ansluten via brygga", och kortet hämtar data högst var 30:e minut.
+Gör **Redeploy**. Inställningar visar "Ansluten via brygga", och kortet hämtar data var 15:e minut, eller var 2:a minut när bilen laddar.
 
 ## Risker
 - **Inofficiellt API:** Škoda kan ändra det utan förvarning. Ett konto kan låsas vid många misslyckade inloggningar; bryggan loggar därför in högst
-  en gång per 10 minuter och hemskärmen frågar högst var 30:e minut. Fel och loggar visar aldrig inloggningsuppgifter.
+  högst var 100:e sekund, och hemskärmen frågar var 15:e minut (var 2:a minut under laddning). Fel och loggar visar aldrig inloggningsuppgifter.
 - **Overifierat:** inget är provat mot ett riktigt Škoda-konto. Bryggan är skriven mot bibliotekets verkliga modeller och testad med byggda svar.
   Visar kortet "Ej tillgänglig": titta i bryggans Vercel-projekt → Logs.
 

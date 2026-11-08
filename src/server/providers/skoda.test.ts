@@ -61,10 +61,12 @@ describe("skoda provider", () => {
     expect(await safeSummary(p)).toEqual({ status: "not_connected" });
     expect(calls).toHaveLength(0);
   });
-  it("with config isConnected is true; ttl is 30 min and timeout is long enough for a login", () => {
+  it("with config isConnected is true; ttl is 15 min (2 min while charging) and timeout is long enough for a login", () => {
     const { p } = make(200, GOOD);
     expect(p.id).toBe("skoda");
-    expect(p.ttlSeconds).toBe(1800);
+    expect(p.ttlSeconds).toBe(900);
+    expect(p.ttlFor?.({ ...GOOD, charging: true } as never)).toBe(120);
+    expect(p.ttlFor?.({ ...GOOD, charging: false } as never)).toBe(900);
     expect(p.timeoutMs).toBeGreaterThanOrEqual(20_000);
   });
   it("schema accepts the bridge shape", () => expect(skodaSchema.safeParse(GOOD).success).toBe(true));

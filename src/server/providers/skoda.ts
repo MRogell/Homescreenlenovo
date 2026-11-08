@@ -22,7 +22,9 @@ export function createSkodaProvider(deps: SkodaDeps): Provider<SkodaData> {
   return {
     id: "skoda",
     // Låg frekvens skyddar Škoda-kontot mot för många inloggningar.
-    ttlSeconds: 1800,
+    // Var 15:e minut normalt, var 2:a minut under laddning (nivå och klartid ändras snabbt). Bryggan loggar in högst var 100:e sekund.
+    ttlSeconds: 900,
+    ttlFor: (d) => (d.charging ? 120 : 900),
     timeoutMs: TIMEOUT_MS,
     schema: skodaSchema,
     isConnected: async () => deps.getConfig() !== null,

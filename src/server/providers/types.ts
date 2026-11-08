@@ -13,6 +13,8 @@ export interface Provider<T> {
   id: ProviderId;
   /** Hur länge en hämtad snapshot räknas som färsk. */
   ttlSeconds: number;
+  /** Valfri TTL beroende på senaste data (sekunder), t.ex. tätare när bilen laddar. Ersätter ttlSeconds när den finns. */
+  ttlFor?: (data: T) => number;
   /** Längsta väntetid på getSummary innan tjänsten räknas som otillgänglig (standard 10 s). */
   timeoutMs?: number;
   /** Väntetid efter misslyckat försök (standard 60 s). Längre för tjänster med dygnskvot, t.ex. Tado. */

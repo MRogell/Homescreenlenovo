@@ -114,6 +114,19 @@ describe("backoff after failure", () => {
   });
 });
 
+describe("data-dependent ttl", () => {
+  it("ttlFor decides freshness from the stored data", async () => {
+    await seed("skoda", { n: 1 }, new Date(T0.getTime() - 150_000));
+    const a = prov("skoda", async () => ({ n: 2 }), 1800);
+    a.p.ttlFor = (d) => ((d as { n: number }).n === 1 ? 120 : 1800);
+    await getHomeStates(T0, [a.p], db);
+    expect(a.calls()).toBe(1);
+    // Nya data (n: 2) har lång ttl: ingen ny hämtning efter 150 s.
+    await getHomeStates(new Date(T0.getTime() + 150_000), [a.p], db);
+    expect(a.calls()).toBe(1);
+  });
+});
+
 describe("provider-specific backoff", () => {
   it("uses the provider's own wait after failure when set", async () => {
     const bad = prov("sonos", async () => { throw new Error("kvot"); });

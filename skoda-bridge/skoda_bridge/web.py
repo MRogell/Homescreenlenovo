@@ -11,7 +11,8 @@ from typing import Any, Mapping
 from skoda_bridge.guard import RateGuard
 from skoda_bridge.handler import BridgeState, Fetch, handle_request
 
-MIN_LOGIN_INTERVAL_S = 600
+# Hemskärmen frågar var 2:a minut när bilen laddar, annars var 15:e. Spärren ligger strax under 2 min så att den inte krockar.
+MIN_LOGIN_INTERVAL_S = 100
 
 
 def _now() -> str:
