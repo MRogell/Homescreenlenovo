@@ -83,7 +83,16 @@ export const weatherSchema = z.object({
   /** Kommande timmar (lokal tid, Europe/Stockholm). Kortet väljer själv de närmaste efter klockan. */
   hourly: z.array(z.object({ time: z.string(), tempC: z.number(), code: z.number(), rainPct: z.number().nullable(), isDay: z.boolean() })).default([]),
   /** Dagsprognos, idag först. */
-  daily: z.array(z.object({ date: z.string(), code: z.number(), minC: z.number(), maxC: z.number(), rainMm: z.number().nullable() })).default([]),
+  daily: z.array(z.object({
+    date: z.string(), code: z.number(), minC: z.number(), maxC: z.number(),
+    /** Regn i mm (regn plus skurar). */
+    rainMm: z.number().nullable(),
+    /** Snö i cm. Valfritt för äldre cache. */
+    snowCm: z.number().nullable().default(null),
+    /** Dagtemperatur (varmaste ljusa timmen) och natt (kallaste mörka timmen). null = faller tillbaka på max/min. */
+    dayC: z.number().nullable().default(null),
+    nightC: z.number().nullable().default(null),
+  })).default([]),
   sunrise: z.string().nullable().default(null),
   sunset: z.string().nullable().default(null),
 });

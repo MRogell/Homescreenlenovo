@@ -5,12 +5,12 @@ import { clockOf, dayLabel, nextHours, nowLocal, weatherView, wxIcon, wxTint } f
 const NOW = new Date("2026-11-08T11:05:00+01:00");
 
 const hour = (h: number, over: Record<string, unknown> = {}) => ({ time: `2026-11-08T${String(h).padStart(2, "0")}:00`, tempC: 7 + h / 10, code: 3, rainPct: 20, isDay: true, ...over });
-const day = (date: string, over: Record<string, unknown> = {}) => ({ date, code: 3, minC: 2, maxC: 7, rainMm: 0, ...over });
+const day = (date: string, over: Record<string, unknown> = {}) => ({ date, code: 3, minC: 2, maxC: 7, rainMm: 0, snowCm: 0, dayC: null, nightC: null, ...over });
 const base: WeatherData = weatherSchema.parse({
   place: "Luleå", tempC: 7.2, code: 3, text: "Mulet", windMs: 4.4, aqi: 24, aqiLabel: "Ganska bra",
   isDay: true, feelsLikeC: 4.1, gustMs: 9.3,
   hourly: [hour(10), hour(11), hour(12), hour(13), hour(14), hour(15), hour(16), hour(17), hour(18)],
-  daily: [day("2026-11-08"), day("2026-11-09", { minC: -3, maxC: 1, rainMm: 3.4, code: 71 }), day("2026-11-10", { minC: 0, maxC: 4 }), day("2026-11-11"), day("2026-11-12")],
+  daily: [day("2026-11-08"), day("2026-11-09", { minC: -3, maxC: 1, rainMm: 0, snowCm: 3.4, code: 71 }), day("2026-11-10", { minC: 0, maxC: 4 }), day("2026-11-11"), day("2026-11-12")],
   sunrise: "2026-11-08T08:41", sunset: "2026-11-08T14:32",
 });
 
@@ -88,9 +88,9 @@ describe("weatherView", () => {
   });
   it("five days with Idag first, rounded range and rain only when it matters", () => {
     expect(v.days.map((d) => d.label)).toEqual(["Idag", "mån", "tis", "ons", "tors"].map((l, i) => (i === 0 ? l : ["mån", "tis", "ons", "tors"][i - 1])));
-    expect(v.days[1]).toMatchObject({ min: "-3°", max: "1°", rain: "3,4 mm", icon: "snow" });
-    expect(v.days[0]!.rain).toBeNull();
-    expect(weatherView({ ...base, daily: [day("2026-11-08", { rainMm: 0.04 })] }, NOW).days[0]!.rain).toBeNull();
+    expect(v.days[1]).toMatchObject({ night: "-3°", day: "1°", precip: { text: "3,4 cm snö", kind: "snow" }, icon: "snow" });
+    expect(v.days[0]!.precip).toBeNull();
+    expect(weatherView({ ...base, daily: [day("2026-11-08", { rainMm: 0.04 })] }, NOW).days[0]!.precip).toBeNull();
   });
   it("range bars span the whole period and are never empty", () => {
     for (const d of v.days) {
@@ -118,5 +118,36 @@ describe("weatherView", () => {
     const old = weatherSchema.parse({ place: "Luleå", tempC: 7, code: 3, text: "Mulet", windMs: null, aqi: null, aqiLabel: null });
     const w = weatherView(old, NOW);
     expect(w).toMatchObject({ hours: [], days: [], sun: null, feelsLike: null, wind: null });
+  });
+});
+
+describe("rain or snow is explicit", () => {
+  const one = (over: Record<string, unknown>) => weatherView({ ...base, daily: [day("2026-11-08", over)] }, NOW).days[0]!;
+  it("rain, snow and sleet get their own text and kind", () => {
+    expect(one({ rainMm: 4.2 }).precip).toEqual({ text: "4,2 mm regn", kind: "rain" });
+    expect(one({ snowCm: 3 }).precip).toEqual({ text: "3 cm snö", kind: "snow" });
+    expect(one({ rainMm: 1.5, snowCm: 2.1 }).precip).toEqual({ text: "1,5 mm regn · 2,1 cm snö", kind: "mix" });
+  });
+  it("old cache without snowCm shows rain mm as before", () => {
+    expect(one({ rainMm: 2, snowCm: null }).precip).toEqual({ text: "2 mm regn", kind: "rain" });
+  });
+  it("hours tell snow from rain", () => {
+    const h = nextHours([hour(12, { code: 73, rainPct: 60 }), hour(13, { code: 63, rainPct: 50 })], NOW);
+    expect(h.map((x) => [x.icon, x.kind])).toEqual([["snow", "snow"], ["rain", "rain"]]);
+  });
+});
+
+describe("day and night temperatures", () => {
+  const one = (over: Record<string, unknown>) => weatherView({ ...base, daily: [day("2026-11-08", over)] }, NOW).days[0]!;
+  it("uses the computed day and night values when present", () => {
+    expect(one({ minC: -5, maxC: 9, nightC: -3, dayC: 8 })).toMatchObject({ night: "-3°", day: "8°" });
+  });
+  it("falls back to min and max", () => {
+    expect(one({ minC: -5, maxC: 9 })).toMatchObject({ night: "-5°", day: "9°" });
+  });
+  it("a warmer night than day still gives a valid bar", () => {
+    const d = one({ nightC: 4, dayC: 1 });
+    expect(d.width).toBeGreaterThan(0);
+    expect(d.left).toBeGreaterThanOrEqual(0);
   });
 });

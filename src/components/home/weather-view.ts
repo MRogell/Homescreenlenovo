@@ -42,7 +42,11 @@ export function nowLocal(now: Date): string {
 
 const deg = (t: number) => `${Math.round(t) || 0}°`;
 
-export interface HourView { label: string; icon: WxIcon; temp: string; rain: string | null }
+/** Regn eller snö: styr färg och ikon så att det syns på en blick. */
+export type PrecipKind = "rain" | "snow";
+export interface HourView { label: string; icon: WxIcon; temp: string; rain: string | null; kind: PrecipKind | null }
+
+const kindOf = (icon: WxIcon): PrecipKind | null => (icon === "snow" ? "snow" : icon === "rain" || icon === "drizzle" || icon === "storm" ? "rain" : null);
 
 /** De närmaste hela timmarna efter nu. */
 export function nextHours(hourly: WeatherData["hourly"], now: Date, n = 6): HourView[] {
@@ -50,7 +54,10 @@ export function nextHours(hourly: WeatherData["hourly"], now: Date, n = 6): Hour
   return hourly
     .filter((h) => h.time > local)
     .slice(0, n)
-    .map((h) => ({ label: h.time.slice(11, 13), icon: wxIcon(h.code, h.isDay), temp: deg(h.tempC), rain: h.rainPct && h.rainPct > 0 ? `${Math.round(h.rainPct)} %` : null }));
+    .map((h) => {
+      const icon = wxIcon(h.code, h.isDay);
+      return { label: h.time.slice(11, 13), icon, temp: deg(h.tempC), rain: h.rainPct && h.rainPct > 0 ? `${Math.round(h.rainPct)} %` : null, kind: kindOf(icon) };
+    });
 }
 
 /** "Idag" eller svensk kort veckodag ("mån"). */
@@ -65,9 +72,25 @@ export function clockOf(iso: string | null): string | null {
   return m ? m[1]! : null;
 }
 
-const rainText = (mm: number | null) => (mm !== null && mm >= 0.1 ? `${String(Math.round(mm * 10) / 10).replace(".", ",")} mm` : null);
+const amount = (v: number) => String(Math.round(v * 10) / 10).replace(".", ",");
 
-export interface DayView { label: string; icon: WxIcon; min: string; max: string; left: number; width: number; rain: string | null }
+/** "4,2 mm regn", "3 cm snö" eller båda ("1,5 mm regn · 2,1 cm snö", kind mix). Under 0,1 räknas inte. */
+function precipOf(rainMm: number | null, snowCm: number | null): { text: string; kind: PrecipKind | "mix" } | null {
+  const rain = rainMm !== null && rainMm >= 0.1 ? `${amount(rainMm)} mm regn` : null;
+  const snow = snowCm !== null && snowCm >= 0.1 ? `${amount(snowCm)} cm snö` : null;
+  if (rain && snow) return { text: `${rain} · ${snow}`, kind: "mix" };
+  if (rain) return { text: rain, kind: "rain" };
+  if (snow) return { text: snow, kind: "snow" };
+  return null;
+}
+
+export interface DayView {
+  label: string; icon: WxIcon;
+  /** Natt (kallaste mörka timmen) och dag (varmaste ljusa timmen). Saknas timdata används min och max. */
+  night: string; day: string;
+  left: number; width: number;
+  precip: { text: string; kind: PrecipKind | "mix" } | null;
+}
 export interface WeatherView {
   icon: WxIcon;
   tint: string;
@@ -81,13 +104,15 @@ export interface WeatherView {
 /** Allt väderkortet visar. Ren funktion: kortet ritar bara upp resultatet. */
 export function weatherView(d: WeatherData, now: Date): WeatherView {
   const today = nowLocal(now).slice(0, 10);
-  const lo = Math.min(...d.daily.map((x) => x.minC));
-  const hi = Math.max(...d.daily.map((x) => x.maxC));
+  const five = d.daily.slice(0, 5).map((x) => ({ x, night: x.nightC ?? x.minC, day: x.dayC ?? x.maxC }));
+  const lo = Math.min(...five.map((e) => Math.min(e.night, e.day)));
+  const hi = Math.max(...five.map((e) => Math.max(e.night, e.day)));
   const span = hi - lo || 1;
-  const days = d.daily.slice(0, 5).map((x) => {
-    const left = ((x.minC - lo) / span) * 100;
-    const width = Math.max(((x.maxC - x.minC) / span) * 100, 8);
-    return { label: dayLabel(x.date, today), icon: wxIcon(x.code, true), min: deg(x.minC), max: deg(x.maxC), left: Math.min(left, 100 - width), width, rain: rainText(x.rainMm) };
+  const days = five.map(({ x, night, day }) => {
+    const a = Math.min(night, day), b = Math.max(night, day);
+    const width = Math.max(((b - a) / span) * 100, 8);
+    const left = ((a - lo) / span) * 100;
+    return { label: dayLabel(x.date, today), icon: wxIcon(x.code, true), night: deg(night), day: deg(day), left: Math.min(left, 100 - width), width, precip: precipOf(x.rainMm, x.snowCm) };
   });
   const rise = clockOf(d.sunrise), set = clockOf(d.sunset);
   const wind = d.windMs === null ? null : `${Math.round(d.windMs)} m/s${d.gustMs !== null ? `, byar ${Math.round(d.gustMs)}` : ""}`;

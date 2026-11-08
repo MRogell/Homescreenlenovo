@@ -7,7 +7,7 @@ import { skodaView } from "./skoda-view";
 import { SkodaClimate } from "./skoda-climate";
 import { weatherView, wxTint } from "./weather-view";
 import { WeatherIcon } from "./weather-icon";
-import { Sunrise, Sunset, Wind } from "lucide-react";
+import { Droplets, Moon, Snowflake, Sun, Sunrise, Sunset, Wind } from "lucide-react";
 import { SonosRooms } from "./sonos-rooms";
 import { AegControls } from "./aeg-controls";
 import { SpotifyControls } from "./spotify-controls";
@@ -123,21 +123,32 @@ export const WeatherCard = ({ state, now }: P) => (
                   <span className="wx-h">{h.label}</span>
                   <WeatherIcon icon={h.icon} />
                   <strong>{h.temp}</strong>
-                  <span className="wx-rain">{h.rain ?? "\u00a0"}</span>
+                  <span className={`wx-chance ${h.kind ?? ""}`}>{h.rain ?? "\u00a0"}</span>
                 </li>
               ))}
             </ol>
           )}
           {v.days.length > 0 && (
-            <ol className="wx-days" aria-label="Kommande dagar">
+            <ol className="wx-days" aria-label="Kommande dagar, natt och dag">
+              <li className="wx-days-head" aria-hidden="true">
+                <span /><span />
+                <span className="wx-night-h"><Moon /> natt</span><span />
+                <span className="wx-day-h"><Sun /> dag</span>
+              </li>
               {v.days.map((x) => (
                 <li key={x.label}>
                   <span className="wx-day">{x.label}</span>
                   <WeatherIcon icon={x.icon} />
-                  <span className="wx-min">{x.min}</span>
+                  <span className="wx-min" aria-label={`natt ${x.night}`}>{x.night}</span>
                   <span className="wx-range" aria-hidden="true"><i style={{ left: `${x.left}%`, width: `${x.width}%` }} /></span>
-                  <span className="wx-max">{x.max}</span>
-                  <span className="wx-mm">{x.rain ?? ""}</span>
+                  <span className="wx-max" aria-label={`dag ${x.day}`}>{x.day}</span>
+                  {x.precip && (
+                    <span className={`wx-precip ${x.precip.kind}`}>
+                      {x.precip.kind !== "snow" && <Droplets aria-hidden="true" />}
+                      {x.precip.kind !== "rain" && <Snowflake aria-hidden="true" />}
+                      {x.precip.text}
+                    </span>
+                  )}
                 </li>
               ))}
             </ol>

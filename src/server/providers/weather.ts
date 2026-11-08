@@ -43,13 +43,35 @@ export function parseForecast(json: Record<string, unknown>) {
     return [{ time, tempC, code, rainPct: rain, isDay: num(list(hourly.is_day)[i]) !== 0 }];
   }).slice(0, 24);
 
+  // Dag och natt per datum ur HELA timserien (även timmar som passerat): varmaste ljusa timmen och kallaste mörka timmen.
+  const byDate = new Map<string, { day: number[]; night: number[] }>();
+  times.forEach((t, i) => {
+    const time = timeStr(t);
+    const temp = num(list(hourly.temperature_2m)[i]);
+    const flag = num(list(hourly.is_day)[i]);
+    if (!time || temp === null || flag === null) return;
+    const e = byDate.get(time.slice(0, 10)) ?? { day: [], night: [] };
+    (flag !== 0 ? e.day : e.night).push(temp);
+    byDate.set(time.slice(0, 10), e);
+  });
+  const round1 = (v: number) => Math.round(v * 10) / 10;
+
   const dates = list(daily.time);
   const days = dates.flatMap((d, i) => {
     const maxC = num(list(daily.temperature_2m_max)[i]);
     const minC = num(list(daily.temperature_2m_min)[i]);
     const code = num(list(daily.weather_code)[i]);
     if (typeof d !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(d) || maxC === null || minC === null || code === null) return [];
-    return [{ date: d, code, minC, maxC, rainMm: num(list(daily.precipitation_sum)[i]) }];
+    const rain = num(list(daily.rain_sum)[i]);
+    const showers = num(list(daily.showers_sum)[i]);
+    const e = byDate.get(d);
+    return [{
+      date: d, code, minC, maxC,
+      rainMm: rain === null && showers === null ? null : round1((rain ?? 0) + (showers ?? 0)),
+      snowCm: num(list(daily.snowfall_sum)[i]),
+      dayC: e?.day.length ? Math.max(...e.day) : null,
+      nightC: e?.night.length ? Math.min(...e.night) : null,
+    }];
   }).slice(0, 5);
 
   const isDay = num(cur.is_day);
@@ -84,7 +106,7 @@ export function createWeatherProvider(deps: WeatherDeps): Provider<WeatherData> 
       forecastUrl.searchParams.set("longitude", String(place.lon));
       forecastUrl.searchParams.set("current", "temperature_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_gusts_10m");
       forecastUrl.searchParams.set("hourly", "temperature_2m,weather_code,precipitation_probability,is_day");
-      forecastUrl.searchParams.set("daily", "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset");
+      forecastUrl.searchParams.set("daily", "weather_code,temperature_2m_max,temperature_2m_min,rain_sum,showers_sum,snowfall_sum,sunrise,sunset");
       forecastUrl.searchParams.set("forecast_days", "5");
       forecastUrl.searchParams.set("wind_speed_unit", "ms");
       forecastUrl.searchParams.set("timezone", "Europe/Stockholm");

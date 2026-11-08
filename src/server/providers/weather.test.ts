@@ -35,7 +35,7 @@ describe("weather provider", () => {
     expect(f.searchParams.get("longitude")).toBe("22.1547");
     expect(f.searchParams.get("current")).toBe("temperature_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_gusts_10m");
     expect(f.searchParams.get("hourly")).toBe("temperature_2m,weather_code,precipitation_probability,is_day");
-    expect(f.searchParams.get("daily")).toBe("weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset");
+    expect(f.searchParams.get("daily")).toBe("weather_code,temperature_2m_max,temperature_2m_min,rain_sum,showers_sum,snowfall_sum,sunrise,sunset");
     expect(f.searchParams.get("forecast_days")).toBe("5");
     expect(f.searchParams.get("wind_speed_unit")).toBe("ms");
     const a = new URL(calls.find((u) => u.includes("air-quality-api.open-meteo.com/v1/air-quality"))!);
@@ -74,7 +74,9 @@ const FULL = {
     weather_code: [3, 71, 3, 3, 3, 3],
     temperature_2m_max: [7, 1, 4, 3, 2, 2],
     temperature_2m_min: [2, -3, 0, 0, 0, 0],
-    precipitation_sum: [0, 3.4, 0, 0.1, 0, 0],
+    rain_sum: [0, 1.2, 0, 0.1, 0, 0],
+    showers_sum: [0, 0.3, 0, 0, 0, 0],
+    snowfall_sum: [0, 2.1, 0, 0, 0, 0],
     sunrise: ["2026-11-08T08:41", "2026-11-09T08:45", "", "", "", ""],
     sunset: ["2026-11-08T14:32", "2026-11-09T14:28", "", "", "", ""],
   },
@@ -88,7 +90,7 @@ describe("parseForecast", () => {
     expect(f.hourly.map((h) => h.time)).toEqual(["2026-11-08T11:00", "2026-11-08T12:00"]);
     expect(f.hourly[1]).toEqual({ time: "2026-11-08T12:00", tempC: 7.5, code: 61, rainPct: null, isDay: true });
     expect(f.daily).toHaveLength(5);
-    expect(f.daily[1]).toEqual({ date: "2026-11-09", code: 71, minC: -3, maxC: 1, rainMm: 3.4 });
+    expect(f.daily[1]).toEqual({ date: "2026-11-09", code: 71, minC: -3, maxC: 1, rainMm: 1.5, snowCm: 2.1, dayC: null, nightC: null });
   });
   it("missing or garbage parts give empty lists and nulls, never a throw", () => {
     for (const bad of [{}, { current: {}, hourly: null, daily: "x" }, { current: { time: 5 }, hourly: { time: "x" }, daily: { time: [1] } }]) {
@@ -109,5 +111,26 @@ describe("weather provider forecast data", () => {
     expect(d.hourly).toHaveLength(2);
     expect(d.daily).toHaveLength(5);
     expect((await safeSummary(p)).status).toBe("ok");
+  });
+});
+
+describe("day and night temperatures from the hourly forecast", () => {
+  const H = (t: string, temp: number, day: 0 | 1) => ({ t, temp, day });
+  const hours = [
+    H("2026-11-08T00:00", -1, 0), H("2026-11-08T06:00", -4, 0), H("2026-11-08T10:00", 3, 1), H("2026-11-08T13:00", 6, 1), H("2026-11-08T20:00", 1, 0),
+    H("2026-11-09T03:00", -6, 0), H("2026-11-09T12:00", -2, 1),
+  ];
+  const json = {
+    current: { time: "2026-11-08T00:00" },
+    hourly: { time: hours.map((h) => h.t), temperature_2m: hours.map((h) => h.temp), weather_code: hours.map(() => 3), precipitation_probability: hours.map(() => 0), is_day: hours.map((h) => h.day) },
+    daily: { time: ["2026-11-08", "2026-11-09", "2026-11-10"], weather_code: [3, 3, 3], temperature_2m_max: [7, -1, 0], temperature_2m_min: [-5, -7, -2], rain_sum: [0, 0, 0], showers_sum: [0, 0, 0], snowfall_sum: [0, 0, 0] },
+  };
+  it("day is the warmest daylight hour and night the coldest dark hour of that date", () => {
+    const f = parseForecast(json);
+    expect(f.daily[0]).toMatchObject({ dayC: 6, nightC: -4 });
+    expect(f.daily[1]).toMatchObject({ dayC: -2, nightC: -6 });
+  });
+  it("a date without hourly data keeps null (the card falls back to max/min)", () => {
+    expect(parseForecast(json).daily[2]).toMatchObject({ dayC: null, nightC: null });
   });
 });
