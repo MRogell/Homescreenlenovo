@@ -19,6 +19,50 @@ export interface WeatherDeps {
 }
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const rec = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+const timeStr = (v: unknown): string | null => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v) ? v : null);
+
+/**
+ * Prognosdelarna ur Open-Meteos svar. Trasiga eller saknade delar ger tomma listor och null, aldrig ett fel:
+ * nuvädret ska visas även om prognosen är ofullständig. Tider är lokala (Europe/Stockholm).
+ */
+export function parseForecast(json: Record<string, unknown>) {
+  const cur = rec(json.current);
+  const hourly = rec(json.hourly);
+  const daily = rec(json.daily);
+  const currentHour = (timeStr(cur.time) ?? "").slice(0, 13);
+
+  const times = list(hourly.time);
+  const hours = times.flatMap((t, i) => {
+    const time = timeStr(t);
+    const tempC = num(list(hourly.temperature_2m)[i]);
+    const code = num(list(hourly.weather_code)[i]);
+    if (!time || tempC === null || code === null || !currentHour || time.slice(0, 13) < currentHour) return [];
+    const rain = num(list(hourly.precipitation_probability)[i]);
+    return [{ time, tempC, code, rainPct: rain, isDay: num(list(hourly.is_day)[i]) !== 0 }];
+  }).slice(0, 24);
+
+  const dates = list(daily.time);
+  const days = dates.flatMap((d, i) => {
+    const maxC = num(list(daily.temperature_2m_max)[i]);
+    const minC = num(list(daily.temperature_2m_min)[i]);
+    const code = num(list(daily.weather_code)[i]);
+    if (typeof d !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(d) || maxC === null || minC === null || code === null) return [];
+    return [{ date: d, code, minC, maxC, rainMm: num(list(daily.precipitation_sum)[i]) }];
+  }).slice(0, 5);
+
+  const isDay = num(cur.is_day);
+  return {
+    isDay: isDay === null ? null : isDay !== 0,
+    feelsLikeC: num(cur.apparent_temperature),
+    gustMs: num(cur.wind_gusts_10m),
+    hourly: hours,
+    daily: days,
+    sunrise: timeStr(list(daily.sunrise)[0]),
+    sunset: timeStr(list(daily.sunset)[0]),
+  };
+}
 
 export function createWeatherProvider(deps: WeatherDeps): Provider<WeatherData> {
   const fetchFn = deps.fetchFn ?? fetch;
@@ -38,7 +82,10 @@ export function createWeatherProvider(deps: WeatherDeps): Provider<WeatherData> 
       const forecastUrl = new URL(FORECAST);
       forecastUrl.searchParams.set("latitude", String(place.lat));
       forecastUrl.searchParams.set("longitude", String(place.lon));
-      forecastUrl.searchParams.set("current", "temperature_2m,weather_code,wind_speed_10m");
+      forecastUrl.searchParams.set("current", "temperature_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_gusts_10m");
+      forecastUrl.searchParams.set("hourly", "temperature_2m,weather_code,precipitation_probability,is_day");
+      forecastUrl.searchParams.set("daily", "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset");
+      forecastUrl.searchParams.set("forecast_days", "5");
       forecastUrl.searchParams.set("wind_speed_unit", "ms");
       forecastUrl.searchParams.set("timezone", "Europe/Stockholm");
       const airUrl = new URL(AIR);
@@ -63,6 +110,7 @@ export function createWeatherProvider(deps: WeatherDeps): Provider<WeatherData> 
         windMs: num(cur?.wind_speed_10m),
         aqi: aqi === null ? null : Math.round(aqi),
         aqiLabel: aqi === null ? null : aqiLabel(aqi),
+        ...parseForecast(forecast.value),
       };
     },
   };

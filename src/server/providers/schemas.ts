@@ -76,6 +76,16 @@ export const weatherSchema = z.object({
   windMs: z.number().nullable(),
   aqi: z.number().nullable(),
   aqiLabel: z.string().nullable(),
+  // Tillkom senare: valfria så att äldre cachade svar godtas.
+  isDay: z.boolean().nullable().default(null),
+  feelsLikeC: z.number().nullable().default(null),
+  gustMs: z.number().nullable().default(null),
+  /** Kommande timmar (lokal tid, Europe/Stockholm). Kortet väljer själv de närmaste efter klockan. */
+  hourly: z.array(z.object({ time: z.string(), tempC: z.number(), code: z.number(), rainPct: z.number().nullable(), isDay: z.boolean() })).default([]),
+  /** Dagsprognos, idag först. */
+  daily: z.array(z.object({ date: z.string(), code: z.number(), minC: z.number(), maxC: z.number(), rainMm: z.number().nullable() })).default([]),
+  sunrise: z.string().nullable().default(null),
+  sunset: z.string().nullable().default(null),
 });
 export type WeatherData = z.infer<typeof weatherSchema>;
 

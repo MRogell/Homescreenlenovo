@@ -261,3 +261,32 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   padding: 8px; gap: 6px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 16px 40px rgb(0 0 0 / .45); }
 .sp-popover .device { background: var(--surface-2); }
 .skoda-place small.stale { color: var(--warn); }
+
+/* Väder: nu, närmaste timmarna, fem dagar, sol och vind. Kortet tonas efter vädret (--wx-tint). */
+.card.weather { background: linear-gradient(180deg, color-mix(in srgb, var(--wx-tint, var(--surface)) 26%, var(--surface)) 0%, var(--surface) 70%); }
+.wx-icon { fill: none; stroke: currentColor; stroke-width: 1.7; flex: none; }
+.wx-sun, .wx-cloud-sun { color: #f2c14e; } .wx-moon, .wx-cloud-moon { color: #b9c6e8; }
+.wx-rain, .wx-drizzle { color: var(--dial-cold); } .wx-snow { color: #cfe3f5; } .wx-storm { color: #b39ddb; }
+.wx-cloud, .wx-fog { color: var(--muted); }
+.wx-now { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.wx-now-icon { width: 56px; height: 56px; stroke-width: 1.5; }
+.wx-now .mid { font-size: 14px; }
+.wx-hours { list-style: none; margin: 4px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; text-align: center; }
+.wx-hours li { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.wx-hours .wx-icon { width: 22px; height: 22px; }
+.wx-hours strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.wx-h { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wx-hours .wx-rain { font-size: 11px; color: var(--dial-cold); font-variant-numeric: tabular-nums; }
+.wx-days { list-style: none; margin: 0; padding: 8px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.wx-days li { display: grid; grid-template-columns: 3.2em 22px 2.6em minmax(30px, 1fr) 2.6em 3.6em; align-items: center; gap: 8px; font-size: 14px; }
+.wx-days .wx-icon { width: 20px; height: 20px; }
+.wx-day { font-weight: 600; }
+.wx-min { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.wx-max { font-weight: 600; font-variant-numeric: tabular-nums; }
+.wx-range { position: relative; height: 5px; border-radius: 5px; background: color-mix(in srgb, var(--fg) 12%, transparent); }
+.wx-range i { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: linear-gradient(90deg, var(--dial-cold), var(--dial-warm)); }
+.wx-mm { font-size: 12px; color: var(--dial-cold); text-align: right; white-space: nowrap; }
+.wx-meta { margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+.wx-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.wx-meta svg { width: 16px; height: 16px; flex: none; }
+.wx-meta svg + svg, .wx-meta span > svg:not(:first-child) { margin-left: 8px; }

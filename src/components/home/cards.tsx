@@ -5,6 +5,9 @@ import { CardShell } from "./card-shell";
 import { Icon, type IconName } from "./icons";
 import { skodaView } from "./skoda-view";
 import { SkodaClimate } from "./skoda-climate";
+import { weatherView, wxTint } from "./weather-view";
+import { WeatherIcon } from "./weather-icon";
+import { Sunrise, Sunset, Wind } from "lucide-react";
 import { SonosRooms } from "./sonos-rooms";
 import { AegControls } from "./aeg-controls";
 import { SpotifyControls } from "./spotify-controls";
@@ -99,14 +102,53 @@ export const AegCard = ({ state, now }: P) => (
 );
 
 export const WeatherCard = ({ state, now }: P) => (
-  <CardShell<WeatherData> title="Väder" icon="cloud" state={as(state)} now={now} render={(d) => ({
-    pill: d.aqiLabel ? { text: `Luft: ${d.aqiLabel}`, tone: d.aqi !== null && d.aqi <= 40 ? "ok" : d.aqi !== null && d.aqi <= 60 ? undefined : "warn" } : undefined,
-    body: <>
-      <div className="big">{formatTemp(d.tempC)}<small>°C</small></div>
-      <div className="mid"><strong>{d.place}</strong> · {d.text}{d.windMs !== null && ` · vind ${Math.round(d.windMs)} m/s`}</div>
-      <div className="rows"><div className="row"><span>Luftkvalitet</span><span>{d.aqi !== null ? `${d.aqi} · ${d.aqiLabel}` : "–"}</span></div></div>
-    </>,
-  })} />
+  <CardShell<WeatherData> title="Väder" icon="cloud" state={as(state)} now={now} className="weather"
+    style={(d) => ({ "--wx-tint": wxTint(d.code, d.isDay) }) as React.CSSProperties}
+    render={(d) => {
+      const v = weatherView(d, now);
+      return {
+        pill: d.aqiLabel ? { text: `Luft: ${d.aqiLabel}`, tone: d.aqi !== null && d.aqi <= 40 ? "ok" : d.aqi !== null && d.aqi <= 60 ? undefined : "warn" } : undefined,
+        body: <>
+          <div className="wx-now">
+            <WeatherIcon icon={v.icon} className="wx-now-icon" />
+            <div>
+              <div className="big">{formatTemp(d.tempC)}<small>°C</small></div>
+              <div className="mid"><strong>{d.text}</strong> · {d.place}{v.feelsLike && <> · {v.feelsLike}</>}</div>
+            </div>
+          </div>
+          {v.hours.length > 0 && (
+            <ol className="wx-hours" aria-label="Närmaste timmarna">
+              {v.hours.map((h) => (
+                <li key={h.label}>
+                  <span className="wx-h">{h.label}</span>
+                  <WeatherIcon icon={h.icon} />
+                  <strong>{h.temp}</strong>
+                  <span className="wx-rain">{h.rain ?? "\u00a0"}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          {v.days.length > 0 && (
+            <ol className="wx-days" aria-label="Kommande dagar">
+              {v.days.map((x) => (
+                <li key={x.label}>
+                  <span className="wx-day">{x.label}</span>
+                  <WeatherIcon icon={x.icon} />
+                  <span className="wx-min">{x.min}</span>
+                  <span className="wx-range" aria-hidden="true"><i style={{ left: `${x.left}%`, width: `${x.width}%` }} /></span>
+                  <span className="wx-max">{x.max}</span>
+                  <span className="wx-mm">{x.rain ?? ""}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          <div className="wx-meta">
+            {v.sun && <span><Sunrise aria-hidden="true" />{v.sun.rise}<Sunset aria-hidden="true" />{v.sun.set}</span>}
+            {v.wind && <span><Wind aria-hidden="true" />{v.wind}</span>}
+          </div>
+        </>,
+      };
+    }} />
 );
 
 export const TadoCard = ({ state, now }: P) => (

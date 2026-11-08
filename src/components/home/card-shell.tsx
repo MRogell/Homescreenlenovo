@@ -13,10 +13,12 @@ interface Props<T> {
   render: (data: T) => { pill?: Pill; body: React.ReactNode };
   /** Extra klass, t.ex. för kort som tar två kolumner. */
   className?: string;
+  /** Extra stil på kortet, t.ex. en färgton (--wx-tint) som beror på datan. */
+  style?: (data: T) => React.CSSProperties | undefined;
 }
 
 /** Gemensam ram som hanterar alla fyra lägen. Tjänsterna renderar bara sin egen data. */
-export function CardShell<T>({ title, icon, state, now, render, className = "" }: Props<T>) {
+export function CardShell<T>({ title, icon, state, now, render, className = "", style }: Props<T>) {
   if (!state || state.status === "not_connected") {
     return (
       <section className={`card off ${className}`} aria-label={title}>
@@ -38,7 +40,7 @@ export function CardShell<T>({ title, icon, state, now, render, className = "" }
   }
   const { pill, body } = render(state.data);
   return (
-    <section className={`card ${className}`} aria-label={title}>
+    <section className={`card ${className}`} aria-label={title} style={style?.(state.data)}>
       <div className="card-head">
         <Icon name={icon} /><span className="name">{title}</span>
         {state.status === "stale" ? <span className="pill bad">Ej tillgänglig</span> : pill && <span className={`pill ${pill.tone ?? ""}`}>{pill.text}</span>}
