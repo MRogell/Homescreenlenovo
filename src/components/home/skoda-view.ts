@@ -13,6 +13,8 @@ export interface SkodaView {
   /** Lås, dörrar, fönster, bagage (och motorhuv om den står öppen). Värden bilen inte rapporterar utelämnas. */
   checks: SkodaCheck[];
   place: string;
+  /** Hela adressen (för title), eller null om platsen är okänd. */
+  placeFull: string | null;
   reported: string | null;
 }
 
@@ -30,6 +32,12 @@ function reportedText(iso: string | null, now: Date): string | null {
     : day(at) === day(yesterday) ? `igår ${clock(at)}`
     : `${at.toLocaleDateString("sv-SE", { day: "numeric", month: "short", timeZone: TZ })} ${clock(at)}`;
   return `Bilen rapporterade ${when}`;
+}
+
+/** Kortare adress för en rad: postnumret ("973 32") och "Sverige" tas bort. Hela adressen finns kvar som title. */
+export function shortAddress(address: string): string {
+  const parts = address.split(",").map((p) => p.replace(/\b\d{3}\s?\d{2}\b/g, "").replace(/\s+/g, " ").trim()).filter((p) => p && !/^(sverige|sweden)$/i.test(p));
+  return parts.join(", ") || address.trim();
 }
 
 function pillFor(d: SkodaData): SkodaView["pill"] {
@@ -74,7 +82,8 @@ export function skodaView(d: SkodaData, now: Date): SkodaView {
     chargeLine,
     targetPct: d.charging ? d.chargeTargetPct : null,
     checks,
-    place: d.parked ?? "Plats okänd",
+    place: d.parked ? shortAddress(d.parked) : "Plats okänd",
+    placeFull: d.parked,
     reported: reportedText(d.capturedAt, now),
   };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { skodaSchema, type SkodaData } from "@/server/providers/schemas";
-import { skodaView } from "./skoda-view";
+import { shortAddress, skodaView } from "./skoda-view";
 
 const NOW = new Date("2026-11-08T18:00:00+01:00");
 const base: SkodaData = skodaSchema.parse({ rangeKm: 312, levelPct: 78, levelKind: "battery", locked: true, charging: false, parked: "Storgatan 1", doorsOpen: false, windowsOpen: false, trunkOpen: false, bonnetOpen: false });
@@ -83,5 +83,20 @@ describe("skodaView level, place and report time", () => {
   it("old payloads without the new fields still parse", () => {
     const old = skodaSchema.parse({ rangeKm: 1, levelPct: 2, levelKind: "fuel", locked: null, charging: false, parked: null });
     expect(skodaView(old, NOW).checks).toEqual([]);
+  });
+});
+
+describe("shortAddress", () => {
+  it("drops the postal code and country", () => {
+    expect(shortAddress("Klintvägen 247B, 973 32 Innerstaden-Östermalm")).toBe("Klintvägen 247B, Innerstaden-Östermalm");
+    expect(shortAddress("Storgatan 1, 97231 Luleå, Sverige")).toBe("Storgatan 1, Luleå");
+  });
+  it("keeps house numbers and plain addresses", () => {
+    expect(shortAddress("Storgatan 12")).toBe("Storgatan 12");
+  });
+  it("the card keeps the full address for the tooltip", () => {
+    const r = skodaView({ ...base, parked: "Storgatan 1, 972 31 Luleå" }, NOW);
+    expect(r.place).toBe("Storgatan 1, Luleå");
+    expect(r.placeFull).toBe("Storgatan 1, 972 31 Luleå");
   });
 });

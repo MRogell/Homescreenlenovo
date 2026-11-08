@@ -162,9 +162,10 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .skoda-checks strong { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .skoda-checks li.ok strong { color: var(--fg); }
 .skoda-checks small { font-size: 12px; color: var(--muted); }
-.skoda-place { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); margin-top: auto; }
+.skoda-place { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); margin-top: 4px; }
 .skoda-place > span { display: flex; flex-direction: column; min-width: 0; }
-.skoda-place .addr { color: var(--fg); font-size: 14px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; }
+.skoda-place .addr { color: var(--fg); font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .skoda-place small { font-size: 12px; }
-.skoda .foot { margin-top: 0; }
+/* Platsen ligger direkt under rutorna; bara "Uppdaterad" står längst ner, som i övriga kort. */
+.skoda .foot { margin-top: auto; }
 @media (max-width: 560px) { .skoda-checks { grid-template-columns: repeat(4, minmax(0, 1fr)); } .skoda-checks li { flex-direction: column; text-align: center; padding: 8px 4px; gap: 4px; } .skoda-checks li span { align-items: center; } }
