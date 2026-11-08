@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { HomeStates } from "@/server/snapshots";
+import { CARD_ORDER } from "./card-order";
 import { Clock } from "./clock";
 import { RefreshContext } from "./refresh-context";
 import { AegCard, ArloUnsupportedCard, SkodaCard, SonosCard, SpotifyCard, TadoCard, WeatherCard } from "./cards";
@@ -41,13 +42,17 @@ export function HomeScreen({ initial, initialNow }: { initial: HomeStates; initi
       <header className="top-bar"><Clock /></header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
       <main className="grid">
-        <SkodaCard state={states.skoda} now={now} />
-        <SonosCard state={states.sonos} now={now} />
-        <SpotifyCard state={states.spotify} now={now} />
-        <AegCard state={states.aeg} now={now} />
-        <ArloUnsupportedCard />
-        <WeatherCard state={states.weather} now={now} />
-        <TadoCard state={states.tado} now={now} />
+        {CARD_ORDER.map((id) => {
+          switch (id) {
+            case "weather": return <WeatherCard key={id} state={states.weather} now={now} />;
+            case "spotify": return <SpotifyCard key={id} state={states.spotify} now={now} />;
+            case "aeg": return <AegCard key={id} state={states.aeg} now={now} />;
+            case "tado": return <TadoCard key={id} state={states.tado} now={now} />;
+            case "arlo": return <ArloUnsupportedCard key={id} />;
+            case "skoda": return <SkodaCard key={id} state={states.skoda} now={now} />;
+            case "sonos": return <SonosCard key={id} state={states.sonos} now={now} />;
+          }
+        })}
       </main>
     </div>
     </RefreshContext.Provider>
