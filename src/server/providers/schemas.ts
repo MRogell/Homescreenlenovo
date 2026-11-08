@@ -38,6 +38,11 @@ export const spotifySchema = z.object({
   /** Spotify tillåter volymstyrning av den aktiva enheten. */
   supportsVolume: z.boolean(),
   volume: z.number().min(0).max(100).nullable(),
+  // Tillkom senare: valfria så att äldre cachade svar godtas.
+  /** Omslag från Spotifys bildserver (bara https://i.scdn.co/...). */
+  imageUrl: z.string().nullable().default(null),
+  progressMs: z.number().min(0).nullable().default(null),
+  durationMs: z.number().min(0).nullable().default(null),
 });
 export const aegSchema = z.object({
   appliance: z.string(),

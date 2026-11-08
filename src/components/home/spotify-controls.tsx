@@ -1,5 +1,5 @@
 "use client";
-import { Pause, Play, SkipBack, SkipForward, Speaker } from "lucide-react";
+import { ChevronDown, Pause, Play, SkipBack, SkipForward, Speaker, Volume1, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRefreshSpotify } from "./refresh-context";
 
@@ -127,17 +127,19 @@ export function SpotifyControls({ playing, device, deviceRestricted = false, sup
       </div>
       )}
       {!restricted && device && (supportsVolume ? (
-        <label className="volume" htmlFor="spotify-volume">
-          <span>Volym</span>
-          <input id="spotify-volume" type="range" min={0} max={100} step={1} value={shownVolume} aria-valuetext={`${shownVolume} procent`} onChange={(e) => changeVolume(Number(e.target.value))} />
-          <span className="volume-value">{shownVolume}</span>
+        <label className="volume sp-volume" htmlFor="spotify-volume">
+          <Volume1 aria-hidden="true" />
+          <span className="sr-only">Volym</span>
+          <input id="spotify-volume" type="range" min={0} max={100} step={1} value={shownVolume} aria-valuetext={`${shownVolume} procent`} style={{ "--vol": `${shownVolume}%` } as React.CSSProperties} onChange={(e) => changeVolume(Number(e.target.value))} />
+          <Volume2 aria-hidden="true" />
         </label>
       ) : (
         <p className="mid small">Volymen ändras på {device} (Spotify tillåter det inte härifrån).</p>
       ))}
-      <button type="button" className="device switch" aria-expanded={picker?.mode === "switch"} disabled={busy} onClick={openSwitcher}>
-        <span className="switch-label"><Speaker aria-hidden="true" /> Byt enhet</span>
-        <span>{device ?? "Ingen aktiv"}</span>
+      <button type="button" className="sp-device" aria-expanded={picker?.mode === "switch"} aria-label={`Byt enhet, nu ${device ?? "ingen aktiv"}`} disabled={busy} onClick={openSwitcher}>
+        <Speaker aria-hidden="true" />
+        <span>{device ?? "Ingen aktiv enhet"}</span>
+        <ChevronDown aria-hidden="true" className={picker?.mode === "switch" ? "open" : ""} />
       </button>
       {picker && (
         <div className="devices" role="group" aria-label="Välj enhet">

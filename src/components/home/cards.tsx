@@ -8,6 +8,8 @@ import { SkodaClimate } from "./skoda-climate";
 import { SonosRooms } from "./sonos-rooms";
 import { AegControls } from "./aeg-controls";
 import { SpotifyControls } from "./spotify-controls";
+import { SpotifyArt } from "./spotify-art";
+import { SpotifyProgress } from "./spotify-progress";
 
 type S<T> = CardState<unknown> | undefined;
 const as = <T,>(s: S<T>) => s as CardState<T> | undefined;
@@ -61,10 +63,20 @@ export const SonosCard = ({ state, now }: P) => (
 );
 
 export const SpotifyCard = ({ state, now }: P) => (
-  <CardShell<SpotifyData> title="Spotify" icon="note" state={as(state)} now={now} render={(d) => ({
+  <CardShell<SpotifyData> title="Spotify" icon="note" state={as(state)} now={now} className="spotify" render={(d) => ({
     pill: { text: d.playing ? "Spelar" : "Pausad", tone: d.playing ? "ok" : undefined },
-    // Enhet visas i "Byt enhet" och läget i pillret, så de står inte en gång till. När inget spelar visas när låten senast spelades.
-    body: <><div className="big text">{d.title}</div>{(d.artist || (!d.playing && d.lastPlayedAt)) && <div className="mid">{[d.artist, !d.playing && d.lastPlayedAt ? `senast ${formatClock(d.lastPlayedAt)}` : null].filter(Boolean).join(" · ")}</div>}<SpotifyControls playing={d.playing} device={d.device} deviceRestricted={d.deviceRestricted} supportsVolume={d.supportsVolume} volume={d.volume} /></>,
+    body: <>
+      <div className="sp-top">
+        <SpotifyArt url={d.imageUrl} dim={!d.playing} />
+        <div className="sp-meta">
+          <div className="sp-title" title={d.title}>{d.title}</div>
+          {d.artist && <div className="sp-artist" title={d.artist}>{d.artist}</div>}
+          <div className="sp-where">{d.playing ? (d.device ? `på ${d.device}` : null) : d.lastPlayedAt ? `senast ${formatClock(d.lastPlayedAt)}` : null}</div>
+        </div>
+      </div>
+      <SpotifyProgress progressMs={d.progressMs} durationMs={d.durationMs} playing={d.playing} fetchedAt={state && "fetchedAt" in state ? state.fetchedAt : null} />
+      <SpotifyControls playing={d.playing} device={d.device} deviceRestricted={d.deviceRestricted} supportsVolume={d.supportsVolume} volume={d.volume} />
+    </>,
   })} />
 );
 

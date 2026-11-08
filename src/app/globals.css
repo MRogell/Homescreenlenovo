@@ -214,3 +214,42 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-info { display: contents; }
   .skoda-info .skoda-place { order: 2; margin-top: 4px; }
 }
+
+/* Spotify: omslag, förlopp, rund spela-knapp, volym med ikoner och enhetsknapp. Kortet tonas av omslagets färg (--sp-tint). */
+.card.spotify { background: linear-gradient(180deg, color-mix(in srgb, var(--sp-tint, var(--surface)) 30%, var(--surface)) 0%, var(--surface) 80%); transition: background .6s ease; }
+.sp-top { display: flex; gap: 14px; align-items: center; min-width: 0; }
+.sp-art { width: 96px; height: 96px; flex: none; border-radius: 12px; overflow: hidden; background: var(--surface-2); display: grid; place-items: center; box-shadow: 0 8px 24px rgb(0 0 0 / .35); }
+.sp-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sp-art svg { width: 36px; height: 36px; color: var(--muted); }
+.sp-art.dim img { filter: grayscale(.4) brightness(.75); }
+.sp-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sp-title { font: 600 22px/1.15 var(--display); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+.sp-artist { color: var(--fg); opacity: .8; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-where { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-where:empty { display: none; }
+.sp-progress { display: flex; flex-direction: column; gap: 4px; }
+.sp-progress-bar { height: 4px; border-radius: 4px; background: color-mix(in srgb, var(--fg) 18%, transparent); overflow: hidden; }
+.sp-progress-bar i { display: block; height: 100%; background: var(--fg); border-radius: 4px; transition: width 1s linear; }
+.sp-progress-times { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .sp-progress-bar i, .card.spotify { transition: none; } }
+.card.spotify .controls { gap: 10px; margin-top: auto; }
+.card.spotify .controls-row { gap: 18px; }
+.card.spotify .ctl { border: 0; background: transparent; min-width: 48px; min-height: 48px; }
+.card.spotify .ctl svg { width: 26px; height: 26px; fill: currentColor; }
+.card.spotify .ctl.main { min-width: 64px; min-height: 64px; background: var(--fg); color: var(--bg); }
+.card.spotify .ctl.main svg { width: 28px; height: 28px; }
+.sp-volume { gap: 10px; min-height: 40px; }
+.sp-volume svg { width: 20px; height: 20px; flex: none; color: var(--muted); }
+.sp-volume input { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--fg) var(--vol, 50%), color-mix(in srgb, var(--fg) 18%, transparent) var(--vol, 50%)); }
+.sp-volume input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
+.sp-volume input::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
+.sp-volume input:focus-visible { outline: 3px solid var(--fg); outline-offset: 6px; }
+.sp-device { align-self: center; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; max-width: 100%; padding: 0 16px; border-radius: 99px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface-2) 70%, transparent); color: var(--fg); font: 600 14px var(--body); cursor: pointer; }
+.sp-device span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-device svg { width: 18px; height: 18px; flex: none; color: var(--ok); }
+.sp-device svg:last-child { color: var(--muted); transition: transform .2s; }
+.sp-device svg.open { transform: rotate(180deg); }
+.sp-device:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.sp-device:disabled { opacity: .6; cursor: default; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (max-width: 560px) { .sp-art { width: 80px; height: 80px; } .sp-title { font-size: 20px; } }

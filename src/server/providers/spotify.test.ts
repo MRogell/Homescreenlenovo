@@ -20,7 +20,7 @@ describe("spotify provider", () => {
   it("200 playing", async () => {
     const { p } = make({ "/me/player": { body: player() } });
     const d = await p.getSummary();
-    expect(d).toEqual({ playing: true, title: "Låt", artist: "Artist A, Artist B", device: "Sonos Vardagsrum", lastPlayedAt: "2026-11-07T18:00:00.000Z", deviceRestricted: false, supportsVolume: false, volume: null });
+    expect(d).toEqual({ playing: true, title: "Låt", artist: "Artist A, Artist B", device: "Sonos Vardagsrum", lastPlayedAt: "2026-11-07T18:00:00.000Z", deviceRestricted: false, supportsVolume: false, volume: null, imageUrl: null, progressMs: null, durationMs: null });
     expect(spotifySchema.safeParse(d).success).toBe(true);
   });
   it("sends the bearer token", async () => {
@@ -35,11 +35,11 @@ describe("spotify provider", () => {
   });
   it("204 falls back to recently-played", async () => {
     const { p } = make({ "/me/player": { status: 204 }, "/me/player/recently-played?limit=1": { body: { items: [{ played_at: "2026-11-07T16:51:00.000Z", track: { name: "Gammal", artists: [{ name: "X" }] } }] } } });
-    expect(await p.getSummary()).toEqual({ playing: false, title: "Gammal", artist: "X", device: null, lastPlayedAt: "2026-11-07T16:51:00.000Z", deviceRestricted: false, supportsVolume: false, volume: null });
+    expect(await p.getSummary()).toEqual({ playing: false, title: "Gammal", artist: "X", device: null, lastPlayedAt: "2026-11-07T16:51:00.000Z", deviceRestricted: false, supportsVolume: false, volume: null, imageUrl: null, progressMs: null, durationMs: null });
   });
   it('204 and empty history gives title "Inget spelas"', async () => {
     const { p } = make({ "/me/player": { status: 204 }, "/me/player/recently-played?limit=1": { body: { items: [] } } });
-    expect(await p.getSummary()).toEqual({ playing: false, title: "Inget spelas", artist: "", device: null, lastPlayedAt: null, deviceRestricted: false, supportsVolume: false, volume: null });
+    expect(await p.getSummary()).toEqual({ playing: false, title: "Inget spelas", artist: "", device: null, lastPlayedAt: null, deviceRestricted: false, supportsVolume: false, volume: null, imageUrl: null, progressMs: null, durationMs: null });
   });
   it("podcast episode uses show name", async () => {
     const { p } = make({ "/me/player": { body: player({ currently_playing_type: "episode", item: { name: "Avsnitt 5", show: { name: "Podden" } } }) } });
@@ -85,5 +85,40 @@ describe("device capabilities", () => {
   it("supports_volume without a number gives no volume", async () => {
     const { p } = make({ "/me/player": { body: player({ device: { name: "X", supports_volume: true } }) } });
     expect(await p.getSummary()).toMatchObject({ supportsVolume: false, volume: null });
+  });
+});
+
+describe("artwork and progress", () => {
+  const img = (w: number) => ({ url: `https://i.scdn.co/image/ab67616d0000${w}`, width: w, height: w });
+  it("track gives a ~300 px album image, progress and duration", async () => {
+    const { p } = make({ "/me/player": { status: 200, body: player({ progress_ms: 61_000, item: { name: "Låt", artists: [{ name: "A" }], duration_ms: 208_000, album: { images: [img(640), img(300), img(64)] } } }) } });
+    const d = await p.getSummary();
+    expect(d).toMatchObject({ imageUrl: "https://i.scdn.co/image/ab67616d0000300", progressMs: 61_000, durationMs: 208_000 });
+    expect(spotifySchema.safeParse(d).success).toBe(true);
+  });
+  it("podcast episode uses the episode or show image", async () => {
+    const { p } = make({ "/me/player": { status: 200, body: player({ currently_playing_type: "episode", item: { name: "Avsnitt", show: { name: "Podd", images: [img(300)] }, duration_ms: 1000 } }) } });
+    expect((await p.getSummary()).imageUrl).toBe("https://i.scdn.co/image/ab67616d0000300");
+  });
+  it("images from other hosts or non-https are ignored", async () => {
+    for (const url of ["http://i.scdn.co/image/x", "https://evil.example.com/x.jpg", "javascript:alert(1)"]) {
+      const { p } = make({ "/me/player": { status: 200, body: player({ item: { name: "Låt", artists: [], album: { images: [{ url, width: 300 }] } } }) } });
+      expect((await p.getSummary()).imageUrl, url).toBeNull();
+    }
+  });
+  it("recently played keeps the album image but has no progress", async () => {
+    const { p } = make({
+      "/me/player": { status: 204 },
+      "/me/player/recently-played?limit=1": { status: 200, body: { items: [{ played_at: "2026-11-07T17:51:00Z", track: { name: "Gammal", artists: [{ name: "B" }], duration_ms: 200_000, album: { images: [img(300)] } } }] } },
+    });
+    expect(await p.getSummary()).toMatchObject({ imageUrl: "https://i.scdn.co/image/ab67616d0000300", progressMs: null, durationMs: null });
+  });
+  it("ads and missing data give nulls", async () => {
+    const { p } = make({ "/me/player": { status: 200, body: player({ currently_playing_type: "ad", item: null }) } });
+    expect(await p.getSummary()).toMatchObject({ imageUrl: null, progressMs: null, durationMs: null });
+  });
+  it("old cached payloads without the new fields still parse", () => {
+    const old = spotifySchema.parse({ playing: false, title: "x", artist: "", device: null, lastPlayedAt: null, deviceRestricted: false, supportsVolume: false, volume: null, imageUrl: null, progressMs: null, durationMs: null });
+    expect(old).toMatchObject({ imageUrl: null, progressMs: null, durationMs: null });
   });
 });
