@@ -173,7 +173,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 :root { --dial-cold: #6fa8f0; --dial-mid: #b49ad8; --dial-warm: #ef7a6e; }
 .skoda-climate { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 12px 14px; border-radius: 18px; background: var(--surface-2); }
 .skoda-climate.on { background: linear-gradient(180deg, color-mix(in srgb, var(--dial-warm) 14%, var(--surface-2)), var(--surface-2) 70%); }
-.skoda-climate-status { align-self: stretch; display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.skoda-climate-status { align-self: stretch; margin: -6px 0 0 -6px; display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
 .skoda-climate.on .skoda-climate-status { color: var(--ok); }
 .skoda-climate.pending .skoda-climate-status { color: var(--warn); }
 .skoda-climate-status svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
@@ -196,7 +196,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .skoda-dial-value .minus { color: var(--dial-cold); } .skoda-dial-value .plus { color: var(--dial-warm); }
 .skoda-dial-value button:disabled { opacity: .35; cursor: default; }
 .skoda-dial-value button:focus-visible, .skoda-climate-btn:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
-.skoda-climate-btn { width: 100%; min-height: 48px; margin-top: 2px; border-radius: 99px; font: 600 16px var(--body); cursor: pointer; border: 0; }
+.skoda-climate-btn { width: 100%; min-height: 48px; margin-top: 12px; border-radius: 99px; font: 600 16px var(--body); cursor: pointer; border: 0; }
 .skoda-climate-btn.start { background: var(--ok); color: #0c1a12; }
 @media (prefers-color-scheme: light) { .skoda-climate-btn.start { color: #fff; } }
 .skoda-climate-btn.stop { background: transparent; color: var(--fg); border: 1.5px solid var(--line); }
