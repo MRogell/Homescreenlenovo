@@ -452,3 +452,9 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .ap-show input[type="checkbox"]:disabled { opacity: .5; cursor: default; }
 .ap-show input[type="checkbox"]:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .ap-show input[type="checkbox"], .ap-show input[type="checkbox"]::after { transition: none; } }
+
+/* Tillbaka till hemskärmen: samma uttryck som kugghjulet (rund kant, ytfärg, 48 px hög) */
+.back-link { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 18px 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 600 15px var(--body); text-decoration: none; }
+.back-link svg { width: 20px; height: 20px; color: var(--muted); }
+.back-link:hover { background: var(--surface-2); }
+.back-link:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { requireUser } from "@/server/authz";
 import { getConnectionStatus } from "@/server/connections";
 import { getOAuthConfig, isOAuthProvider, type OAuthProviderId } from "@/server/oauth-providers";
@@ -45,7 +46,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const notice = sp.tjanst && NAMES[sp.tjanst] ? (sp.ok ? `${NAMES[sp.tjanst]} är ansluten.` : sp.fel ? (ERRORS[sp.fel] ?? "Något gick fel.") : null) : null;
   return (
     <div className="wrap">
-      <header className="top-bar"><div><h1>Inställningar</h1><div className="sub">Inloggad som {user.email}</div></div><Link className="link" href="/">← Hemskärmen</Link></header>
+      <header className="top-bar"><div><h1>Inställningar</h1><div className="sub">Inloggad som {user.email}</div></div><Link className="back-link" href="/"><ArrowLeft aria-hidden="true" />Hemskärmen</Link></header>
       {notice && <p className={sp.ok ? "mid" : "err"} role="status">{notice}</p>}
       <section className="card" aria-label="Anslutningar">
         <div className="card-head"><span className="name">Anslutningar</span></div>
