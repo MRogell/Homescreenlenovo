@@ -169,7 +169,7 @@ export const WeatherCard = ({ state, now }: P) => (
 );
 
 export const TadoCard = ({ state, now }: P) => (
-  <CardShell<TadoData> title="Inomhus" off={{ big: "Värmen", text: "Se temperaturen i varje rum." }} icon="temp" state={as(state)} now={now} render={(d) => {
+  <CardShell<TadoData> title="Inomhus" off={{ big: "Värmen", text: "Se temperaturen i varje rum." }} icon="temp" state={as(state)} now={now} className="tado" render={(d) => {
     const heating = d.rooms.filter((r) => r.heating).length;
     const rooms = tadoView(d.rooms);
     const sum = tadoSummary(d.rooms);

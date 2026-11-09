@@ -64,7 +64,8 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 /* Bred skärm (surfplatta liggande): raderna fyller hela höjden så att hemskärmen inte slutar halvvägs. */
 @media (min-width: 1001px) {
   .wrap { min-height: calc(100dvh - 40px); }
-  .grid { flex: 1; grid-auto-rows: minmax(0, 1fr); }
+  /* Raderna är lika höga som sitt innehåll. Blir det över på höjden delas det mellan raderna (align-content), så skärmen fylls ändå. */
+  .grid { flex: 1; grid-auto-rows: auto; align-content: stretch; }
 }
 /* Uppspelningsknappar (Spotify). Tryckytor minst 48 px. */
 .controls { display: flex; flex-direction: column; gap: 6px; }
@@ -465,3 +466,14 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
 /* Landmark utan egen ruta: layouten påverkas inte */
 .landmark { display: contents; }
+
+/* Inomhus tar hela raden på surfplatta, så att den inte blir ensam med tomma rutor bredvid sig. Rummen läggs i en rad. */
+@media (min-width: 561px) {
+  .card.tado { grid-column: 1 / -1; }
+  .card.tado .ti-dials { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+  .card.tado .ti-sum, .card.tado .ti-sum.span-2, .card.tado .ti-sum.span-3 { grid-column: auto; flex-direction: column; padding: 8px 4px; gap: 2px; }
+  .card.tado .ti-sum .ti-cap { text-align: center; font-size: 12px; }
+}
+/* Mycket smal bredd (t.ex. iPhone med sidzoom 150 % i Safari): veckoprognosen tappar kolumner i stället för att skjuta ut sidan. */
+@media (max-width: 300px) { .wx-days li { grid-template-columns: 2.6em 20px 2.2em minmax(24px, 1fr) 2.2em; } .wx-days li > :nth-child(6) { display: none; } }
+@media (max-width: 230px) { .wx-days li { grid-template-columns: 2.6em 20px 2.2em 2.2em; } .wx-days li > :nth-child(4) { display: none; } }
