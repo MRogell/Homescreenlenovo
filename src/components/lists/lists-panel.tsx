@@ -1,8 +1,8 @@
 "use client";
-import { ArrowUpRight, Check, ChevronDown, ClipboardCopy, PartyPopper, Plus, SearchX, Trash2, Undo2, WifiOff, X } from "lucide-react";
+import { ArrowUpRight, Check, ClipboardCopy, PartyPopper, Plus, SearchX, Trash2, Undo2, WifiOff, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { doneItems, groupItems, skippedItems, type CategoryId, type Note, type ShopItem } from "@/lib/shopping";
+import { doneItems, groupItems, skippedItems, type Note, type ShopItem } from "@/lib/shopping";
 import { formatAgo } from "@/lib/format";
 import { useCardHeight, useFitMode } from "./use-fit";
 import { useLists } from "./use-lists";
@@ -114,20 +114,16 @@ const CARD_MAX = 5;
 const FIT_FIXED = 152;
 const FIT_ROW = 41;
 
-/** Butiksläget: en avdelning i taget. Den första som inte är klar är öppen, resten är hopfällda med antal. */
+/** Butiksläget: en enda lista att bocka av, i butikens ordning (frukt först, hushåll sist), utan rubriker. */
 function Shop({ api }: { api: ListsApi }) {
   const { state } = api;
-  const [picked, setPicked] = useState<CategoryId | null>(null);
   const [showDone, setShowDone] = useState(false);
   const [copied, setCopied] = useState(false);
-  const groups = useMemo(() => groupItems(state.items, { withSkipped: false }), [state.items]);
+  const open = useMemo(() => groupItems(state.items, { withSkipped: false }).flatMap((g) => g.items), [state.items]);
   const skipped = useMemo(() => skippedItems(state.items), [state.items]);
   const done = useMemo(() => doneItems(state.items), [state.items]);
   const total = state.items.length;
   const left = total - done.length;
-  // Öppen avdelning: den man valt om den finns kvar, annars den första som inte är klar (så att listan går framåt av sig själv).
-  const active = groups.find((g) => g.id === picked)?.id ?? groups[0]?.id ?? null;
-  const progress = (id: CategoryId) => { const all = state.items.filter((i) => i.category === id); return { all: all.length, got: all.filter((i) => i.checked).length }; };
 
   const tap = (id: string, c: boolean) => { if (typeof navigator.vibrate === "function") navigator.vibrate(12); api.toggle(id, c); };
 
@@ -150,7 +146,7 @@ function Shop({ api }: { api: ListsApi }) {
         <span>{left > 0 ? `${left} kvar · ${done.length} i korgen` : "Allt är hanterat"}</span>
       </div>
 
-      {groups.length === 0 && (
+      {open.length === 0 && (
         <div className="li-finish" role="status">
           <PartyPopper aria-hidden="true" />
           <b>{skipped.length > 0 ? "Klart, förutom det du inte hittade" : "Klart! Allt ligger i korgen"}</b>
@@ -159,24 +155,11 @@ function Shop({ api }: { api: ListsApi }) {
         </div>
       )}
 
-      {groups.map((g) => {
-        const open = g.id === active;
-        const p = progress(g.id);
-        return (
-          <section key={g.id} className={`li-aisle${open ? " open" : ""}`} aria-label={g.label}>
-            <button type="button" className="li-aislehead" aria-expanded={open} onClick={() => setPicked(g.id)}>
-              <span>{g.label}</span>
-              <span className="li-count">{p.got > 0 ? `${p.got}/${p.all}` : p.all}</span>
-              <ChevronDown aria-hidden="true" />
-            </button>
-            {open && (
-              <ul className="li-list">
-                {g.items.map((i) => <Row key={i.id} item={i} big shop onToggle={(c) => tap(i.id, c)} onSkip={() => api.skip(i.id, true)} />)}
-              </ul>
-            )}
-          </section>
-        );
-      })}
+      {open.length > 0 && (
+        <ul className="li-list li-flat">
+          {open.map((i) => <Row key={i.id} item={i} big shop onToggle={(c) => tap(i.id, c)} onSkip={() => api.skip(i.id, true)} />)}
+        </ul>
+      )}
 
       {skipped.length > 0 && (
         <section className="li-aisle li-missing" aria-label="Hittade inte">
@@ -192,7 +175,7 @@ function Shop({ api }: { api: ListsApi }) {
         </section>
       )}
 
-      {done.length > 0 && groups.length > 0 && (
+      {done.length > 0 && open.length > 0 && (
         <section className="li-group li-done" aria-label="I korgen">
           <div className="li-donehead">
             <button type="button" className="li-toggle" aria-expanded={showDone} onClick={() => setShowDone((v) => !v)}>I korgen <b>{done.length}</b></button>
