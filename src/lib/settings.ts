@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** Alla kort i standardordning. Samma lista styr vad som får ordnas och döljas. */
-export const CARD_IDS = ["weather", "calendar", "skoda", "spotify", "sonos", "aeg", "tado"] as const;
+export const CARD_IDS = ["weather", "calendar", "lists", "skoda", "spotify", "sonos", "aeg", "tado"] as const;
 export type CardId = (typeof CARD_IDS)[number];
 
 export interface AppSettings {

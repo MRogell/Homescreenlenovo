@@ -6,7 +6,7 @@ const at = (h: number, m = 0) => new Date(2026, 10, 8, h, m); // lokal tid, så 
 describe("defaults", () => {
   it("keep today's order, hide nothing, no saved place, night mode off 22:00-06:00", () => {
     expect(DEFAULT_SETTINGS).toEqual({ cards: { order: [...CARD_IDS], hidden: [] }, place: null, night: { enabled: false, from: "22:00", to: "06:00" }, notify: { aegDone: true, carCharged: true, carUnlockedNight: false } });
-    expect(CARD_IDS).toEqual(["weather", "calendar", "skoda", "spotify", "sonos", "aeg", "tado"]);
+    expect(CARD_IDS).toEqual(["weather", "calendar", "lists", "skoda", "spotify", "sonos", "aeg", "tado"]);
   });
 });
 
@@ -16,7 +16,7 @@ describe("normalizeSettings", () => {
   });
   it("keeps a valid order, drops unknown and duplicate ids and appends missing cards in default order", () => {
     const s = normalizeSettings({ cards: { order: ["tado", "weather", "tado", "bogus", "aeg"], hidden: ["sonos", "sonos", "bogus"] } });
-    expect(s.cards.order).toEqual(["tado", "weather", "aeg", "calendar", "skoda", "spotify", "sonos"]);
+    expect(s.cards.order).toEqual(["tado", "weather", "aeg", "calendar", "lists", "skoda", "spotify", "sonos"]);
     expect(s.cards.hidden).toEqual(["sonos"]);
   });
   it("a valid place is kept, an invalid one becomes null", () => {
@@ -32,8 +32,8 @@ describe("normalizeSettings", () => {
 
 describe("resolveCards", () => {
   it("returns the visible cards in the saved order", () => {
-    const s = normalizeSettings({ cards: { order: ["spotify", "weather", "skoda", "sonos", "aeg", "tado", "calendar"], hidden: ["skoda", "tado"] } });
-    expect(resolveCards(s)).toEqual(["spotify", "weather", "sonos", "aeg", "calendar"]);
+    const s = normalizeSettings({ cards: { order: ["spotify", "weather", "skoda", "sonos", "aeg", "tado", "calendar", "lists"], hidden: ["skoda", "tado"] } });
+    expect(resolveCards(s)).toEqual(["spotify", "weather", "sonos", "aeg", "calendar", "lists"]);
   });
   it("everything hidden gives an empty list", () => {
     expect(resolveCards({ ...DEFAULT_SETTINGS, cards: { order: [...CARD_IDS], hidden: [...CARD_IDS] } })).toEqual([]);
@@ -76,7 +76,7 @@ describe("settingsPatchSchema", () => {
   });
   it("rejects incomplete or duplicate orders, unknown cards and extra keys", () => {
     expect(ok({ cards: { order: ["weather"], hidden: [] } })).toBe(false);
-    expect(ok({ cards: { order: ["weather", "weather", "calendar", "spotify", "sonos", "aeg", "tado"], hidden: [] } })).toBe(false);
+    expect(ok({ cards: { order: ["weather", "weather", "calendar", "lists", "spotify", "sonos", "aeg", "tado"], hidden: [] } })).toBe(false);
     expect(ok({ cards: { order: [...CARD_IDS], hidden: ["bogus"] } })).toBe(false);
     expect(ok({ cards: { order: [...CARD_IDS], hidden: ["tado", "tado"] } })).toBe(false);
     expect(ok({ cards: { order: [...CARD_IDS], hidden: [], extra: 1 } })).toBe(false);
@@ -98,8 +98,8 @@ describe("settingsPatchSchema", () => {
 describe("moveCard", () => {
   const order = [...CARD_IDS];
   it("moves a card one step up or down", () => {
-    expect(moveCard(order, "skoda", -1)).toEqual(["weather", "skoda", "calendar", "spotify", "sonos", "aeg", "tado"]);
-    expect(moveCard(order, "skoda", 1)).toEqual(["weather", "calendar", "spotify", "skoda", "sonos", "aeg", "tado"]);
+    expect(moveCard(order, "skoda", -1)).toEqual(["weather", "calendar", "skoda", "lists", "spotify", "sonos", "aeg", "tado"]);
+    expect(moveCard(order, "skoda", 1)).toEqual(["weather", "calendar", "lists", "spotify", "skoda", "sonos", "aeg", "tado"]);
   });
   it("the first card cannot go up and the last cannot go down", () => {
     expect(moveCard(order, "weather", -1)).toEqual(order);

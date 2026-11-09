@@ -87,3 +87,11 @@ Raden under hälsningen visar SMHI:s gula, orange och röda varningar som gälle
 
 ## Tillgänglighet
 Granskad mot WCAG 2.1 AA (axe-core, kontrastberäkning, tangentbord, reflow). Textkontrast klarar 4,5:1 i både mörkt och ljust läge. Formulärfält, reglage och färgval har en egen kantfärg (`--field-line`, minst 3:1 mot ytan). Sidorna har `<main>`. Kvar med flit: zoom är avstängd (se `viewport` i `layout.tsx` och `NoZoom`), vilket avviker från WCAG 1.4.4.
+
+## Inköp och lappar
+Kortet "Inköp" på hemskärmen och sidan `/handla` (stor vy för butiken). Listan delas av alla enheter och sparas i `AppSetting` ("lists"), så ingen ny tabell eller extern tjänst behövs.
+- **Smart:** Varorna sorteras i butikens ordning (frukt, bröd, mejeri, kött, skafferi, fryst, dryck, godis, hushåll). Mängd tolkas ur texten ("2 mjölk", "mjölk 2 l", "3x ägg"), flera varor kan skrivas på en gång ("mjölk, ägg, bröd"), samma vara läggs inte dubbelt, och det ni brukar köpa föreslås.
+- **Offline:** Ändringar köas i telefonen och skickas när nätet är tillbaka. Varje ändring har ett eget id, så en omsänd ändring ger aldrig en dubblett. Service workern sparar handlalägets skal och Next.js filer så att `/handla` kan öppnas utan täckning (sidan innehåller ingen listdata).
+- **Samtidigt:** Två enheter som sparar samtidigt köar (advisory lock i databasen), så inget skrivs över.
+- **Gränser:** 300 varor, 30 lappar, 60 ändringar per anrop.
+- **Återställ allt** (Utseende) rör bara utseendet och notisvalen. Tidigare raderade den även kalendrar och push-nycklar; det är rättat.

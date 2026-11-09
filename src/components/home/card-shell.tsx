@@ -13,6 +13,8 @@ interface Props<T> {
   render: (data: T) => { pill?: Pill; body: React.ReactNode };
   /** Texten på kortet innan tjänsten är ansluten: en kort rubrik, en mening om vad kortet ger och knappens text. */
   off?: { big: string; text: string; cta?: string };
+  /** Dölj raden "Uppdaterad …" (för kort som alltid är live, som inköpslistan). */
+  noFoot?: boolean;
   /** Extra klass, t.ex. för kort som tar två kolumner. */
   className?: string;
   /** Extra stil på kortet, t.ex. en färgton (--wx-tint) som beror på datan. */
@@ -20,7 +22,7 @@ interface Props<T> {
 }
 
 /** Gemensam ram som hanterar alla fyra lägen. Tjänsterna renderar bara sin egen data. */
-export function CardShell<T>({ title, icon, state, now, render, off, className = "", style }: Props<T>) {
+export function CardShell<T>({ title, icon, state, now, render, off, noFoot, className = "", style }: Props<T>) {
   if (!state || state.status === "not_connected") {
     return (
       <section className={`card off ${className}`} aria-label={title}>
@@ -49,7 +51,7 @@ export function CardShell<T>({ title, icon, state, now, render, off, className =
         {state.status === "stale" ? <span className="pill warn">Gammal data</span> : pill && <span className={`pill ${pill.tone ?? ""}`}>{pill.text}</span>}
       </div>
       {body}
-      <div className="foot">{state.status === "stale" ? `Visar senast kända data (${formatAgo(state.fetchedAt, now)})` : `Uppdaterad ${formatAgo(state.fetchedAt, now)}`}</div>
+      {!(noFoot && state.status === "ok") && <div className="foot">{state.status === "stale" ? `Visar senast kända data (${formatAgo(state.fetchedAt, now)})` : `Uppdaterad ${formatAgo(state.fetchedAt, now)}`}</div>}
     </section>
   );
 }

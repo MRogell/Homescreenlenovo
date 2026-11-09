@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp, Search } from "lucide-react";
 import { useRef, useState } from "react";
 import { moveCard, type AppSettings, type CardId, type SettingsPatch } from "@/lib/settings";
 
-const LABELS: Record<CardId, string> = { weather: "Väder", calendar: "Kalender", skoda: "Škoda", spotify: "Spotify", sonos: "Sonos", aeg: "AEG", tado: "Inomhus" };
+const LABELS: Record<CardId, string> = { weather: "Väder", calendar: "Kalender", lists: "Inköp", skoda: "Škoda", spotify: "Spotify", sonos: "Sonos", aeg: "AEG", tado: "Inomhus" };
 type Hit = { name: string; region: string; lat: number; lon: number };
 
 /** Utseende: kortens ordning och synlighet, väderplats och nattläge. Varje ändring sparas direkt och återställs om sparandet misslyckas. */

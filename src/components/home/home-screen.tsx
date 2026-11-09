@@ -5,6 +5,7 @@ import type { HomeStates } from "@/server/snapshots";
 import { resolveCards, type AppSettings } from "@/lib/settings";
 import { NightVeil } from "./night-veil";
 import { Settings as SettingsIcon } from "lucide-react";
+import { ListsCard } from "./lists-card";
 import { attentionLine, attentionTone } from "./attention";
 import type { SonosInfo } from "./spotify-view";
 import { Clock } from "./clock";
@@ -81,6 +82,7 @@ export function HomeScreen({ initial, initialNow, initialSettings }: { initial: 
         {visible.map((id) => {
           switch (id) {
             case "weather": return <WeatherCard key={id} state={states.weather} now={now} />;
+            case "lists": return <ListsCard key={id} state={states.lists} now={now} />;
             case "calendar": return <CalendarCard key={id} state={states.calendar} now={now} />;
             case "spotify": return <SpotifyCard key={id} state={states.spotify} now={now} sonos={sonosInfo} />;
             case "aeg": return <AegCard key={id} state={states.aeg} now={now} />;

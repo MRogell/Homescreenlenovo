@@ -22,7 +22,7 @@ import { listCalendars, publicCalendars } from "@/server/calendar/store";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Inställningar" };
 
-const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", weather: "Väder", tado: "Tado (inomhus)", calendar: "Kalender" };
+const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", weather: "Väder", tado: "Tado (inomhus)", calendar: "Kalender", lists: "Inköp" };
 const ERRORS: Record<string, string> = {
   "ogiltig-state": "Anslutningen avbröts av säkerhetsskäl. Försök igen från början.",
   avbrutet: "Du avbröt anslutningen.",

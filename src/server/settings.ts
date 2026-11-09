@@ -3,6 +3,8 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { normalizeSettings, type AppSettings, type SettingsPatch } from "@/lib/settings";
 import { db as defaultDb } from "./db";
 
+const APPEARANCE_KEYS = ["cards", "place", "night", "notify"] as const;
+
 /** Alla inställningar. Saknade eller trasiga värden blir grundvärden, aldrig ett fel (startsidan får aldrig gå sönder av dem). */
 export async function getSettings(db: PrismaClient = defaultDb): Promise<AppSettings> {
   const rows = await db.appSetting.findMany();
@@ -13,7 +15,8 @@ export async function getSettings(db: PrismaClient = defaultDb): Promise<AppSett
 export async function applySettingsPatch(patch: SettingsPatch, db: PrismaClient = defaultDb): Promise<AppSettings> {
   const save = (key: string, value: unknown) => db.appSetting.upsert({ where: { key }, create: { key, value: value as never }, update: { value: value as never } });
   if (patch.reset) {
-    await db.appSetting.deleteMany();
+    // Bara utseendet och notisvalen återställs. Kalendrar, push-nycklar och listor ligger i samma tabell och ska vara kvar.
+    await db.appSetting.deleteMany({ where: { key: { in: [...APPEARANCE_KEYS] } } });
     return getSettings(db);
   }
   const ops = [];

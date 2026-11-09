@@ -14,6 +14,7 @@ const P = {
   trunk: "M3 13h18v5H3zM6 13l2-6h8l2 6M7 18v2M17 18v2",
   pin: "M12 21s-6-5.4-6-11a6 6 0 0 1 12 0c0 5.6-6 11-6 11zM12 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4z",
   bolt: "M13 3 5 14h6l-1 7 8-11h-6z",
+  cart: "M3 4h2.2l2.3 11h10.1L20 7.5H6M9.5 20.2a.8.8 0 1 0 0 .01M17 20.2a.8.8 0 1 0 0 .01",
 } as const;
 export type IconName = keyof typeof P;
 

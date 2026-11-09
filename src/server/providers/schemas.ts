@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CATEGORY_IDS } from "@/lib/shopping";
 import { warningSchema } from "./smhi";
 
 export const skodaSchema = z.object({
@@ -120,3 +121,12 @@ export const calendarSchema = z.object({
   failed: z.number(),
 });
 export type CalendarData = z.infer<typeof calendarSchema>;
+
+const listCategory = z.enum(CATEGORY_IDS as [(typeof CATEGORY_IDS)[number], ...(typeof CATEGORY_IDS)[number][]]);
+/** Inköpslista och lappar (hela tillståndet, med historiken som förslagen bygger på). */
+export const listsSchema = z.object({
+  items: z.array(z.object({ id: z.string(), name: z.string(), qty: z.string().nullable(), category: listCategory, checked: z.boolean(), at: z.number(), checkedAt: z.number().nullable() })),
+  notes: z.array(z.object({ id: z.string(), text: z.string(), at: z.number() })),
+  history: z.record(z.string(), z.object({ name: z.string(), category: listCategory, count: z.number(), lastAt: z.number() })),
+});
+export type ListsData = z.infer<typeof listsSchema>;

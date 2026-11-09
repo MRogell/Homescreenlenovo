@@ -35,6 +35,6 @@ describe("GET /api/home", () => {
     user.current = { id: "u1" };
     const body = await (await GET()).json();
     expect(body.settings.night).toEqual({ enabled: true, from: "21:00", to: "07:00" });
-    expect(body.settings.cards.order).toHaveLength(7);
+    expect(body.settings.cards.order).toHaveLength(8);
   });
 });
