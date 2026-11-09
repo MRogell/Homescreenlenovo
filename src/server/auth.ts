@@ -17,6 +17,8 @@ export const auth = betterAuth({
   session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24 },
   rateLimit: {
     enabled: true,
+    // Databas, inte minne: serverlösa instanser delar inte minne, så en minnesgräns går att runda genom att träffa nya instanser.
+    storage: "database",
     window: 60,
     max: 120 * env.AUTH_RATE_LIMIT_SCALE,
     customRules: {

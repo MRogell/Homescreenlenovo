@@ -50,3 +50,19 @@ describe("getEnv utan databasadress", () => {
     expect(getEnv().DATABASE_URL).toBe("postgresql://riktig");
   });
 });
+
+describe("getEnv i Vercels Production", () => {
+  afterEach(() => { vi.unstubAllEnvs(); resetEnvCache(); });
+  it("ignorerar lättad hastighetsgräns", () => {
+    resetEnvCache();
+    vi.stubEnv("DATABASE_URL", "postgresql://x");
+    vi.stubEnv("BETTER_AUTH_SECRET", "a".repeat(32));
+    vi.stubEnv("BETTER_AUTH_URL", "https://hem.example.com");
+    vi.stubEnv("AUTH_RATE_LIMIT_SCALE", "100");
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect(getEnv().AUTH_RATE_LIMIT_SCALE).toBe(1);
+    resetEnvCache();
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect(getEnv().AUTH_RATE_LIMIT_SCALE).toBe(100);
+  });
+});

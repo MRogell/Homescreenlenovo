@@ -38,7 +38,8 @@ export function getEnv(): Env {
     const building = process.env.NEXT_PHASE === "phase-production-build" && !process.env.DATABASE_URL;
     const parsed = schema.safeParse(building ? { ...process.env, DATABASE_URL: "postgresql://bygge-utan-databas" } : process.env);
     if (!parsed.success) throw new Error(`Ogiltig miljökonfiguration: ${z.prettifyError(parsed.error)}`);
-    cached = parsed.data;
+    // Lättnaden i inloggningens hastighetsgräns är bara till för automatiska tester: i Vercels Production gäller alltid grundgränsen.
+    cached = process.env.VERCEL_ENV === "production" ? { ...parsed.data, AUTH_RATE_LIMIT_SCALE: 1 } : parsed.data;
   }
   return cached;
 }

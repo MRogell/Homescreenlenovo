@@ -137,3 +137,14 @@ model NotificationEvent {
 
   @@map("notification_event")
 }
+
+/// Better Auths hastighetsgräns (inloggningsförsök per adress). Ligger i databasen eftersom Vercels serverlösa instanser
+/// annars har var sin räknare som nollställs vid kallstart, och gränsen då inte skyddar mot gissning av lösenord.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limit")
+}

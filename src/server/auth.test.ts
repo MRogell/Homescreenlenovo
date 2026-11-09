@@ -30,3 +30,24 @@ describe("auth", () => {
     expect(await auth.api.getSession({ headers: new Headers() })).toBeNull();
   });
 });
+
+describe("hastighetsgräns för inloggning", () => {
+  const attempt = (ip: string) => auth.handler(new Request("http://localhost:3000/api/auth/sign-in/email", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "http://localhost:3000", "x-forwarded-for": ip },
+    body: JSON.stringify({ email: "a@example.com", password: "fel-lösenord-123" }),
+  }));
+  beforeEach(async () => { await db.rateLimit.deleteMany(); });
+
+  it("stoppar gissning efter tio försök, och räknaren ligger i databasen (inte i minnet)", async () => {
+    const codes: number[] = [];
+    for (let i = 0; i < 13; i++) codes.push((await attempt("203.0.113.7")).status);
+    expect(codes.slice(0, 10).every((c) => c !== 429)).toBe(true);
+    expect(codes.slice(10)).toEqual([429, 429, 429]);
+    expect(await db.rateLimit.count()).toBeGreaterThan(0);
+  });
+  it("en annan adress påverkas inte", async () => {
+    for (let i = 0; i < 12; i++) await attempt("203.0.113.8");
+    expect((await attempt("203.0.113.9")).status).not.toBe(429);
+  });
+});

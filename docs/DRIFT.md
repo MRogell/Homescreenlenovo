@@ -79,3 +79,8 @@ Raden under hälsningen visar SMHI:s gula, orange och röda varningar som gälle
 - **Hämtning:** Följer vädrets cache, var 15:e minut, och var 5:e minut medan en varning gäller. "Meddelande" (t.ex. risk för vattenbrist) räknas inte som varning. Varningar som börjar mer än två dygn fram visas inte än.
 - **Fel:** Går SMHI inte att nå visas vädret ändå och inga varningar. En trasig post hoppas över utan att övriga påverkas.
 - **Utanför Sverige:** Platser utanför SMHI:s områden får inga varningar.
+
+## Säkerhet
+- **Skyddsrubriker** (`next.config.ts`): CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` och HSTS på alla svar. CSP tillåter Google Fonts (teckensnitt) och https-bilder (skivomslag); allt annat externt är stängt. Lägger du till en ny extern källa (bilder, teckensnitt, anrop från webbläsaren) måste den läggas i CSP:n, annars blockeras den.
+- **Inloggningsgräns:** Försöksräknaren ligger i databasen (`rate_limit`), inte i minnet, eftersom Vercels instanser annars har var sin räknare. 10 inloggningsförsök per minut och adress. `AUTH_RATE_LIMIT_SCALE` ignoreras i Production.
+- **Anrop som ändrar något** kräver inloggning, samma Origin och strikt kontrollerad indata. Škoda-bryggan jämför token i konstant tid.
