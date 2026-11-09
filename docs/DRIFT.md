@@ -95,3 +95,18 @@ Kortet "Inköp" på hemskärmen och sidan `/handla` (stor vy för butiken). List
 - **Samtidigt:** Två enheter som sparar samtidigt köar (advisory lock i databasen), så inget skrivs över.
 - **Gränser:** 300 varor, 30 lappar, 60 ändringar per anrop.
 - **Återställ allt** (Utseende) rör bara utseendet och notisvalen. Tidigare raderade den även kalendrar och push-nycklar; det är rättat.
+
+## Middagsplan
+Fliken "Middag" i inköpskortet (och på `/handla` i stor vy). Planen ligger i samma delade lista som inköpen (`AppSetting` "lists": `dinners`, `recipes`, `habits`, `people`), så den synkas, köas offline och delas med familjelänkar på samma sätt.
+- **Rätter:** Inbyggda rätter (`src/lib/dinner.ts`) med mängder som skalas efter antal personer, och egna recept (högst 40, 30 rader var). Egna recept går före inbyggda med samma namn.
+- **Skriv fritt:** "Tacos ons" sätter onsdag, "fredagstacos" sätter fredag och gör den till en vana. Vanor föreslås varje vecka som en ljus rad med knappen "Lägg in".
+- **Inköpslistan:** "Lägg ingredienser på listan" lägger alla ingredienser för planerade dagar utan dubbletter (samma vara som redan finns läggs inte till). Dagen märks "på listan".
+- **Hemskärmen:** Raden under hälsningen visar "Middag idag: …" när inget annat kräver uppmärksamhet (varningar går före).
+- **Städning:** Dagar äldre än 14 dagar rensas automatiskt.
+
+## Förvärm till avresa
+Avresetid per veckodag (olika tider möjliga), förvärmning startar `leadMin` minuter före om det är kallare än gränsen. Inställningarna ligger i `AppSetting` ("departure") och nås från raden under klimatrutan i Škoda-kortet.
+- **Hur:** Det finns ingen bakgrundsjobbare på Vercel Hobby. Det är därför en öppen och uppkopplad skärm (surfplattan) som, vid sin ordinarie hämtning var 30:e sekund, får servern att kontrollera tiden och starta klimatet (`after()` i `/api/home`). Stängs alla skärmar eller tappar de nätet startar inget.
+- **Bara en gång:** Start görs under advisory lock (727003), så flera skärmar startar bilen en gång. Upp till tre försök.
+- **Alltid när på och kallt:** Škoda-datat har ingen laddkabelflagga, så det finns inget "bara när inkopplad".
+- **Notis:** Egen notistyp "Förvärm" (av/på under Notiser). "Hoppa över idag" nollställs nästa dygn.

@@ -6,6 +6,7 @@ import { doneItems, groupItems, skippedItems, type Note, type ShopItem } from "@
 import { formatAgo } from "@/lib/format";
 import { useCardHeight, useFitMode } from "./use-fit";
 import { useLists } from "./use-lists";
+import { DinnerTab } from "./dinner-tab";
 
 export type ListsApi = ReturnType<typeof useLists>;
 export { useLists };
@@ -199,7 +200,8 @@ export function ListsPanel({ api, mode, handlaHref = "/handla" }: { api: ListsAp
   const fit = useFitMode() && compact;
   const height = useCardHeight(rootRef, fit);
   const cardMax = fit && height > 0 ? Math.max(1, Math.min(CARD_MAX, Math.floor((height - FIT_FIXED) / FIT_ROW))) : CARD_MAX;
-  const [tab, setTab] = useState<"shop" | "notes">("shop");
+  const dinnerRows = fit && height > 0 ? Math.max(2, Math.min(7, Math.floor((height - 218) / 40))) : 4;
+  const [tab, setTab] = useState<"shop" | "notes" | "dinner">("shop");
   const [showDone, setShowDone] = useState(false);
   const groups = useMemo(() => groupItems(state.items), [state.items]);
   const done = useMemo(() => doneItems(state.items), [state.items]);
@@ -240,9 +242,10 @@ export function ListsPanel({ api, mode, handlaHref = "/handla" }: { api: ListsAp
       {shop ? <Shop api={api} /> : (
         <>
           <div className="li-top">
-            <div className="li-tabs" role="tablist" aria-label="Lista eller lappar">
+            <div className="li-tabs" role="tablist" aria-label="Inköp, lappar eller middag">
               <button role="tab" type="button" aria-selected={tab === "shop"} onClick={() => setTab("shop")}>Inköp{open > 0 ? <b>{open}</b> : null}</button>
               <button role="tab" type="button" aria-selected={tab === "notes"} onClick={() => setTab("notes")}>Lappar{state.notes.length > 0 ? <b>{state.notes.length}</b> : null}</button>
+              <button role="tab" type="button" aria-selected={tab === "dinner"} onClick={() => setTab("dinner")}>Middag</button>
             </div>
             {compact && <Link className="li-expand" href={handlaHref} aria-label="Öppna butiksläget (stor vy för butiken)"><ArrowUpRight aria-hidden="true" /></Link>}
           </div>
@@ -275,7 +278,7 @@ export function ListsPanel({ api, mode, handlaHref = "/handla" }: { api: ListsAp
               )}
               {big && <Link className="li-open" href={handlaHref}><span>Öppna butiksläget</span><small>bocka av medan du handlar</small></Link>}
             </>
-          ) : <Notes api={api} />}
+          ) : tab === "notes" ? <Notes api={api} /> : <DinnerTab api={api} compactRows={compact ? dinnerRows : undefined} />}
         </>
       )}
     </div>

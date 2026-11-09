@@ -13,10 +13,10 @@ export interface AppSettings {
   notify: NotifyPrefs;
 }
 
-export const NOTIFY_KINDS = ["aegDone", "carCharged", "carUnlockedNight"] as const;
+export const NOTIFY_KINDS = ["aegDone", "carCharged", "carUnlockedNight", "preheat"] as const;
 export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 export type NotifyPrefs = Record<NotifyKind, boolean>;
-export const DEFAULT_NOTIFY: NotifyPrefs = { aegDone: true, carCharged: true, carUnlockedNight: false };
+export const DEFAULT_NOTIFY: NotifyPrefs = { aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true };
 
 export const DEFAULT_SETTINGS: AppSettings = {
   cards: { order: [...CARD_IDS], hidden: [] },
@@ -32,7 +32,8 @@ const cardId = z.enum(CARD_IDS);
 const placeSchema = z.object({ name: z.string().trim().min(1).max(80), lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180) }).strict();
 const nightSchema = z.object({ enabled: z.boolean(), from: z.string().regex(TIME), to: z.string().regex(TIME) }).strict();
 
-const notifySchema = z.object({ aegDone: z.boolean(), carCharged: z.boolean(), carUnlockedNight: z.boolean() }).strict();
+// preheat är valfri så att en flik med äldre kod (som skickar de tre första) fortfarande godtas.
+const notifySchema = z.object({ aegDone: z.boolean(), carCharged: z.boolean(), carUnlockedNight: z.boolean(), preheat: z.boolean().optional() }).strict();
 
 /** Det som får skickas till /api/settings: en eller flera delar, strikt kontrollerade. */
 export const settingsPatchSchema = z
@@ -64,7 +65,7 @@ export function normalizeSettings(raw: unknown): AppSettings {
     cards: { order: [...order, ...CARD_IDS.filter((id) => !order.includes(id))], hidden: known(cards.hidden) },
     place: place.success ? place.data : null,
     night: { enabled: night.enabled === true, from: time(night.from, DEFAULT_SETTINGS.night.from), to: time(night.to, DEFAULT_SETTINGS.night.to) },
-    notify: { aegDone: flag("aegDone"), carCharged: flag("carCharged"), carUnlockedNight: flag("carUnlockedNight") },
+    notify: { aegDone: flag("aegDone"), carCharged: flag("carCharged"), carUnlockedNight: flag("carUnlockedNight"), preheat: flag("preheat") },
   };
 }
 

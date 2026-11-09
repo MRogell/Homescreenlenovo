@@ -3,6 +3,7 @@ import type { CardState } from "@/server/providers/types";
 import type { AegData, CalendarData, SkodaData, SonosData, SpotifyData, TadoData, WeatherData } from "@/server/providers/schemas";
 import { CardShell } from "./card-shell";
 import { Icon, type IconName } from "./icons";
+import type { DepartureView } from "@/lib/departure";
 import { skodaView } from "./skoda-view";
 import { SkodaClimate } from "./skoda-climate";
 import { weatherView, wxTint } from "./weather-view";
@@ -25,7 +26,7 @@ type P = { state: CardState<unknown> | undefined; now: Date };
 
 const CHECK_ICON: Record<string, IconName> = { Lås: "lock", Dörrar: "door", Fönster: "window", Bagage: "trunk", Motorhuv: "car" };
 
-export const SkodaCard = ({ state, now }: P) => (
+export const SkodaCard = ({ state, now, departure, onDeparture }: P & { departure?: DepartureView | null; onDeparture?: (v: DepartureView) => void }) => (
   <CardShell<SkodaData> title="Škoda" off={{ big: "Bilen", text: "Se laddning och starta klimatet." }} icon="car" state={as(state)} now={now} className="skoda" render={(d) => {
     const v = skodaView(d, now);
     return {
@@ -54,7 +55,7 @@ export const SkodaCard = ({ state, now }: P) => (
           <span><span className="addr" title={v.placeFull ?? undefined}>{v.place}</span>{v.reported && <small>{v.reported}</small>}{v.batteryNote && <small className="stale">{v.batteryNote}</small>}</span>
         </div>
       </div>
-        <SkodaClimate on={v.climate.on} targetC={v.climate.targetC} text={v.climate.text} pending={v.climate.pending} />
+        <SkodaClimate on={v.climate.on} targetC={v.climate.targetC} text={v.climate.text} pending={v.climate.pending} departure={departure} onDeparture={onDeparture} />
       </div>,
     };
   }} />

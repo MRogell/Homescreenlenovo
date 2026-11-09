@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { EMPTY_LISTS } from "@/lib/shopping";
 import { db } from "../db";
 import { applySettingsPatch } from "../settings";
 import { handleListsGet, handleListsPost, MAX_OPS, type ListsRequest } from "./flow";
@@ -11,11 +12,33 @@ beforeEach(async () => { await db.appSetting.deleteMany(); await db.snapshot.del
 
 describe("normalizeLists", () => {
   it("skräp ger tom lista och trasiga poster hoppas över", () => {
-    for (const bad of [null, undefined, 5, "x", [], {}]) expect(normalizeLists(bad)).toEqual({ items: [], notes: [], history: {} });
+    for (const bad of [null, undefined, 5, "x", [], {}]) expect(normalizeLists(bad)).toEqual(EMPTY_LISTS);
     const s = normalizeLists({ items: [{ id: "a", name: "Mjölk", category: "mejeri", at: 5 }, { id: "b" }, null, { id: "c", name: "X", category: "finns-inte", checked: true, checkedAt: 7 }], notes: [{ id: "n", text: "hej", at: 1 }, { id: "m" }], history: { a: { name: "A", category: "frukt", count: 2.7, lastAt: 1 }, b: 5 } });
     expect(s.items.map((i) => [i.id, i.category, i.checked, i.checkedAt])).toEqual([["a", "mejeri", false, null], ["c", "ovrigt", true, 7]]);
     expect(s.notes).toHaveLength(1);
     expect(s.history).toEqual({ a: { name: "A", category: "frukt", count: 2, lastAt: 1 } });
+  });
+  it("middagar, recept, vanor och antal personer: trasigt hoppas över, annars grundvärden", () => {
+    const s = normalizeLists({ dinners: { "2026-11-11": { dish: "Tacos", at: 3, by: "Anna", listed: true }, "inte-datum": { dish: "x" }, "2026-11-12": { dish: "" }, "2026-11-13": 5 }, recipes: { a: { name: "Gryta", ingredients: ["Lök", 5, ""] }, b: { name: "Tom", ingredients: [] }, c: 5 }, habits: { "5": "Tacos", "9": "Nej", "2": "" }, people: 20 });
+    expect(s.dinners).toEqual({ "2026-11-11": { dish: "Tacos", at: 3, by: "Anna", listed: true } });
+    expect(s.recipes).toEqual({ a: { name: "Gryta", ingredients: ["Lök"] } });
+    expect(s.habits).toEqual({ "5": "Tacos" });
+    expect(s.people).toBe(4);
+    expect(normalizeLists({ people: 6 }).people).toBe(6);
+  });
+});
+
+describe("mutateLists: middagar", () => {
+  it("märker middagen med namnet och släpper äldre än två veckor", async () => {
+    const now = new Date("2026-11-09T09:00:00+01:00").getTime();
+    await mutateLists([{ op: "dinner", date: "2026-10-01", dish: "Gammal", at: 1 }, { op: "dinner", date: "2026-11-11", dish: "Tacos", at: 1 }], db, now, "Anna");
+    const s = await loadLists(db);
+    expect(s.dinners).toEqual({ "2026-11-11": { dish: "Tacos", at: 1, by: "Anna" } });
+  });
+  it("ingredienser, vana och recept sparas och läses tillbaka", async () => {
+    await mutateLists([{ op: "habit", weekday: 5, dish: "Tacos" }, { op: "people", n: 5 }, { op: "recipe", name: "Min gryta", ingredients: ["Lök"] }], db, 100);
+    const s = await loadLists(db);
+    expect([s.habits, s.people, s.recipes["min gryta"]?.ingredients]).toEqual([{ "5": "Tacos" }, 5, ["Lök"]]);
   });
 });
 
@@ -45,7 +68,7 @@ describe("handleListsGet/Post", () => {
   });
   it("ogiltig indata är 400 och sparar inget", async () => {
     const good = { op: "add", id: "item-0001", name: "Mjölk", at: 1 };
-    for (const ops of [[{ ...good, extra: 1 }], [{ ...good, id: "x" }], [{ ...good, id: "med mellanslag!" }], [{ ...good, name: "" }], [{ ...good, name: "x".repeat(121) }], [{ op: "okänd" }], [{ op: "check", id: "item-0001" }], Array.from({ length: MAX_OPS + 1 }, () => good), "x"]) {
+    for (const ops of [[{ op: "dinner", date: "fre", dish: "Tacos", at: 1 }], [{ op: "dinner", date: "2026-11-11", dish: "Tacos", at: 1, by: "Chefen" }], [{ op: "people", n: 13 }], [{ op: "habit", weekday: 8, dish: null }], [{ op: "recipe", name: "x", ingredients: [] }], [{ op: "dinnerListed", dates: ["i morgon"] }], [{ ...good, extra: 1 }], [{ ...good, id: "x" }], [{ ...good, id: "med mellanslag!" }], [{ ...good, name: "" }], [{ ...good, name: "x".repeat(121) }], [{ op: "okänd" }], [{ op: "check", id: "item-0001" }], Array.from({ length: MAX_OPS + 1 }, () => good), "x"]) {
       expect((await post(ops as unknown[])).status, JSON.stringify(ops).slice(0, 60)).toBe(400);
     }
     expect((await handleListsPost({ ...ok, body: null }, db)).status).toBe(400);

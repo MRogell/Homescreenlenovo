@@ -7,6 +7,7 @@ const KINDS: { id: NotifyKind; label: string; hint: string }[] = [
   { id: "aegDone", label: "Maskinen är klar", hint: "Diskmaskinen eller tvättmaskinen har blivit färdig." },
   { id: "carCharged", label: "Bilen är laddad", hint: "Laddningen har slutat, med batterinivån." },
   { id: "carUnlockedNight", label: "Bilen står olåst på natten", hint: "En gång per natt, mellan 22 och 06." },
+  { id: "preheat", label: "Förvärmningen startade", hint: "När klimatet startat inför din avresa." },
 ];
 
 const noSubscribe = () => () => {};

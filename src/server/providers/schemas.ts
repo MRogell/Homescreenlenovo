@@ -128,5 +128,9 @@ export const listsSchema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string(), qty: z.string().nullable(), category: listCategory, checked: z.boolean(), at: z.number(), checkedAt: z.number().nullable(), skipped: z.boolean().optional(), by: z.string().optional() })),
   notes: z.array(z.object({ id: z.string(), text: z.string(), at: z.number(), by: z.string().optional() })),
   history: z.record(z.string(), z.object({ name: z.string(), category: listCategory, count: z.number(), lastAt: z.number() })),
+  dinners: z.record(z.string(), z.object({ dish: z.string(), by: z.string().optional(), at: z.number(), listed: z.boolean().optional() })).default({}),
+  recipes: z.record(z.string(), z.object({ name: z.string(), ingredients: z.array(z.string()) })).default({}),
+  habits: z.record(z.string(), z.string()).default({}),
+  people: z.number().int().min(1).max(12).default(4),
 });
 export type ListsData = z.infer<typeof listsSchema>;

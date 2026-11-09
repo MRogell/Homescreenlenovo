@@ -1,3 +1,5 @@
+import { MAX_RECIPE_LINES, MAX_RECIPES, recipeKey, type CustomRecipe } from "./dinner";
+
 /**
  * Inköpslista och lappar: ren logik som delas av servern och webbläsaren.
  * Servern och klienten kör samma `applyOps`, så att det du ser medan du är offline blir exakt det som sparas när du är online igen.
@@ -109,12 +111,27 @@ export interface ShopItem {
 }
 export interface Note { id: string; text: string; at: number; by?: string }
 export interface HistoryEntry { name: string; category: CategoryId; count: number; lastAt: number }
-export interface ListsState { items: ShopItem[]; notes: Note[]; history: Record<string, HistoryEntry> }
+/** En planerad middag. `listed`: ingredienserna har lagts på inköpslistan. */
+export interface Dinner { dish: string; by?: string; at: number; listed?: boolean }
+export interface ListsState {
+  items: ShopItem[]; notes: Note[]; history: Record<string, HistoryEntry>;
+  /** Middagar per datum ("YYYY-MM-DD", svensk tid). */
+  dinners: Record<string, Dinner>;
+  /** Egna recept (nyckel = namnet i gemener). */
+  recipes: Record<string, CustomRecipe>;
+  /** Återkommande middagar: veckodag (1–7) till rätt, som föreslås varje vecka. */
+  habits: Record<string, string>;
+  /** Antal personer som mängderna räknas för. */
+  people: number;
+}
 
 export const MAX_ITEMS = 300;
 export const MAX_NOTES = 30;
 export const MAX_HISTORY = 400;
-export const EMPTY_LISTS: ListsState = { items: [], notes: [], history: {} };
+export const MAX_DINNERS = 60;
+export const MAX_PEOPLE = 12;
+export const DEFAULT_PEOPLE = 4;
+export const EMPTY_LISTS: ListsState = { items: [], notes: [], history: {}, dinners: {}, recipes: {}, habits: {}, people: DEFAULT_PEOPLE };
 
 export type Op =
   | { op: "add"; id: string; name: string; qty?: string | null; at: number; by?: string }
@@ -124,13 +141,23 @@ export type Op =
   | { op: "setQty"; id: string; qty: string | null }
   | { op: "clearChecked" }
   | { op: "noteAdd"; id: string; text: string; at: number; by?: string }
-  | { op: "noteRemove"; id: string };
+  | { op: "noteRemove"; id: string }
+  | { op: "dinner"; date: string; dish: string; at: number; by?: string }
+  | { op: "dinnerListed"; dates: string[] }
+  | { op: "habit"; weekday: number; dish: string | null }
+  | { op: "people"; n: number }
+  | { op: "recipe"; name: string; ingredients: string[] }
+  | { op: "recipeRemove"; name: string };
 
 /** Tillämpar operationer på ett tillstånd och ger ett nytt (indata ändras aldrig). Operationer som inte går att utföra hoppas över. */
 export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
   let items = [...state.items];
   let notes = [...state.notes];
   const history = { ...state.history };
+  let dinners = { ...state.dinners };
+  let recipes = { ...state.recipes };
+  let habits = { ...state.habits };
+  let people = state.people;
   for (const o of ops) {
     switch (o.op) {
       case "add": {
@@ -170,9 +197,39 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
         break;
       }
       case "noteRemove": notes = notes.filter((n) => n.id !== o.id); break;
+      case "dinner": {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(o.date)) break;
+        const dish = tidy(o.dish).slice(0, 60);
+        if (!dish) { const { [o.date]: _gone, ...rest } = dinners; void _gone; dinners = rest; break; }
+        if (!dinners[o.date] && Object.keys(dinners).length >= MAX_DINNERS) break;
+        // Ny eller ändrad rätt: ingredienserna är inte på listan än.
+        dinners = { ...dinners, [o.date]: { dish, at: o.at, ...(o.by ? { by: o.by.slice(0, 24) } : {}) } };
+        break;
+      }
+      case "dinnerListed": {
+        for (const d of o.dates) if (dinners[d]) dinners = { ...dinners, [d]: { ...dinners[d]!, listed: true } };
+        break;
+      }
+      case "habit": {
+        if (!Number.isInteger(o.weekday) || o.weekday < 1 || o.weekday > 7) break;
+        const dish = o.dish ? tidy(o.dish).slice(0, 60) : "";
+        if (!dish) { const { [String(o.weekday)]: _gone, ...rest } = habits; void _gone; habits = rest; } else habits = { ...habits, [String(o.weekday)]: dish };
+        break;
+      }
+      case "people": if (Number.isInteger(o.n) && o.n >= 1 && o.n <= MAX_PEOPLE) people = o.n; break;
+      case "recipe": {
+        const name = tidy(o.name).slice(0, 60);
+        const lines = o.ingredients.map((l) => tidy(l).slice(0, 60)).filter(Boolean).slice(0, MAX_RECIPE_LINES);
+        if (!name || lines.length === 0) break;
+        const key = recipeKey(name);
+        if (!recipes[key] && Object.keys(recipes).length >= MAX_RECIPES) break;
+        recipes = { ...recipes, [key]: { name, ingredients: lines } };
+        break;
+      }
+      case "recipeRemove": { const { [recipeKey(o.name)]: _gone, ...rest } = recipes; void _gone; recipes = rest; break; }
     }
   }
-  return { items, notes, history };
+  return { items, notes, history, dinners, recipes, habits, people };
 }
 
 /** Varor att visa: de som ska handlas grupperade i butikens ordning, och sist de avbockade. */

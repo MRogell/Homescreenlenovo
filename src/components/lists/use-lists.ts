@@ -178,10 +178,21 @@ export function useLists(initial: ListsState | null, opts: ListsOptions = {}) {
   const clearChecked = useCallback(() => enqueue([{ op: "clearChecked" }]), [enqueue]);
   const noteAdd = useCallback((text: string) => { if (text.trim()) enqueue([{ op: "noteAdd", id: newId(), text, at: Date.now() }]); }, [enqueue]);
   const noteRemove = useCallback((id: string) => enqueue([{ op: "noteRemove", id }]), [enqueue]);
+  const setDinner = useCallback((date: string, dish: string) => enqueue([{ op: "dinner", date, dish, at: Date.now() }]), [enqueue]);
+  const setHabit = useCallback((weekday: number, dish: string | null) => enqueue([{ op: "habit", weekday, dish }]), [enqueue]);
+  const setPeople = useCallback((n: number) => enqueue([{ op: "people", n }]), [enqueue]);
+  const saveRecipe = useCallback((name: string, ingredients: string[]) => enqueue([{ op: "recipe", name, ingredients }]), [enqueue]);
+  const removeRecipe = useCallback((name: string) => enqueue([{ op: "recipeRemove", name }]), [enqueue]);
+  /** Lägger ingredienserna på inköpslistan (utan dubbletter) och markerar att middagarna har sina ingredienser där. */
+  const addIngredients = useCallback((lines: string[], dates: string[]): AddResult => {
+    const r = add(lines.join("\n"));
+    enqueue([{ op: "dinnerListed", dates }]);
+    return r;
+  }, [add, enqueue]);
 
   return {
     state, loaded, online, error, pendingCount: pending.length,
-    add, toggle, remove, skip, clearChecked, noteAdd, noteRemove,
+    add, toggle, remove, skip, clearChecked, noteAdd, noteRemove, setDinner, setHabit, setPeople, saveRecipe, removeRecipe, addIngredients,
     suggest: useCallback((n = 8) => suggestions(state, n), [state]),
     complete: useCallback((typed: string) => autocomplete(state, typed), [state]),
   };

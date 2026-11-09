@@ -61,3 +61,10 @@ export function dayWindow(now: Date, tz: string = DEFAULT_TZ): DayWindow {
   const end = addLocalDays(todayStart, 2, tz);
   return { today: localDate(todayStart, tz), tomorrow: localDate(tomorrowStart, tz), todayStart, tomorrowStart, end };
 }
+
+/** Datum, veckodag (1 = måndag … 7 = söndag) och minuter sedan midnatt, i tidszonen. */
+export function localClock(date: Date, tz: string = DEFAULT_TZ): { date: string; weekday: number; minutes: number } {
+  const p = partsOf(date.getTime(), tz);
+  const dow = new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay();
+  return { date: `${p.y}-${pad(p.m)}-${pad(p.d)}`, weekday: dow === 0 ? 7 : dow, minutes: p.h * 60 + p.mi };
+}

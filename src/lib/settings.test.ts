@@ -5,7 +5,7 @@ const at = (h: number, m = 0) => new Date(2026, 10, 8, h, m); // lokal tid, så 
 
 describe("defaults", () => {
   it("keep today's order, hide nothing, no saved place, night mode off 22:00-06:00", () => {
-    expect(DEFAULT_SETTINGS).toEqual({ cards: { order: [...CARD_IDS], hidden: [] }, place: null, night: { enabled: false, from: "22:00", to: "06:00" }, notify: { aegDone: true, carCharged: true, carUnlockedNight: false } });
+    expect(DEFAULT_SETTINGS).toEqual({ cards: { order: [...CARD_IDS], hidden: [] }, place: null, night: { enabled: false, from: "22:00", to: "06:00" }, notify: { aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true } });
     expect(CARD_IDS).toEqual(["weather", "calendar", "lists", "skoda", "spotify", "sonos", "aeg", "tado"]);
   });
 });
@@ -115,10 +115,10 @@ describe("moveCard", () => {
 
 describe("notify", () => {
   it("grundvärden: AEG och laddning på, olåst på natten av", () => {
-    expect(normalizeSettings({}).notify).toEqual({ aegDone: true, carCharged: true, carUnlockedNight: false });
+    expect(normalizeSettings({}).notify).toEqual({ aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true });
   });
   it("sparade val behålls, trasiga värden blir grundvärdet", () => {
-    expect(normalizeSettings({ notify: { aegDone: false, carCharged: "ja", carUnlockedNight: true } }).notify).toEqual({ aegDone: false, carCharged: true, carUnlockedNight: true });
+    expect(normalizeSettings({ notify: { aegDone: false, carCharged: "ja", carUnlockedNight: true } }).notify).toEqual({ aegDone: false, carCharged: true, carUnlockedNight: true, preheat: true });
     expect(normalizeSettings({ notify: 5 }).notify.aegDone).toBe(true);
   });
   it("patchen kräver alla tre och godtar inget annat", () => {

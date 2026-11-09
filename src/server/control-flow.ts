@@ -137,20 +137,12 @@ const skodaBody = z.union([
 ]);
 const SKODA_STATUS: Record<SkodaControlErrorCode, number> = { throttled: 429, config: 409, failed: 502 };
 
-/** Škoda: starta/stoppa klimatisering. Bryggans svar (ny avläsning) sparas direkt som snapshot. */
-async function handleSkoda(body: unknown, deps: ControlFlowDeps): Promise<ControlResult> {
-  const parsed = skodaBody.safeParse(body);
-  if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
-  let data: SkodaData;
-  try {
-    data = await sendSkodaClimate(parsed.data, { getConfig: deps.skodaConfig ?? (() => skodaConfigFromEnv(getEnv())), fetchFn: deps.fetchFn });
-  } catch (e) {
-    const err = e instanceof SkodaControlError ? e : new SkodaControlError("failed");
-    return { status: SKODA_STATUS[err.code], json: { error: err.message, code: err.code } };
-  }
+/** Skickar kommandot till bryggan och sparar svaret (ny avläsning) som snapshot. Kastar SkodaControlError. */
+async function runSkodaCommand(command: { action: "climate_start"; temperatureC: number } | { action: "climate_stop" }, deps: ControlFlowDeps): Promise<{ data: SkodaData; fetchedAt: Date }> {
+  let data = await sendSkodaClimate(command, { getConfig: deps.skodaConfig ?? (() => skodaConfigFromEnv(getEnv())), fetchFn: deps.fetchFn });
   const fetchedAt = new Date();
   // Bryggan väntar inte på bilen: stämmer läget inte än, märks kommandot så att kortet visar "väntar på bilen" och hämtar tätare.
-  const wanted = parsed.data.action === "climate_start";
+  const wanted = command.action === "climate_start";
   if (data.climateOn !== wanted) data = { ...data, climateRequested: { action: wanted ? "start" : "stop", at: fetchedAt.toISOString() } };
   else data = { ...data, climateRequested: null };
   const db = deps.db ?? defaultDb;
@@ -159,7 +151,30 @@ async function handleSkoda(body: unknown, deps: ControlFlowDeps): Promise<Contro
     db.snapshot.create({ data: { provider: "skoda", payload: data as never, fetchedAt } }),
     db.providerBackoff.deleteMany({ where: { provider: "skoda" } }),
   ]);
-  return { status: 200, json: { state: { status: "ok", data, fetchedAt: fetchedAt.toISOString() } } };
+  return { data, fetchedAt };
+}
+
+/** Škoda: starta/stoppa klimatisering. */
+async function handleSkoda(body: unknown, deps: ControlFlowDeps): Promise<ControlResult> {
+  const parsed = skodaBody.safeParse(body);
+  if (!parsed.success) return { status: 400, json: { error: "Ogiltigt kommando", code: "invalid" } };
+  try {
+    const { data, fetchedAt } = await runSkodaCommand(parsed.data, deps);
+    return { status: 200, json: { state: { status: "ok", data, fetchedAt: fetchedAt.toISOString() } } };
+  } catch (e) {
+    const err = e instanceof SkodaControlError ? e : new SkodaControlError("failed");
+    return { status: SKODA_STATUS[err.code], json: { error: err.message, code: err.code } };
+  }
+}
+
+/** Startar bilens klimatisering utan inloggad användare (förvärm till avresa). Ger null om det lyckades, annars felkoden. */
+export async function startSkodaClimateNow(temperatureC: number, deps: ControlFlowDeps = {}): Promise<SkodaControlErrorCode | null> {
+  try {
+    await runSkodaCommand({ action: "climate_start", temperatureC }, deps);
+    return null;
+  } catch (e) {
+    return e instanceof SkodaControlError ? e.code : "failed";
+  }
 }
 
 const STATUS: Record<ControlErrorCode, number> = { reauth: 409, scope: 409, no_device: 409, device_offline: 409, choose_device: 409, restricted_device: 409, not_now: 409, volume_disallowed: 409, premium: 403, rate_limit: 429, failed: 502 };

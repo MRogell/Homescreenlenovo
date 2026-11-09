@@ -21,6 +21,12 @@ const op = z.discriminatedUnion("op", [
   z.object({ op: z.literal("clearChecked") }).strict(),
   z.object({ op: z.literal("noteAdd"), id, text: z.string().trim().min(1).max(400), at }).strict(),
   z.object({ op: z.literal("noteRemove"), id }).strict(),
+  z.object({ op: z.literal("dinner"), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), dish: z.string().trim().max(120), at }).strict(),
+  z.object({ op: z.literal("dinnerListed"), dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(14) }).strict(),
+  z.object({ op: z.literal("habit"), weekday: z.number().int().min(1).max(7), dish: z.string().trim().max(120).nullable() }).strict(),
+  z.object({ op: z.literal("people"), n: z.number().int().min(1).max(12) }).strict(),
+  z.object({ op: z.literal("recipe"), name: z.string().trim().min(1).max(60), ingredients: z.array(z.string().trim().min(1).max(80)).min(1).max(30) }).strict(),
+  z.object({ op: z.literal("recipeRemove"), name: z.string().trim().min(1).max(60) }).strict(),
 ]);
 export const MAX_OPS = 60;
 /** Samma strikta indata för ägaren och för familjemedlemmarna. */

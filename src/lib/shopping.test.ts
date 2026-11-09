@@ -94,7 +94,7 @@ describe("applyOps: varor", () => {
     expect(run(ops).items).toHaveLength(MAX_ITEMS);
   });
   it("minns avdelningen från historiken", () => {
-    const base: ListsState = { items: [], notes: [], history: { [itemKey("Pesto")]: { name: "Pesto", category: "kott", count: 2, lastAt: 1 } } };
+    const base: ListsState = { ...EMPTY_LISTS, history: { [itemKey("Pesto")]: { name: "Pesto", category: "kott", count: 2, lastAt: 1 } } };
     expect(run([add("a", "pesto")], base).items[0]!.category).toBe("kott");
   });
 });
@@ -127,7 +127,7 @@ describe("visning och förslag", () => {
     expect(suggestions(again)).toEqual([]);
   });
   it("sorterar förslag efter antal köp", () => {
-    const h: ListsState = { items: [], notes: [], history: { a: { name: "A", category: "ovrigt", count: 1, lastAt: 9 }, b: { name: "B", category: "ovrigt", count: 5, lastAt: 1 }, c: { name: "C", category: "ovrigt", count: 0, lastAt: 99 } } };
+    const h: ListsState = { ...EMPTY_LISTS, history: { a: { name: "A", category: "ovrigt", count: 1, lastAt: 9 }, b: { name: "B", category: "ovrigt", count: 5, lastAt: 1 }, c: { name: "C", category: "ovrigt", count: 0, lastAt: 99 } } };
     expect(suggestions(h)).toEqual(["B", "A"]);
     expect(suggestions(h, 1)).toEqual(["B"]);
   });
@@ -173,5 +173,51 @@ describe("hittade inte och vem som lade till", () => {
     const s = run([add("a", "Mjölk"), add("b", "Bananer"), { op: "skip", id: "b", skipped: true }]);
     expect(groupItems(s.items).flatMap((g) => g.items.map((i) => i.name))).toEqual(["Bananer", "Mjölk"]);
     expect(groupItems(s.items, { withSkipped: false }).flatMap((g) => g.items.map((i) => i.name))).toEqual(["Mjölk"]);
+  });
+});
+
+
+describe("middagsplan i reducern", () => {
+  const dinner = (date: string, dish: string, by?: string): Op => ({ op: "dinner", date, dish, at: 5, ...(by ? { by } : {}) });
+  it("sätter, ändrar och tar bort en middag", () => {
+    let s = run([dinner("2026-11-11", "tacos", "Anna")]);
+    expect(s.dinners["2026-11-11"]).toEqual({ dish: "tacos", at: 5, by: "Anna" });
+    s = run([dinner("2026-11-11", "Pasta")], s);
+    expect(s.dinners["2026-11-11"]).toEqual({ dish: "Pasta", at: 5 }); // ny rätt: ingredienserna är inte på listan än
+    s = run([dinner("2026-11-11", "  ")], s);
+    expect(s.dinners).toEqual({});
+  });
+  it("ogiltigt datum ignoreras och högst 60 middagar", () => {
+    expect(run([dinner("imorgon", "Tacos")]).dinners).toEqual({});
+    const ops = Array.from({ length: 70 }, (_, i) => dinner(`2026-${String(1 + Math.floor(i / 28)).padStart(2, "0")}-${String(1 + (i % 28)).padStart(2, "0")}`, "Mat"));
+    expect(Object.keys(run(ops).dinners)).toHaveLength(60);
+  });
+  it("markerar att ingredienserna ligger på listan, och bara för middagar som finns", () => {
+    const s = run([dinner("2026-11-11", "Tacos"), { op: "dinnerListed", dates: ["2026-11-11", "2026-11-12"] }]);
+    expect(s.dinners["2026-11-11"]!.listed).toBe(true);
+    expect(s.dinners["2026-11-12"]).toBeUndefined();
+  });
+  it("återkommande middag per veckodag, och ta bort den", () => {
+    let s = run([{ op: "habit", weekday: 5, dish: "Tacos" }, { op: "habit", weekday: 9, dish: "Nej" }, { op: "habit", weekday: 0, dish: "Nej" }]);
+    expect(s.habits).toEqual({ "5": "Tacos" });
+    s = run([{ op: "habit", weekday: 5, dish: null }], s);
+    expect(s.habits).toEqual({});
+  });
+  it("antal personer: 1–12", () => {
+    expect(run([{ op: "people", n: 6 }]).people).toBe(6);
+    for (const n of [0, 13, 2.5, -1]) expect(run([{ op: "people", n }]).people).toBe(4);
+  });
+  it("egna recept: sparas på namnet, skrivs över, tas bort; tomma ignoreras", () => {
+    let s = run([{ op: "recipe", name: "Mormors Gryta", ingredients: ["Nötkött 500 g", " ", "Lök"] }]);
+    expect(s.recipes["mormors gryta"]).toEqual({ name: "Mormors Gryta", ingredients: ["Nötkött 500 g", "Lök"] });
+    s = run([{ op: "recipe", name: "mormors gryta", ingredients: ["Potatis"] }], s);
+    expect(s.recipes["mormors gryta"]).toEqual({ name: "mormors gryta", ingredients: ["Potatis"] });
+    expect(run([{ op: "recipe", name: "", ingredients: ["x"] }, { op: "recipe", name: "Tom", ingredients: [" "] }]).recipes).toEqual({});
+    s = run([{ op: "recipeRemove", name: "MORMORS gryta" }], s);
+    expect(s.recipes).toEqual({});
+  });
+  it("högst 40 egna recept", () => {
+    const ops = Array.from({ length: 45 }, (_, i) => ({ op: "recipe", name: `Recept ${i}`, ingredients: ["x"] }) as Op);
+    expect(Object.keys(run(ops).recipes)).toHaveLength(40);
   });
 });
