@@ -26,7 +26,10 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .sub:not(:empty) { text-wrap: balance; }
 .sub[data-tone="yellow"] { color: var(--warn); }
 .sub[data-tone="orange"] { color: var(--w-orange); }
-.sub[data-tone="red"] { color: var(--bad); font-weight: 600; }
+.sub[data-tone="red"] { color: var(--bad); }
+/* Vädervarning: större, fetare och med färgad bakgrund, så att den syns på håll även om texten är för liten att läsa. */
+.sub[data-tone] { font: 600 20px/1.25 var(--display); padding: 8px 14px; margin-top: 8px; border-radius: 12px; border-left: 5px solid currentColor; background: color-mix(in srgb, currentColor 14%, transparent); }
+@media (max-width: 560px) { .sub[data-tone] { font-size: 17px; } }
 .clock { text-align: right; font-family: var(--display); }
 .clock b { display: block; font-size: clamp(36px, 5vw, 64px); line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
 .clock span { color: var(--muted); font-family: var(--body); }
@@ -317,6 +320,9 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
 /* Nattläge: dämpar sidan, släpper igenom tryck. */
 .night-veil { position: fixed; inset: 0; z-index: 50; pointer-events: none; background: rgb(0 0 0 / .6); transition: opacity .6s; }
+/* Nattläget dämpar korten men inte klockan och vädervarningen: de ska gå att läsa även på natten (bara lite dämpade). Grå text lyfts så att den inte försvinner under slöjan. */
+.night-veil ~ header.top-bar { position: relative; z-index: 51; filter: brightness(.8); }
+@media (prefers-color-scheme: dark) { .night-veil ~ .grid { --muted: #e6edf3; } }
 /* Kugghjul uppe vid klockan: alltid en väg till Inställningar, även om alla kort är dolda. */
 .settings-link { align-self: flex-start; display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; color: var(--muted); border: 1px solid var(--line); background: var(--surface); }
 .settings-link svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; }
@@ -412,7 +418,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .cal-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--cal, var(--muted)); display: inline-block; }
 .cal-grp { font: 600 13px var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
 .cal-next { display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 16px; background: linear-gradient(160deg, color-mix(in srgb, var(--cal) 22%, var(--surface-2)), var(--surface-2) 75%); }
-.cal-when { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.cal-when { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 600; color: var(--fg); }
 .cal-ttl { font: 600 24px/1.15 var(--display); overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .cal-more { margin: 0; padding-left: calc(3.6em + 18px); color: var(--muted); font-size: 13px; font-weight: 600; }
 .cal-meta { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
