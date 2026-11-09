@@ -14,8 +14,8 @@ export default async function Page({ params }: { params: Promise<{ token: string
   if (!who) notFound();
   return (
     <div className="wrap shop">
-      <header className="top-bar">
-        <div><h1>Hej {who.name}</h1><div className="sub">Familjens inköpslista och lappar. Det du skriver syns för alla.</div></div>
+      <header className="top-bar page-bar">
+        <h1>Hej {who.name}</h1>
       </header>
       <main className="landmark">
         <section className="card" aria-label="Familjens lista">

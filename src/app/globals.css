@@ -700,7 +700,6 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
 /* Butiksläget: en avdelning i taget, hittade-inte och klart-läge. */
 .li-shop { gap: 8px; }
-.li-shop .li-progress { position: sticky; top: 0; z-index: 3; background: var(--surface); padding: 6px 0 8px; margin-top: -6px; }
 .li-aisle { border-radius: 16px; background: var(--surface-2); padding: 0 14px; }
 .li-aisle.open { padding-bottom: 6px; background: transparent; border: 1px solid var(--field-line); }
 .li-aislehead { width: 100%; min-height: 56px; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: var(--fg); font: 600 17px var(--display); text-align: left; cursor: pointer; padding: 0; }
@@ -743,3 +742,42 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
 /* Butiksläget: en enda lista, med fina avskiljare mellan varorna. */
 .li-flat .li-item { border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+
+/* Sidhuvud som sitter fast högst upp på handla- och familjesidorna. Det täcker också statusfältet på iPhone, så att rubriken aldrig hamnar halvt under klockan när man scrollar. */
+body:has(.wrap.shop) { padding-top: 0; }
+.wrap.shop { gap: 10px; }
+.top-bar.page-bar { flex: none; position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 12px; margin: 0 -16px; padding: max(12px, env(safe-area-inset-top, 0px)) 16px 10px; background: var(--bg); border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.top-bar.page-bar h1 { flex: 1; min-width: 0; font-size: 28px; }
+.icon-btn { width: 48px; height: 48px; flex: none; display: inline-grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; text-decoration: none; }
+.icon-btn svg { width: 22px; height: 22px; }
+.icon-btn:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+
+/* Panel (nedre ark på telefon, mitt på platta) */
+.sheet { border: 0; padding: 0; background: var(--surface); color: var(--fg); width: min(560px, 100%); max-width: 100%; max-height: 90dvh; border-radius: 24px 24px 0 0; margin: auto auto 0; box-shadow: 0 -10px 40px rgb(0 0 0 / .45); overflow: auto; }
+.sheet::backdrop { background: rgb(0 0 0 / .6); }
+.sheet-in { display: flex; flex-direction: column; gap: 14px; padding: 18px 18px max(22px, env(safe-area-inset-bottom, 0px)); }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sheet-head h2 { margin: 0; font: 600 24px var(--display); }
+@media (min-width: 700px) { .sheet { border-radius: 24px; margin: auto; } }
+
+/* Personer i delningen */
+.sm { display: flex; flex-direction: column; gap: 14px; }
+.sm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sm-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); flex-wrap: wrap; }
+.sm-row:last-child { border-bottom: 0; }
+.sm-avatar { width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 600 18px var(--display); background: color-mix(in srgb, var(--cal) 22%, var(--surface-2)); color: var(--cal); }
+.sm-who { flex: 1; min-width: 120px; display: flex; flex-direction: column; }
+.sm-who b { font: 600 17px var(--display); }
+.sm-who small { color: var(--muted); font-size: 13px; }
+.sm-actions, .sm-confirm { display: flex; align-items: center; gap: 6px; }
+.sm-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border-radius: 99px; border: 1px solid var(--field-line); background: transparent; color: var(--fg); font: 600 15px var(--body); cursor: pointer; }
+.sm-btn svg { width: 17px; height: 17px; }
+.sm-btn.primary { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.sm-btn.danger { background: var(--bad); border-color: transparent; color: var(--bg); }
+.sm-btn:disabled { opacity: .5; cursor: default; }
+.sm-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.sm-icon svg { width: 19px; height: 19px; }
+.sm-btn:focus-visible, .sm-icon:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.sm-form { display: flex; gap: 8px; }
+.sm-form input { flex: 1; min-width: 0; min-height: 48px; border-radius: 12px; border: 1px solid var(--field-line); background: var(--surface-2); color: var(--fg); padding: 0 14px; font: 16px var(--body); }
+.sm-form .sm-btn { min-height: 48px; }

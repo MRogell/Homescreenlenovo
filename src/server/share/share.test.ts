@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../db";
 import { applySettingsPatch } from "../settings";
 import { loadLists } from "../lists/store";
-import { handleCreateShare, handleGuestGet, handleGuestPost, handleRemoveShare, type ShareRequest } from "./flow";
+import { handleCreateShare, handleGuestGet, handleListShares, handleGuestPost, handleRemoveShare, type ShareRequest } from "./flow";
 import { createShare, findShare, listShares, MAX_SHARES, removeShare } from "./store";
 
 const SECRET = "x".repeat(32);
@@ -83,6 +83,17 @@ describe("delningar (ägarens anrop)", () => {
     expect((await handleCreateShare(owner, deps)).status).toBe(409);
     const r = await handleRemoveShare({ ...owner, body: { id: c.json.shares![0]!.id } }, deps);
     expect(r.json.shares).toEqual([]);
+  });
+});
+
+describe("delningar (lista)", () => {
+  it("bara inloggad ägare får se länkarna", async () => {
+    await createShare("Anna", db, SECRET);
+    expect((await handleListShares({ userId: null }, deps)).status).toBe(401);
+    const r = await handleListShares({ userId: "u1" }, deps);
+    expect(r.status).toBe(200);
+    expect(r.json.shares).toHaveLength(1);
+    expect(r.json.shares![0]!.token).toHaveLength(43);
   });
 });
 

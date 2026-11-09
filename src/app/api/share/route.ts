@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionUser } from "@/server/authz";
-import { handleCreateShare, handleRemoveShare, type ShareRequest, type ShareResult } from "@/server/share/flow";
+import { handleCreateShare, handleListShares, handleRemoveShare, type ShareRequest, type ShareResult } from "@/server/share/flow";
 
 export const dynamic = "force-dynamic";
 
@@ -19,3 +19,9 @@ async function run(req: NextRequest, fn: (r: ShareRequest) => Promise<ShareResul
 
 export const POST = (req: NextRequest) => run(req, (r) => handleCreateShare(r));
 export const DELETE = (req: NextRequest) => run(req, (r) => handleRemoveShare(r));
+
+export async function GET() {
+  const user = await getSessionUser();
+  const r = await handleListShares({ userId: user?.id ?? null });
+  return NextResponse.json(r.json, { status: r.status, headers: { "Cache-Control": "no-store" } });
+}

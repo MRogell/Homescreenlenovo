@@ -24,6 +24,13 @@ function ownerGate(req: ShareRequest): ShareResult | null {
   return null;
 }
 
+/** Delningarna med länkarnas nycklar. Bara för den inloggade ägaren (länkarna ger tillgång till listan). */
+export async function handleListShares(req: Pick<ShareRequest, "userId">, deps: ShareDeps = {}): Promise<ShareResult> {
+  if (!req.userId) return { status: 401, json: { error: "Inte inloggad" } };
+  const db = deps.db ?? defaultDb, secret = deps.secret ?? getEnv().BETTER_AUTH_SECRET;
+  return { status: 200, json: { shares: await listShares(db, secret) } };
+}
+
 /** Lägger till en familjemedlem och ger tillbaka alla (med länkarnas nycklar, bara till den inloggade ägaren). */
 export async function handleCreateShare(req: ShareRequest, deps: ShareDeps = {}): Promise<ShareResult> {
   const denied = ownerGate(req);

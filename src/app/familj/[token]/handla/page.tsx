@@ -15,9 +15,9 @@ export default async function Page({ params }: { params: Promise<{ token: string
   if (!(await findShare(token, db, getEnv().BETTER_AUTH_SECRET))) notFound();
   return (
     <div className="wrap shop">
-      <header className="top-bar">
-        <div><h1>Handla</h1><div className="sub">Bocka av medan du går. Fungerar även utan täckning.</div></div>
-        <Link className="back-link" href={`/familj/${token}`}><ArrowLeft aria-hidden="true" />Listan</Link>
+      <header className="top-bar page-bar">
+        <Link className="icon-btn" href={`/familj/${token}`} aria-label="Tillbaka till listan"><ArrowLeft aria-hidden="true" /></Link>
+        <h1>Handla</h1>
       </header>
       <main className="landmark">
         <section className="card" aria-label="Inköpslista">
