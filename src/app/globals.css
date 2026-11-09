@@ -171,14 +171,15 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
 /* Škoda: klimatisering. Båge kallt→varmt med markör, temperatur i mitten, bred rundad knapp. */
 :root { --dial-cold: #6fa8f0; --dial-mid: #b49ad8; --dial-warm: #ef7a6e; }
-.skoda-climate { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 12px 14px; border-radius: 18px; background: var(--surface-2); }
+.skoda-climate { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 38px 12px 14px; border-radius: 18px; background: var(--surface-2); }
 .skoda-climate.on { background: linear-gradient(180deg, color-mix(in srgb, var(--dial-warm) 14%, var(--surface-2)), var(--surface-2) 70%); }
-.skoda-climate-status { align-self: stretch; margin: -6px 0 0 -6px; display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
+/* Alltid i övre vänstra hörnet av rutan, även när rutan är högre än innehållet (då centreras resten). */
+.skoda-climate-status { position: absolute; top: 10px; left: 11px; right: 11px; display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
 .skoda-climate.on .skoda-climate-status { color: var(--ok); }
 .skoda-climate.pending .skoda-climate-status { color: var(--warn); }
 .skoda-climate-status svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 /* Höjden via padding-top (172/200) i stället för aspect-ratio: Safari räknar kortets höjd rätt med den vägen. */
-.skoda-dial { position: relative; width: 100%; max-width: 250px; }
+.skoda-dial { position: relative; width: 100%; max-width: 300px; }
 .skoda-dial::before { content: ""; display: block; padding-top: 86%; }
 .skoda-dial svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .skoda-dial .track { fill: none; stroke: url(#skoda-dial-grad); stroke-width: 14; stroke-linecap: round; }
@@ -188,9 +189,9 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 @keyframes skoda-pulse { 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) { .skoda-dial .marker { transition: none; } .skoda-climate.pending .skoda-dial .marker { animation: none; } }
 /* Mitt i cirkeln: bågens medelpunkt ligger vid 100 av 172 (58 %) i viewBox, så texten centreras på den punkten. */
-.skoda-dial-center { position: absolute; left: 50%; top: 58.14%; width: 76%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 0; }
+.skoda-dial-center { position: absolute; left: 50%; top: 58.14%; width: 78%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 0; }
 .skoda-dial-center .label { color: var(--muted); font-size: 13px; font-weight: 600; }
-.skoda-dial-value { display: flex; align-items: center; justify-content: center; gap: 2px; width: 100%; }
+.skoda-dial-value { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
 .skoda-dial-value output { min-width: 2.6ch; text-align: center; font: 600 clamp(36px, 3.4vw, 44px)/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
 .skoda-dial-value button { width: 48px; height: 48px; flex: none; border-radius: 50%; border: 0; background: color-mix(in srgb, var(--fg) 8%, transparent); font: 500 26px/1 var(--body); cursor: pointer; display: grid; place-items: center; padding: 0 0 2px; }
 .skoda-dial-value .minus { color: var(--dial-cold); } .skoda-dial-value .plus { color: var(--dial-warm); }
