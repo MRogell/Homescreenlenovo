@@ -33,7 +33,10 @@ let cached: Env | undefined;
 /** Valideras vid första användning (inte vid import) så att `next build` inte kräver hemligheter. */
 export function getEnv(): Env {
   if (!cached) {
-    const parsed = schema.safeParse(process.env);
+    // Vercels förhandsbygge (Preview) har ingen databasadress: den hör bara till Production, så att förhandsvisningar aldrig rör
+    // produktionsdatabasen. Själva bygget behöver ingen databas, så bara under bygget fylls en platshållare i. Vid körning krävs adressen.
+    const building = process.env.NEXT_PHASE === "phase-production-build" && !process.env.DATABASE_URL;
+    const parsed = schema.safeParse(building ? { ...process.env, DATABASE_URL: "postgresql://bygge-utan-databas" } : process.env);
     if (!parsed.success) throw new Error(`Ogiltig miljökonfiguration: ${z.prettifyError(parsed.error)}`);
     cached = parsed.data;
   }
