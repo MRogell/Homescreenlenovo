@@ -141,3 +141,37 @@ describe("visning och förslag", () => {
     expect(autocomplete(hist, "mjölk")).toEqual([]);
   });
 });
+
+describe("hittade inte och vem som lade till", () => {
+  it("hoppar över en vara och lägger tillbaka den; avbockning rensar markeringen", () => {
+    let s = run([add("a", "Mjölk"), { op: "skip", id: "a", skipped: true }]);
+    expect(s.items[0]!.skipped).toBe(true);
+    s = run([{ op: "skip", id: "a", skipped: false }], s);
+    expect(s.items[0]!.skipped).toBe(false);
+    s = run([{ op: "skip", id: "a", skipped: true }, { op: "check", id: "a", checked: true, at: 5 }], s);
+    expect(s.items[0]).toMatchObject({ checked: true, skipped: false });
+  });
+  it("en avbockad vara kan inte hoppas över, och 'rensa avbockade' lämnar det som inte hittades", () => {
+    let s = run([add("a", "Mjölk"), add("b", "Ägg"), { op: "check", id: "a", checked: true, at: 2 }, { op: "skip", id: "a", skipped: true }, { op: "skip", id: "b", skipped: true }]);
+    expect(s.items.find((i) => i.id === "a")!.skipped).toBeFalsy();
+    s = run([{ op: "clearChecked" }], s);
+    expect(s.items.map((i) => i.name)).toEqual(["Ägg"]);
+    expect(s.items[0]!.skipped).toBe(true);
+  });
+  it("att lägga till samma vara igen tar bort 'hittade inte'", () => {
+    const s = run([add("a", "Mjölk"), { op: "skip", id: "a", skipped: true }, add("b", "mjölk")]);
+    expect(s.items).toHaveLength(1);
+    expect(s.items[0]!.skipped).toBe(false);
+  });
+  it("märker varor och lappar med vem som lade till dem, kapat till 24 tecken", () => {
+    const s = run([{ op: "add", id: "a", name: "Mjölk", at: 1, by: "Anna" }, { op: "noteAdd", id: "n", text: "Hej", at: 2, by: "x".repeat(40) }, add("b", "Ägg")]);
+    expect(s.items.find((i) => i.id === "a")!.by).toBe("Anna");
+    expect(s.items.find((i) => i.id === "b")!.by).toBeUndefined();
+    expect(s.notes[0]!.by).toHaveLength(24);
+  });
+  it("hoppade varor ligger kvar i grupperingen, men kan hållas utanför för butiksläget", () => {
+    const s = run([add("a", "Mjölk"), add("b", "Bananer"), { op: "skip", id: "b", skipped: true }]);
+    expect(groupItems(s.items).flatMap((g) => g.items.map((i) => i.name))).toEqual(["Bananer", "Mjölk"]);
+    expect(groupItems(s.items, { withSkipped: false }).flatMap((g) => g.items.map((i) => i.name))).toEqual(["Mjölk"]);
+  });
+});

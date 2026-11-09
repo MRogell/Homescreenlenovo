@@ -125,8 +125,8 @@ export type CalendarData = z.infer<typeof calendarSchema>;
 const listCategory = z.enum(CATEGORY_IDS as [(typeof CATEGORY_IDS)[number], ...(typeof CATEGORY_IDS)[number][]]);
 /** Inköpslista och lappar (hela tillståndet, med historiken som förslagen bygger på). */
 export const listsSchema = z.object({
-  items: z.array(z.object({ id: z.string(), name: z.string(), qty: z.string().nullable(), category: listCategory, checked: z.boolean(), at: z.number(), checkedAt: z.number().nullable() })),
-  notes: z.array(z.object({ id: z.string(), text: z.string(), at: z.number() })),
+  items: z.array(z.object({ id: z.string(), name: z.string(), qty: z.string().nullable(), category: listCategory, checked: z.boolean(), at: z.number(), checkedAt: z.number().nullable(), skipped: z.boolean().optional(), by: z.string().optional() })),
+  notes: z.array(z.object({ id: z.string(), text: z.string(), at: z.number(), by: z.string().optional() })),
   history: z.record(z.string(), z.object({ name: z.string(), category: listCategory, count: z.number(), lastAt: z.number() })),
 });
 export type ListsData = z.infer<typeof listsSchema>;

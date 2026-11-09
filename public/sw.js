@@ -15,15 +15,15 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
-  if (e.request.mode === "navigate" && url.pathname === "/handla") {
+  if (e.request.mode === "navigate" && (url.pathname === "/handla" || /^\/familj\/[^/]+(\/handla)?$/.test(url.pathname))) {
     // Nätet först. Lyckas det sparas skalet; annars används det sparade. Omdirigeringar (utloggad) sparas aldrig.
     e.respondWith(
       fetch(e.request)
         .then((res) => {
-          if (res.ok && !res.redirected) { const copy = res.clone(); caches.open(SHELL).then((c) => c.put("/handla", copy)); }
+          if (res.ok && !res.redirected) { const copy = res.clone(); caches.open(SHELL).then((c) => c.put(url.pathname, copy)); }
           return res;
         })
-        .catch(() => caches.open(SHELL).then((c) => c.match("/handla")).then((r) => r || caches.match("/offline"))),
+        .catch(() => caches.open(SHELL).then((c) => c.match(url.pathname)).then((r) => r || caches.match("/offline"))),
     );
     return;
   }

@@ -45,7 +45,7 @@ export function CardShell<T>({ title, icon, state, now, render, off, noFoot, cla
   }
   const { pill, body } = render(state.data);
   return (
-    <section className={`card ${className}`} aria-label={title} style={style?.(state.data)}>
+    <section className={`card ${className}`} aria-label={title} data-stale={state.status === "stale" ? "" : undefined} style={style?.(state.data)}>
       <div className="card-head">
         <Icon name={icon} /><span className="name">{title}</span>
         {state.status === "stale" ? <span className="pill warn">Gammal data</span> : pill && <span className={`pill ${pill.tone ?? ""}`}>{pill.text}</span>}

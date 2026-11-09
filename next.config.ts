@@ -34,6 +34,15 @@ const config: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
         ],
       },
+      {
+        // Familjemedlemmarnas länkar: aldrig i sökmotorer, aldrig i webbläsarens cache av svaret, aldrig vidare som referens.
+        source: "/familj/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Cache-Control", value: "no-store" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
     ];
   },
 };

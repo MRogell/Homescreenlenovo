@@ -15,6 +15,7 @@ const qty = z.string().trim().max(20).nullable().optional();
 const op = z.discriminatedUnion("op", [
   z.object({ op: z.literal("add"), id, name: z.string().trim().min(1).max(120), qty, at }).strict(),
   z.object({ op: z.literal("check"), id, checked: z.boolean(), at }).strict(),
+  z.object({ op: z.literal("skip"), id, skipped: z.boolean() }).strict(),
   z.object({ op: z.literal("remove"), id }).strict(),
   z.object({ op: z.literal("setQty"), id, qty: z.string().trim().max(20).nullable() }).strict(),
   z.object({ op: z.literal("clearChecked") }).strict(),
@@ -22,7 +23,9 @@ const op = z.discriminatedUnion("op", [
   z.object({ op: z.literal("noteRemove"), id }).strict(),
 ]);
 export const MAX_OPS = 60;
-const body = z.object({ ops: z.array(op).max(MAX_OPS) }).strict();
+/** Samma strikta indata för ägaren och för familjemedlemmarna. */
+export const opsBody = z.object({ ops: z.array(op).max(MAX_OPS) }).strict();
+const body = opsBody;
 
 /** Hämtar listorna. Kräver inloggning. */
 export async function handleListsGet(req: Pick<ListsRequest, "userId">, db: PrismaClient = defaultDb): Promise<ListsResult> {

@@ -100,8 +100,14 @@ export const itemKey = (name: string) => tidy(name).toLowerCase();
 
 // ---------- Tillstånd och operationer ----------
 
-export interface ShopItem { id: string; name: string; qty: string | null; category: CategoryId; checked: boolean; at: number; checkedAt: number | null }
-export interface Note { id: string; text: string; at: number }
+export interface ShopItem {
+  id: string; name: string; qty: string | null; category: CategoryId; checked: boolean; at: number; checkedAt: number | null;
+  /** Hittades inte i butiken: ligger kvar på listan till nästa gång. */
+  skipped?: boolean;
+  /** Vem som lade till varan (familjemedlemmens namn). Sätts av servern, aldrig av klienten. */
+  by?: string;
+}
+export interface Note { id: string; text: string; at: number; by?: string }
 export interface HistoryEntry { name: string; category: CategoryId; count: number; lastAt: number }
 export interface ListsState { items: ShopItem[]; notes: Note[]; history: Record<string, HistoryEntry> }
 
@@ -111,12 +117,13 @@ export const MAX_HISTORY = 400;
 export const EMPTY_LISTS: ListsState = { items: [], notes: [], history: {} };
 
 export type Op =
-  | { op: "add"; id: string; name: string; qty?: string | null; at: number }
+  | { op: "add"; id: string; name: string; qty?: string | null; at: number; by?: string }
   | { op: "check"; id: string; checked: boolean; at: number }
+  | { op: "skip"; id: string; skipped: boolean }
   | { op: "remove"; id: string }
   | { op: "setQty"; id: string; qty: string | null }
   | { op: "clearChecked" }
-  | { op: "noteAdd"; id: string; text: string; at: number }
+  | { op: "noteAdd"; id: string; text: string; at: number; by?: string }
   | { op: "noteRemove"; id: string };
 
 /** Tillämpar operationer på ett tillstånd och ger ett nytt (indata ändras aldrig). Operationer som inte går att utföra hoppas över. */
@@ -133,18 +140,18 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
         const same = items.find((i) => itemKey(i.name) === key);
         if (same) {
           // Samma vara finns redan: ny mängd om den saknade en, och avbockad vara hamnar på listan igen.
-          items = items.map((i) => (i.id === same.id ? { ...i, checked: false, checkedAt: null, qty: i.qty ?? parsed.qty } : i));
+          items = items.map((i) => (i.id === same.id ? { ...i, checked: false, checkedAt: null, skipped: false, qty: i.qty ?? parsed.qty } : i));
           break;
         }
         const h = history[key];
-        items.push({ id: o.id, name: parsed.name, qty: parsed.qty, category: h?.category ?? categorize(parsed.name), checked: false, at: o.at, checkedAt: null });
+        items.push({ id: o.id, name: parsed.name, qty: parsed.qty, category: h?.category ?? categorize(parsed.name), checked: false, at: o.at, checkedAt: null, ...(o.by ? { by: o.by.slice(0, 24) } : {}) });
         if (!h && Object.keys(history).length < MAX_HISTORY) history[key] = { name: parsed.name, category: categorize(parsed.name), count: 0, lastAt: o.at };
         break;
       }
       case "check": {
         const it = items.find((i) => i.id === o.id);
         if (!it) break;
-        items = items.map((i) => (i.id === o.id ? { ...i, checked: o.checked, checkedAt: o.checked ? o.at : null } : i));
+        items = items.map((i) => (i.id === o.id ? { ...i, checked: o.checked, checkedAt: o.checked ? o.at : null, skipped: false } : i));
         const key = itemKey(it.name);
         if (o.checked && !it.checked) {
           const h = history[key];
@@ -152,13 +159,14 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
         }
         break;
       }
+      case "skip": items = items.map((i) => (i.id === o.id && !i.checked ? { ...i, skipped: o.skipped } : i)); break;
       case "remove": items = items.filter((i) => i.id !== o.id); break;
       case "setQty": items = items.map((i) => (i.id === o.id ? { ...i, qty: o.qty ? o.qty.slice(0, 20) : null } : i)); break;
       case "clearChecked": items = items.filter((i) => !i.checked); break;
       case "noteAdd": {
         const text = tidy(o.text).slice(0, 280);
         if (!text || notes.some((n) => n.id === o.id) || notes.length >= MAX_NOTES) break;
-        notes = [{ id: o.id, text, at: o.at }, ...notes];
+        notes = [{ id: o.id, text, at: o.at, ...(o.by ? { by: o.by.slice(0, 24) } : {}) }, ...notes];
         break;
       }
       case "noteRemove": notes = notes.filter((n) => n.id !== o.id); break;
@@ -168,10 +176,12 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
 }
 
 /** Varor att visa: de som ska handlas grupperade i butikens ordning, och sist de avbockade. */
-export function groupItems(items: readonly ShopItem[]): { id: CategoryId; label: string; items: ShopItem[] }[] {
-  const open = items.filter((i) => !i.checked);
+export function groupItems(items: readonly ShopItem[], opts: { withSkipped?: boolean } = {}): { id: CategoryId; label: string; items: ShopItem[] }[] {
+  const open = items.filter((i) => !i.checked && (opts.withSkipped !== false || !i.skipped));
   return CATEGORIES.map((c) => ({ id: c.id, label: c.label, items: open.filter((i) => i.category === c.id).sort((a, b) => a.at - b.at) })).filter((g) => g.items.length > 0);
 }
+/** Varor som inte hittades. De ligger kvar på listan. */
+export const skippedItems = (items: readonly ShopItem[]) => items.filter((i) => i.skipped && !i.checked);
 export const doneItems = (items: readonly ShopItem[]) => items.filter((i) => i.checked).sort((a, b) => (b.checkedAt ?? 0) - (a.checkedAt ?? 0));
 
 /** Förslag: det ni köper oftast och inte redan har på listan. */

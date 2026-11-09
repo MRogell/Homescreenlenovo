@@ -2,15 +2,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { applyOps, autocomplete, EMPTY_LISTS, itemKey, parseItem, splitInput, suggestions, type ListsState, type Op } from "@/lib/shopping";
 
-const STORE_KEY = "lists-v1";
+const DEFAULT_STORE_KEY = "lists-v1";
 const BATCH = 60;
 const RETRY_MS = [3_000, 8_000, 20_000, 45_000];
 
 interface Stored { server: ListsState; pending: Op[] }
 
-function readStored(): Stored | null {
+function readStored(key: string): Stored | null {
   try {
-    const raw = localStorage.getItem(STORE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const j = JSON.parse(raw) as Partial<Stored>;
     if (!j || typeof j !== "object" || !j.server || !Array.isArray(j.pending)) return null;
@@ -19,9 +19,9 @@ function readStored(): Stored | null {
     return null;
   }
 }
-function writeStored(s: Stored) {
+function writeStored(key: string, s: Stored) {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(s));
+    localStorage.setItem(key, JSON.stringify(s));
   } catch {
     // Privat läge eller full lagring: listan fungerar ändå, men överlever inte en omstart offline.
   }
@@ -40,7 +40,16 @@ export interface AddResult { added: string[]; existing: string[] }
  * så att allt svarar direkt och fungerar utan täckning. Ändringarna köas (och sparas i telefonen), skickas i omgångar och
  * kan skickas om utan risk eftersom varje har ett eget id. Servern har sista ordet.
  */
-export function useLists(initial: ListsState | null, pollMs = 20_000) {
+export interface ListsOptions {
+  pollMs?: number;
+  /** Adressen listorna hämtas från och sparas till. Familjemedlemmar har en egen (med sin länk i). */
+  endpoint?: string;
+  /** Nyckeln i telefonen där köade ändringar och senast kända läge ligger. */
+  storeKey?: string;
+}
+
+export function useLists(initial: ListsState | null, opts: ListsOptions = {}) {
+  const { pollMs = 20_000, endpoint = "/api/lists", storeKey = DEFAULT_STORE_KEY } = opts;
   const [server, setServer] = useState<ListsState>(initial ?? EMPTY_LISTS);
   const [pending, setPending] = useState<Op[]>([]);
   const [loaded, setLoaded] = useState(initial !== null);
@@ -57,8 +66,8 @@ export function useLists(initial: ListsState | null, pollMs = 20_000) {
     pendingRef.current = p;
     setServer(s);
     setPending(p);
-    writeStored({ server: s, pending: p });
-  }, []);
+    writeStored(storeKey, { server: s, pending: p });
+  }, [storeKey]);
 
   const flush = useCallback(async (): Promise<void> => {
     if (inflight.current || pendingRef.current.length === 0) return;
@@ -69,7 +78,7 @@ export function useLists(initial: ListsState | null, pollMs = 20_000) {
         const batch = pendingRef.current.slice(0, BATCH);
         let res: Response;
         try {
-          res = await fetch("/api/lists", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ops: batch }) });
+          res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ops: batch }) });
         } catch {
           setOnline(false);
           const wait = RETRY_MS[Math.min(retry.current++, RETRY_MS.length - 1)]!;
@@ -97,7 +106,7 @@ export function useLists(initial: ListsState | null, pollMs = 20_000) {
     } finally {
       inflight.current = false;
     }
-  }, [commit]);
+  }, [commit, endpoint]);
 
   const enqueue = useCallback((ops: Op[]) => {
     if (ops.length === 0) return;
@@ -108,7 +117,7 @@ export function useLists(initial: ListsState | null, pollMs = 20_000) {
   const pull = useCallback(async () => {
     if (inflight.current || pendingRef.current.length > 0) return;
     try {
-      const res = await fetch("/api/lists", { cache: "no-store" });
+      const res = await fetch(endpoint, { cache: "no-store" });
       if (!res.ok) return;
       const j = (await res.json()) as { lists?: ListsState };
       if (j.lists && !inflight.current && pendingRef.current.length === 0) { commit(j.lists, []); setLoaded(true); }
@@ -116,11 +125,11 @@ export function useLists(initial: ListsState | null, pollMs = 20_000) {
     } catch {
       setOnline(false);
     }
-  }, [commit]);
+  }, [commit, endpoint]);
 
   // Start: ta upp köade ändringar och sista kända läge från telefonen (efter första ritningen, så att servern och klienten ritar lika).
   useEffect(() => {
-    const stored = readStored();
+    const stored = readStored(storeKey);
     if (stored) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       commit(initial ?? stored.server, stored.pending);
@@ -165,13 +174,14 @@ export function useLists(initial: ListsState | null, pollMs = 20_000) {
 
   const toggle = useCallback((id: string, checked: boolean) => enqueue([{ op: "check", id, checked, at: Date.now() }]), [enqueue]);
   const remove = useCallback((id: string) => enqueue([{ op: "remove", id }]), [enqueue]);
+  const skip = useCallback((id: string, skipped: boolean) => enqueue([{ op: "skip", id, skipped }]), [enqueue]);
   const clearChecked = useCallback(() => enqueue([{ op: "clearChecked" }]), [enqueue]);
   const noteAdd = useCallback((text: string) => { if (text.trim()) enqueue([{ op: "noteAdd", id: newId(), text, at: Date.now() }]); }, [enqueue]);
   const noteRemove = useCallback((id: string) => enqueue([{ op: "noteRemove", id }]), [enqueue]);
 
   return {
     state, loaded, online, error, pendingCount: pending.length,
-    add, toggle, remove, clearChecked, noteAdd, noteRemove,
+    add, toggle, remove, skip, clearChecked, noteAdd, noteRemove,
     suggest: useCallback((n = 8) => suggestions(state, n), [state]),
     complete: useCallback((typed: string) => autocomplete(state, typed), [state]),
   };

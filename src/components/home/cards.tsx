@@ -89,7 +89,7 @@ export const SpotifyCard = ({ state, now, sonos = null }: P & { sonos?: SonosInf
 );
 
 export const AegCard = ({ state, now }: P) => (
-  <CardShell<AegData> title="AEG" off={{ big: "Maskinen", text: "Följ programmet och starta eller stoppa." }} icon="wash" state={as(state)} now={now} render={(d) => {
+  <CardShell<AegData> title="AEG" off={{ big: "Maskinen", text: "Följ programmet och starta eller stoppa." }} icon="wash" state={as(state)} now={now} className="aeg" render={(d) => {
     const active = d.state === "RUNNING" || d.state === "PAUSED" || d.state === "DELAYED_START";
     return {
       // Stor text visar läget; pillret visar uppkoppling, eller läget när maskinen kör (då är stora texten tiden kvar).
@@ -219,14 +219,14 @@ export const CalendarCard = ({ state, now }: P) => (
               <div className="cal-meta">{v.hero.meta}</div>
             </div>
           )}
-          {v.later.length > 0 && <><div className="cal-grp">Senare idag</div>{v.later.map((e) => <CalRow key={e.key} e={e} />)}{v.laterMore > 0 && <p className="cal-more">+{v.laterMore} till idag</p>}</>}
+          {v.later.length > 0 && <><div className="cal-grp">Senare idag</div><div className="cal-rows">{v.later.map((e) => <CalRow key={e.key} e={e} />)}</div>{v.laterMore > 0 && <p className="cal-more">+{v.laterMore} till idag</p>}</>}
           {(v.tomorrow.allDay.length > 0 || v.tomorrow.events.length > 0) && (
-            <>
+            <div className="cal-tomorrow">
               <div className="cal-grp">Imorgon</div>
               {v.tomorrow.allDay.map((a, i) => <CalAllDay key={`m${i}`} {...a} />)}
               {v.tomorrow.events.map((e) => <CalRow key={e.key} e={e} />)}
               {v.tomorrow.more > 0 && <p className="cal-more">+{v.tomorrow.more} till imorgon</p>}
-            </>
+            </div>
           )}
           {v.note && <p className="mid small">{v.note}</p>}
         </div>

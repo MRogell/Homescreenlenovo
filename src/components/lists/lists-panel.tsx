@@ -1,13 +1,17 @@
 "use client";
-import { ArrowUpRight, Check, ClipboardCopy, Plus, Trash2, WifiOff, X } from "lucide-react";
+import { ArrowUpRight, Check, ChevronDown, ClipboardCopy, PartyPopper, Plus, SearchX, Trash2, Undo2, WifiOff, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { doneItems, groupItems, type ShopItem } from "@/lib/shopping";
+import { doneItems, groupItems, skippedItems, type CategoryId, type Note, type ShopItem } from "@/lib/shopping";
 import { formatAgo } from "@/lib/format";
+import { useCardHeight, useFitMode } from "./use-fit";
 import { useLists } from "./use-lists";
 
 export type ListsApi = ReturnType<typeof useLists>;
 export { useLists };
+
+/** `card`: liten på hemskärmen. `page`: hela listan med fält och lappar (hantera). `shop`: butiksläget, bara att bocka av. */
+export type PanelMode = "card" | "page" | "shop";
 
 /** Listan som text att skicka eller klistra in (grupperad som i butiken). */
 export function listAsText(items: readonly ShopItem[]): string {
@@ -15,16 +19,17 @@ export function listAsText(items: readonly ShopItem[]): string {
   return lines.join("\n").trim();
 }
 
-function Row({ item, big, onToggle, onRemove }: { item: ShopItem; big: boolean; onToggle: (c: boolean) => void; onRemove: () => void }) {
+function Row({ item, big, shop, onToggle, onRemove, onSkip }: { item: ShopItem; big: boolean; shop?: boolean; onToggle: (c: boolean) => void; onRemove?: () => void; onSkip?: () => void }) {
   return (
     <li className={`li-item${item.checked ? " done" : ""}${big ? " big" : ""}`}>
       <label className="li-row">
         <input type="checkbox" checked={item.checked} onChange={(e) => onToggle(e.target.checked)} />
         <span className="li-box" aria-hidden="true"><Check /></span>
-        <span className="li-name">{item.name}</span>
+        <span className="li-name">{item.name}{item.by && big && !shop && <small className="li-by">{item.by}</small>}</span>
         {item.qty && <span className="li-qty">{item.qty}</span>}
       </label>
-      <button type="button" className="li-x" aria-label={`Ta bort ${item.name}`} onClick={onRemove}><X aria-hidden="true" /></button>
+      {onSkip && !item.checked && <button type="button" className="li-skip" aria-label={`Hittade inte ${item.name}`} title="Hittade inte" onClick={onSkip}><SearchX aria-hidden="true" /></button>}
+      {onRemove && <button type="button" className="li-x" aria-label={`Ta bort ${item.name}`} onClick={onRemove}><X aria-hidden="true" /></button>}
     </li>
   );
 }
@@ -77,6 +82,8 @@ function Chips({ api, limit }: { api: ListsApi; limit: number }) {
   );
 }
 
+const noteWho = (n: Note) => (n.by ? `${n.by} · ` : "");
+
 function Notes({ api }: { api: ListsApi }) {
   const [text, setText] = useState("");
   const id = useId();
@@ -92,7 +99,7 @@ function Notes({ api }: { api: ListsApi }) {
         <ul className="li-notelist">
           {api.state.notes.map((n) => (
             <li key={n.id}>
-              <span className="li-notetext">{n.text}<small>{formatAgo(new Date(n.at).toISOString(), now)}</small></span>
+              <span className="li-notetext">{n.text}<small>{noteWho(n)}{formatAgo(new Date(n.at).toISOString(), now)}</small></span>
               <button type="button" className="li-x" aria-label="Ta bort lappen" onClick={() => api.noteRemove(n.id)}><X aria-hidden="true" /></button>
             </li>
           ))}
@@ -103,27 +110,26 @@ function Notes({ api }: { api: ListsApi }) {
 }
 
 const CARD_MAX = 5;
+/** I läget "allt på en skärm": kortets fasta höjd minus det som alltid tar plats (rubrik, flikar, fält), delat på en rad. */
+const FIT_FIXED = 152;
+const FIT_ROW = 41;
 
-/** Inköpslistan. `card` är den kompakta på hemskärmen; `full` är handlaläget: stora rader, förlopp och offline. */
-export function ListsPanel({ api, mode }: { api: ListsApi; mode: "card" | "full" }) {
-  const big = mode === "full";
+/** Butiksläget: en avdelning i taget. Den första som inte är klar är öppen, resten är hopfällda med antal. */
+function Shop({ api }: { api: ListsApi }) {
   const { state } = api;
-  const [tab, setTab] = useState<"shop" | "notes">("shop");
+  const [picked, setPicked] = useState<CategoryId | null>(null);
   const [showDone, setShowDone] = useState(false);
   const [copied, setCopied] = useState(false);
-  const groups = useMemo(() => groupItems(state.items), [state.items]);
+  const groups = useMemo(() => groupItems(state.items, { withSkipped: false }), [state.items]);
+  const skipped = useMemo(() => skippedItems(state.items), [state.items]);
   const done = useMemo(() => doneItems(state.items), [state.items]);
-  const open = state.items.length - done.length;
+  const total = state.items.length;
+  const left = total - done.length;
+  // Öppen avdelning: den man valt om den finns kvar, annars den första som inte är klar (så att listan går framåt av sig själv).
+  const active = groups.find((g) => g.id === picked)?.id ?? groups[0]?.id ?? null;
+  const progress = (id: CategoryId) => { const all = state.items.filter((i) => i.category === id); return { all: all.length, got: all.filter((i) => i.checked).length }; };
 
-  // Håll skärmen tänd medan man handlar.
-  useEffect(() => {
-    if (!big || !("wakeLock" in navigator)) return;
-    let lock: WakeLockSentinel | null = null;
-    const get = () => { if (document.visibilityState === "visible") navigator.wakeLock.request("screen").then((l) => { lock = l; }).catch(() => {}); };
-    get();
-    document.addEventListener("visibilitychange", get);
-    return () => { document.removeEventListener("visibilitychange", get); void lock?.release().catch(() => {}); };
-  }, [big]);
+  const tap = (id: string, c: boolean) => { if (typeof navigator.vibrate === "function") navigator.vibrate(12); api.toggle(id, c); };
 
   async function copy() {
     try {
@@ -131,80 +137,165 @@ export function ListsPanel({ api, mode }: { api: ListsApi; mode: "card" | "full"
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Webbläsaren får inte kopiera: knappen gör ingenting, listan går att markera ändå.
+      // Webbläsaren får inte kopiera.
     }
   }
+
+  if (total === 0) return <p className="mid">Listan är tom. Lägg till varor på hemskärmen eller i familjens lista.</p>;
+
+  return (
+    <>
+      <div className="li-progress" aria-label={`${done.length} av ${total} i korgen`}>
+        <div className="li-bar"><i style={{ width: `${Math.round((done.length / total) * 100)}%` }} /></div>
+        <span>{left > 0 ? `${left} kvar · ${done.length} i korgen` : "Allt är hanterat"}</span>
+      </div>
+
+      {groups.length === 0 && (
+        <div className="li-finish" role="status">
+          <PartyPopper aria-hidden="true" />
+          <b>{skipped.length > 0 ? "Klart, förutom det du inte hittade" : "Klart! Allt ligger i korgen"}</b>
+          {skipped.length > 0 && <span>{skipped.length} {skipped.length === 1 ? "vara ligger" : "varor ligger"} kvar på listan till nästa gång.</span>}
+          {done.length > 0 && <button type="button" className="li-clear big" onClick={api.clearChecked}><Trash2 aria-hidden="true" />Töm korgen</button>}
+        </div>
+      )}
+
+      {groups.map((g) => {
+        const open = g.id === active;
+        const p = progress(g.id);
+        return (
+          <section key={g.id} className={`li-aisle${open ? " open" : ""}`} aria-label={g.label}>
+            <button type="button" className="li-aislehead" aria-expanded={open} onClick={() => setPicked(g.id)}>
+              <span>{g.label}</span>
+              <span className="li-count">{p.got > 0 ? `${p.got}/${p.all}` : p.all}</span>
+              <ChevronDown aria-hidden="true" />
+            </button>
+            {open && (
+              <ul className="li-list">
+                {g.items.map((i) => <Row key={i.id} item={i} big shop onToggle={(c) => tap(i.id, c)} onSkip={() => api.skip(i.id, true)} />)}
+              </ul>
+            )}
+          </section>
+        );
+      })}
+
+      {skipped.length > 0 && (
+        <section className="li-aisle li-missing" aria-label="Hittade inte">
+          <h3 className="li-cat">Hittade inte <b>{skipped.length}</b></h3>
+          <ul className="li-list">
+            {skipped.map((i) => (
+              <li key={i.id} className="li-item big">
+                <span className="li-row li-skippedrow"><span className="li-name">{i.name}</span>{i.qty && <span className="li-qty">{i.qty}</span>}</span>
+                <button type="button" className="li-back" onClick={() => api.skip(i.id, false)}><Undo2 aria-hidden="true" />Lägg tillbaka</button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {done.length > 0 && groups.length > 0 && (
+        <section className="li-group li-done" aria-label="I korgen">
+          <div className="li-donehead">
+            <button type="button" className="li-toggle" aria-expanded={showDone} onClick={() => setShowDone((v) => !v)}>I korgen <b>{done.length}</b></button>
+          </div>
+          {showDone && <ul className="li-list">{done.map((i) => <Row key={i.id} item={i} big shop onToggle={(c) => tap(i.id, c)} />)}</ul>}
+        </section>
+      )}
+
+      {left > 0 && <button type="button" className="li-copy" onClick={() => void copy()}><ClipboardCopy aria-hidden="true" />{copied ? "Kopierad" : "Kopiera det som är kvar som text"}</button>}
+    </>
+  );
+}
+
+/** Inköpslistan och lapparna. Se PanelMode för de tre lägena. */
+export function ListsPanel({ api, mode, handlaHref = "/handla" }: { api: ListsApi; mode: PanelMode; handlaHref?: string }) {
+  const compact = mode === "card";
+  const shop = mode === "shop";
+  const big = !compact;
+  const { state } = api;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const fit = useFitMode() && compact;
+  const height = useCardHeight(rootRef, fit);
+  const cardMax = fit && height > 0 ? Math.max(1, Math.min(CARD_MAX, Math.floor((height - FIT_FIXED) / FIT_ROW))) : CARD_MAX;
+  const [tab, setTab] = useState<"shop" | "notes">("shop");
+  const [showDone, setShowDone] = useState(false);
+  const groups = useMemo(() => groupItems(state.items), [state.items]);
+  const done = useMemo(() => doneItems(state.items), [state.items]);
+  const open = state.items.length - done.length;
+
+  // Håll skärmen tänd medan man handlar.
+  useEffect(() => {
+    if (!shop || !("wakeLock" in navigator)) return;
+    let lock: WakeLockSentinel | null = null;
+    const get = () => { if (document.visibilityState === "visible") navigator.wakeLock.request("screen").then((l) => { lock = l; }).catch(() => {}); };
+    get();
+    document.addEventListener("visibilitychange", get);
+    return () => { document.removeEventListener("visibilitychange", get); void lock?.release().catch(() => {}); };
+  }, [shop]);
 
   // Kort: högst några rader, resten räknas.
   const { cardGroups, shown } = useMemo(() => {
     let n = 0;
     const out: typeof groups = [];
     for (const g of groups) {
-      const take = big ? g.items : g.items.slice(0, Math.max(0, CARD_MAX - n));
+      const take = big ? g.items : g.items.slice(0, Math.max(0, cardMax - n));
       n += take.length;
       if (take.length > 0) out.push({ ...g, items: take });
     }
     return { cardGroups: out, shown: n };
-  }, [groups, big]);
+  }, [groups, big, cardMax]);
   const hidden = open - shown;
 
   if (!api.loaded) return <p className="mid">Hämtar listan…</p>;
 
   return (
-    <div className={`li${big ? " li-full" : ""}`}>
+    <div ref={rootRef} className={`li${big ? " li-full" : ""}${shop ? " li-shop" : ""}`}>
       {!api.online && (
         <p className="li-offline" role="status"><WifiOff aria-hidden="true" />Ingen täckning. Ändringar sparas i telefonen och skickas när nätet är tillbaka{api.pendingCount > 0 ? ` (${api.pendingCount} väntar)` : ""}.</p>
       )}
       {api.error && <p className="err" role="alert">{api.error}</p>}
 
-      {!big && (
-        <div className="li-top">
-          <div className="li-tabs" role="tablist" aria-label="Lista eller lappar">
-            <button role="tab" type="button" aria-selected={tab === "shop"} onClick={() => setTab("shop")}>Inköp{open > 0 ? <b>{open}</b> : null}</button>
-            <button role="tab" type="button" aria-selected={tab === "notes"} onClick={() => setTab("notes")}>Lappar{state.notes.length > 0 ? <b>{state.notes.length}</b> : null}</button>
-          </div>
-          <Link className="li-expand" href="/handla" aria-label="Öppna handlaläget (stor vy för butiken)"><ArrowUpRight aria-hidden="true" /></Link>
-        </div>
-      )}
-
-      {big && state.items.length > 0 && (
-        <div className="li-progress" aria-label={`${done.length} av ${state.items.length} i korgen`}>
-          <div className="li-bar"><i style={{ width: `${Math.round((done.length / state.items.length) * 100)}%` }} /></div>
-          <span>{done.length} av {state.items.length} i korgen</span>
-        </div>
-      )}
-
-      {(big || tab === "shop") ? (
+      {shop ? <Shop api={api} /> : (
         <>
-          <AddBar api={api} big={big} />
-          {open === 0 && done.length === 0 && <Chips api={api} limit={big ? 10 : 6} />}
-          {open === 0 && done.length === 0 && <p className="mid small">Listan är tom. Skriv en vara, eller välj en av de vanliga.</p>}
-          {cardGroups.map((g) => (
-            <section key={g.id} className="li-group" aria-label={g.label}>
-              <h3 className="li-cat">{g.label}</h3>
-              <ul className="li-list">
-                {g.items.map((i) => <Row key={i.id} item={i} big={big} onToggle={(c) => api.toggle(i.id, c)} onRemove={() => api.remove(i.id)} />)}
-              </ul>
-            </section>
-          ))}
-          {!big && hidden > 0 && <Link className="li-more" href="/handla">+{hidden} till · öppna Handla</Link>}
-          {open > 0 && big && <Chips api={api} limit={8} />}
-          {done.length > 0 && (
-            <section className="li-group li-done" aria-label="Avbockade">
-              <div className="li-donehead">
-                <button type="button" className="li-toggle" aria-expanded={big || showDone} onClick={() => setShowDone((v) => !v)} disabled={big}>
-                  {big ? "I korgen" : showDone ? "Dölj avbockade" : "Avbockade"} <b>{done.length}</b>
-                </button>
-                <button type="button" className="li-clear" onClick={api.clearChecked}><Trash2 aria-hidden="true" />Rensa</button>
-              </div>
-              {(big || showDone) && <ul className="li-list">{done.map((i) => <Row key={i.id} item={i} big={big} onToggle={(c) => api.toggle(i.id, c)} onRemove={() => api.remove(i.id)} />)}</ul>}
-            </section>
-          )}
-          {big && open > 0 && (
-            <button type="button" className="li-copy" onClick={() => void copy()}><ClipboardCopy aria-hidden="true" />{copied ? "Kopierad" : "Kopiera listan som text"}</button>
-          )}
+          <div className="li-top">
+            <div className="li-tabs" role="tablist" aria-label="Lista eller lappar">
+              <button role="tab" type="button" aria-selected={tab === "shop"} onClick={() => setTab("shop")}>Inköp{open > 0 ? <b>{open}</b> : null}</button>
+              <button role="tab" type="button" aria-selected={tab === "notes"} onClick={() => setTab("notes")}>Lappar{state.notes.length > 0 ? <b>{state.notes.length}</b> : null}</button>
+            </div>
+            {compact && <Link className="li-expand" href={handlaHref} aria-label="Öppna butiksläget (stor vy för butiken)"><ArrowUpRight aria-hidden="true" /></Link>}
+          </div>
+
+          {tab === "shop" ? (
+            <>
+              <AddBar api={api} big={big} />
+              {open === 0 && done.length === 0 && <Chips api={api} limit={big ? 10 : 6} />}
+              {open === 0 && done.length === 0 && <p className="mid small">Listan är tom. Skriv en vara, eller välj en av de vanliga.</p>}
+              {cardGroups.map((g) => (
+                <section key={g.id} className="li-group" aria-label={g.label}>
+                  <h3 className="li-cat">{g.label}</h3>
+                  <ul className="li-list">
+                    {g.items.map((i) => <Row key={i.id} item={i} big={big} onToggle={(c) => api.toggle(i.id, c)} onRemove={() => api.remove(i.id)} />)}
+                  </ul>
+                </section>
+              ))}
+              {compact && hidden > 0 && <Link className="li-more" href={handlaHref}>+{hidden} till · öppna butiksläget</Link>}
+              {open > 0 && big && <Chips api={api} limit={8} />}
+              {done.length > 0 && (
+                <section className="li-group li-done" aria-label="Avbockade">
+                  <div className="li-donehead">
+                    <button type="button" className="li-toggle" aria-expanded={showDone} onClick={() => setShowDone((v) => !v)}>
+                      {showDone ? "Dölj avbockade" : "Avbockade"} <b>{done.length}</b>
+                    </button>
+                    <button type="button" className="li-clear" onClick={api.clearChecked}><Trash2 aria-hidden="true" />Rensa</button>
+                  </div>
+                  {showDone && <ul className="li-list">{done.map((i) => <Row key={i.id} item={i} big={big} onToggle={(c) => api.toggle(i.id, c)} onRemove={() => api.remove(i.id)} />)}</ul>}
+                </section>
+              )}
+              {big && <Link className="li-open" href={handlaHref}><span>Öppna butiksläget</span><small>bocka av medan du handlar</small></Link>}
+            </>
+          ) : <Notes api={api} />}
         </>
-      ) : <Notes api={api} />}
+      )}
     </div>
   );
 }
+

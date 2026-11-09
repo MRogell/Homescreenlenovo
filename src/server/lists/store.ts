@@ -18,12 +18,14 @@ export function normalizeLists(raw: unknown): ListsState {
   const items = (Array.isArray(raw.items) ? raw.items : []).flatMap((i) => {
     if (!isRec(i)) return [];
     const id = str(i.id, 64), name = str(i.name, 60);
-    return id && name ? [{ id, name, qty: str(i.qty, 20), category: cat(i.category), checked: i.checked === true, at: num(i.at), checkedAt: i.checked === true ? num(i.checkedAt) : null }] : [];
+    const by = str(i.by, 24);
+    return id && name ? [{ id, name, qty: str(i.qty, 20), category: cat(i.category), checked: i.checked === true, at: num(i.at), checkedAt: i.checked === true ? num(i.checkedAt) : null, ...(i.skipped === true && i.checked !== true ? { skipped: true } : {}), ...(by ? { by } : {}) }] : [];
   }).slice(0, MAX_ITEMS);
   const notes = (Array.isArray(raw.notes) ? raw.notes : []).flatMap((n) => {
     if (!isRec(n)) return [];
     const id = str(n.id, 64), text = str(n.text, 280);
-    return id && text ? [{ id, text, at: num(n.at) }] : [];
+    const by = str(n.by, 24);
+    return id && text ? [{ id, text, at: num(n.at), ...(by ? { by } : {}) }] : [];
   }).slice(0, MAX_NOTES);
   const history: Record<string, HistoryEntry> = {};
   if (isRec(raw.history)) {
@@ -41,12 +43,16 @@ export async function loadLists(db: PrismaClient = defaultDb): Promise<ListsStat
 }
 
 /** Tillämpar operationer och sparar. Läs, ändra och skriv sker under ett lås, så att inget går förlorat när flera enheter sparar samtidigt. */
-export async function mutateLists(ops: readonly Op[], db: PrismaClient = defaultDb, now: number = Date.now()): Promise<ListsState> {
+export async function mutateLists(ops: readonly Op[], db: PrismaClient = defaultDb, now: number = Date.now(), by?: string): Promise<ListsState> {
   return db.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${LOCK})`;
     const current = normalizeLists((await tx.appSetting.findUnique({ where: { key: KEY } }))?.value);
     // Klientens klocka får inte ge tider i framtiden.
-    const safe = ops.map((o) => ("at" in o ? { ...o, at: Math.min(o.at, now) } : o));
+    // Vem som lade till något bestäms av servern (länken som användes), aldrig av det klienten skickar.
+    const safe = ops.map((o) => {
+      const t = "at" in o ? { ...o, at: Math.min(o.at, now) } : o;
+      return t.op === "add" || t.op === "noteAdd" ? { ...t, by } : t;
+    });
     const next = applyOps(current, safe);
     const value = { ...next, history: pruneHistory(next.history) };
     await tx.appSetting.upsert({ where: { key: KEY }, create: { key: KEY, value: value as never }, update: { value: value as never } });
