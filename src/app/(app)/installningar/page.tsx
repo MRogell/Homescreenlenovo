@@ -18,6 +18,7 @@ import { getSettings } from "@/server/settings";
 import { NotificationSettings } from "@/components/notification-settings";
 import { CalendarSettings } from "@/components/calendar-settings";
 import { ShareSettings } from "@/components/share-settings";
+import { ScreenInfo } from "@/components/screen-info";
 import { listShares } from "@/server/share/store";
 import { listCalendars, publicCalendars } from "@/server/calendar/store";
 
@@ -129,6 +130,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
       )}
       <NotificationSettings initial={settings.notify} />
       <AppearanceSettings initial={settings} defaultPlace={getEnv().WEATHER_PLACE} />
+      <ScreenInfo />
       <section className="card" aria-label="Konto">
         <div className="card-head"><span className="name">Konto</span></div>
         <SignOutButton />
