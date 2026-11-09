@@ -118,3 +118,22 @@ model AppSetting {
 
   @@map("app_setting")
 }
+
+/// Telefoner/webbläsare som tagit emot notiser (Web Push). Endpoint är unik per enhet.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@map("push_subscription")
+}
+
+/// Skickade notiser. Nyckeln (t.ex. "car_charged:2026-11-09T07:12") är unik så att samma händelse aldrig skickas två gånger, även om flera enheter upptäcker den samtidigt.
+model NotificationEvent {
+  key    String   @id
+  sentAt DateTime @default(now()) @db.Timestamptz
+
+  @@map("notification_event")
+}

@@ -61,3 +61,13 @@ Kalendrar läggs till under Inställningar → Kalender med den hemliga iCal-adr
 - Adressen sparas krypterad (AES-256-GCM med `BETTER_AUTH_SECRET`) i `AppSetting` ("calendars") och skickas aldrig tillbaka till webbläsaren, bara värdnamnet.
 - Servern hämtar bara https, blockerar lokala och privata adresser (även efter DNS och vid omdirigering), 8 s timeout och högst 3 MB.
 - Högst 6 kalendrar. Byter du `BETTER_AUTH_SECRET` måste kalendrarna läggas till igen.
+
+## Notiser (iPhone)
+Notiser skickas med Web Push och kräver ingen extra tjänst eller miljövariabel.
+- **Nycklar:** Push-nycklarna (VAPID) skapas första gången de behövs. Den privata nyckeln sparas krypterad i `AppSetting` ("vapid"). Byts `BETTER_AUTH_SECRET` skapas nya nycklar och alla enheter måste slå på notiser igen.
+- **Slå på:** På iPhone måste appen först läggas till på hemskärmen (iOS 16.4 eller nyare). Sedan Inställningar → Notiser → Slå på notiser i den installerade appen.
+- **Vad som upptäcks:** Förändringar jämförs när startsidan hämtar färsk data (plattan frågar var 30:e sekund, så den fungerar som vakt). Är plattan avstängd märks ingenting förrän någon öppnar appen. Vercel Hobby tillåter bara cron en gång per dygn, så det kan inte användas.
+- **Slag:** AEG klar, bilen laddad (eller laddningen stoppade under målet) och bilen olåst på natten (22–06, en gång per natt, av från början). Jämförelser äldre än 2 timmar ger ingen notis.
+- **Dubbletter:** Varje händelse har en unik nyckel i `notification_event`, så den skickas bara en gång även om flera enheter märker den samtidigt.
+- **Enheter:** Högst 10. Döda prenumerationer (404/410 från Apple eller Google) tas bort automatiskt.
+- **Migrering:** `push_notiser` skapar tabellerna `push_subscription` och `notification_event`; produktionsbygget kör den.

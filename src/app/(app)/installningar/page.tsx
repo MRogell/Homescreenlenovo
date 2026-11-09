@@ -14,6 +14,7 @@ import { getSpotifyDefaultDevice } from "@/server/spotify-prefs";
 import { SignOutButton } from "@/components/sign-out-button";
 import { AppearanceSettings } from "@/components/appearance-settings";
 import { getSettings } from "@/server/settings";
+import { NotificationSettings } from "@/components/notification-settings";
 import { CalendarSettings } from "@/components/calendar-settings";
 import { listCalendars, publicCalendars } from "@/server/calendar/store";
 
@@ -39,6 +40,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const user = await requireUser();
   const sp = await searchParams;
   const oauth = new Map((await Promise.all((["sonos", "spotify"] as const).map(oauthRow))).map((r) => [r.id, r]));
+  const settings = await getSettings();
   const calendars = publicCalendars(await listCalendars(undefined, getEnv().BETTER_AUTH_SECRET));
   const notice = sp.tjanst && NAMES[sp.tjanst] ? (sp.ok ? `${NAMES[sp.tjanst]} är ansluten.` : sp.fel ? (ERRORS[sp.fel] ?? "Något gick fel.") : null) : null;
   return (
@@ -118,7 +120,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           <DiagnoseButton provider="sonos" label="Sonos-anslutningen" />
         </section>
       )}
-      <AppearanceSettings initial={await getSettings()} defaultPlace={getEnv().WEATHER_PLACE} />
+      <NotificationSettings initial={settings.notify} />
+      <AppearanceSettings initial={settings} defaultPlace={getEnv().WEATHER_PLACE} />
       <section className="card" aria-label="Konto">
         <div className="card-head"><span className="name">Konto</span></div>
         <SignOutButton />

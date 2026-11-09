@@ -9,12 +9,20 @@ export interface AppSettings {
   /** Vald väderplats. null = använd miljövariablerna (reserv). */
   place: { name: string; lat: number; lon: number } | null;
   night: { enabled: boolean; from: string; to: string };
+  /** Vilka händelser som ger en notis på telefonen. */
+  notify: NotifyPrefs;
 }
+
+export const NOTIFY_KINDS = ["aegDone", "carCharged", "carUnlockedNight"] as const;
+export type NotifyKind = (typeof NOTIFY_KINDS)[number];
+export type NotifyPrefs = Record<NotifyKind, boolean>;
+export const DEFAULT_NOTIFY: NotifyPrefs = { aegDone: true, carCharged: true, carUnlockedNight: false };
 
 export const DEFAULT_SETTINGS: AppSettings = {
   cards: { order: [...CARD_IDS], hidden: [] },
   place: null,
   night: { enabled: false, from: "22:00", to: "06:00" },
+  notify: { ...DEFAULT_NOTIFY },
 };
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -24,12 +32,15 @@ const cardId = z.enum(CARD_IDS);
 const placeSchema = z.object({ name: z.string().trim().min(1).max(80), lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180) }).strict();
 const nightSchema = z.object({ enabled: z.boolean(), from: z.string().regex(TIME), to: z.string().regex(TIME) }).strict();
 
+const notifySchema = z.object({ aegDone: z.boolean(), carCharged: z.boolean(), carUnlockedNight: z.boolean() }).strict();
+
 /** Det som får skickas till /api/settings: en eller flera delar, strikt kontrollerade. */
 export const settingsPatchSchema = z
   .object({
     cards: z.object({ order: z.array(cardId).length(CARD_IDS.length).refine(unique), hidden: z.array(cardId).refine(unique) }).strict().optional(),
     place: placeSchema.nullable().optional(),
     night: nightSchema.optional(),
+    notify: notifySchema.optional(),
     reset: z.literal(true).optional(),
   })
   .strict()
@@ -47,10 +58,13 @@ export function normalizeSettings(raw: unknown): AppSettings {
   const place = placeSchema.safeParse(r.place);
   const night = isRecord(r.night) ? r.night : {};
   const time = (v: unknown, fallback: string) => (typeof v === "string" && TIME.test(v) ? v : fallback);
+  const notify = isRecord(r.notify) ? r.notify : {};
+  const flag = (k: NotifyKind) => (typeof notify[k] === "boolean" ? (notify[k] as boolean) : DEFAULT_NOTIFY[k]);
   return {
     cards: { order: [...order, ...CARD_IDS.filter((id) => !order.includes(id))], hidden: known(cards.hidden) },
     place: place.success ? place.data : null,
     night: { enabled: night.enabled === true, from: time(night.from, DEFAULT_SETTINGS.night.from), to: time(night.to, DEFAULT_SETTINGS.night.to) },
+    notify: { aegDone: flag("aegDone"), carCharged: flag("carCharged"), carUnlockedNight: flag("carUnlockedNight") },
   };
 }
 

@@ -19,6 +19,7 @@ export async function applySettingsPatch(patch: SettingsPatch, db: PrismaClient 
   const ops = [];
   if (patch.cards) ops.push(save("cards", patch.cards));
   if (patch.night) ops.push(save("night", patch.night));
+  if (patch.notify) ops.push(save("notify", patch.notify));
   if (patch.place === null) ops.push(db.appSetting.deleteMany({ where: { key: "place" } }));
   else if (patch.place) ops.push(save("place", patch.place));
   await db.$transaction(ops);

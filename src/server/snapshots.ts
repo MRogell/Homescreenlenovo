@@ -1,6 +1,8 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { db as defaultDb } from "./db";
+import { detectEvents } from "./notify/events";
+import { dispatchEvents } from "./notify/push";
 import { PROVIDERS } from "./providers";
 import { providerConnected, safeSummary } from "./providers/safe";
 import type { CardState, Provider, ProviderId } from "./providers/types";
@@ -16,6 +18,17 @@ async function loadLast(db: PrismaClient, p: Provider<unknown>): Promise<{ data:
   const parsed = p.schema.safeParse(row.payload);
   // Utgånget schema (ändrad payload) räknas som att ingen snapshot finns.
   return parsed.success ? { data: parsed.data, fetchedAt: row.fetchedAt } : undefined;
+}
+
+/** Märker förändringar mellan två hämtningar (AEG klar, bilen laddad…) och skickar notiser. Får aldrig stoppa eller fördröja startsidan länge. */
+async function notifyChanges(providerId: string, prev: { data: unknown; fetchedAt: Date } | undefined, next: unknown, now: Date, db: PrismaClient): Promise<void> {
+  try {
+    const events = detectEvents(providerId, prev, next, now);
+    if (events.length === 0) return;
+    await Promise.race([dispatchEvents(events, { db }, now), new Promise<void>((r) => setTimeout(r, 8000).unref?.())]);
+  } catch {
+    // Notiser är en extra; startsidan går före.
+  }
 }
 
 async function resolveOne(p: Provider<unknown>, now: Date, db: PrismaClient): Promise<CardState<unknown>> {
@@ -40,6 +53,7 @@ async function resolveOne(p: Provider<unknown>, now: Date, db: PrismaClient): Pr
     const created = await db.snapshot.create({ data: { provider: p.id, payload: state.data as never, fetchedAt: now } });
     await db.snapshot.deleteMany({ where: { provider: p.id, id: { not: created.id } } });
     if (backoff) await db.providerBackoff.deleteMany({ where: { provider: p.id } });
+    await notifyChanges(p.id, last, state.data, now, db);
     return { ...state, fetchedAt: now.toISOString() };
   }
   if (state.status === "stale" || state.status === "unavailable") {

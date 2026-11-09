@@ -17,3 +17,24 @@ self.addEventListener("fetch", (e) => {
   }
   if (ALLOW.includes(url.pathname)) e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
 });
+
+// Notiser (Web Push). iOS kräver att varje push visar en notis, så vi visar alltid något.
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { /* ogiltig data: visa standardtext */ }
+  const title = typeof d.title === "string" && d.title ? d.title : "Hemskärmen";
+  e.waitUntil(self.registration.showNotification(title, {
+    body: typeof d.body === "string" ? d.body : "",
+    tag: typeof d.tag === "string" ? d.tag : undefined,
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    data: { url: "/" },
+  }));
+});
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
+    const open = cs.find((c) => new URL(c.url).origin === self.location.origin);
+    return open ? open.focus() : self.clients.openWindow("/");
+  }));
+});
