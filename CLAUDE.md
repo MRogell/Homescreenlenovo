@@ -22,6 +22,7 @@ Varje push startar byggen i två projekt (hemskärmen och Škoda-bryggan), och e
 - Kör typkontroll, lint, tester och bygge lokalt först. Pusha inte om något är rött.
 - Pusha till både grenen och `main` (`git push origin <gren>:main`).
 - Pusha inte halvfärdigt arbete eller något ägaren bett att få förhandsvisa först.
-- Säg efteråt att det är utlagt och att Vercel (båda projekten) ska visa Ready.
+- Efter pushen: kontrollera Vercels status på commiten själv (`gh api repos/MRogell/homescreenlenovo/commits/<sha>/status`, båda projekten) tills den är klar.
+- **Säg bara till ägaren om Vercel inte kan lägga ut** (status error/failure, till exempel byggfel eller nådd byggengräns), med orsaken och vad som behövs. Är allt Ready: säg ingenting om utlägget.
 
 @AGENTS.md
