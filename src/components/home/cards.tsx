@@ -26,7 +26,7 @@ type P = { state: CardState<unknown> | undefined; now: Date };
 const CHECK_ICON: Record<string, IconName> = { Lås: "lock", Dörrar: "door", Fönster: "window", Bagage: "trunk", Motorhuv: "car" };
 
 export const SkodaCard = ({ state, now }: P) => (
-  <CardShell<SkodaData> title="Škoda" icon="car" state={as(state)} now={now} className="skoda" render={(d) => {
+  <CardShell<SkodaData> title="Škoda" off={{ big: "Bilen", text: "Se laddning och starta klimatet." }} icon="car" state={as(state)} now={now} className="skoda" render={(d) => {
     const v = skodaView(d, now);
     return {
       pill: v.pill,
@@ -61,7 +61,7 @@ export const SkodaCard = ({ state, now }: P) => (
 );
 
 export const SonosCard = ({ state, now }: P) => (
-  <CardShell<SonosData> title="Sonos" icon="spk" state={as(state)} now={now} className="sonos" render={(d) => {
+  <CardShell<SonosData> title="Sonos" off={{ big: "Rummen", text: "Styr högtalarna i huset." }} icon="spk" state={as(state)} now={now} className="sonos" render={(d) => {
     const playing = d.groups.filter((g) => g.playing).length;
     return {
       pill: playing > 0 ? { text: `Spelar i ${playing} rum`, tone: "ok" } : { text: "Tyst" },
@@ -71,7 +71,7 @@ export const SonosCard = ({ state, now }: P) => (
 );
 
 export const SpotifyCard = ({ state, now, sonos = null }: P & { sonos?: SonosInfo | null }) => (
-  <CardShell<SpotifyData> title="Spotify" icon="note" state={as(state)} now={now} className="spotify" render={(d) => ({
+  <CardShell<SpotifyData> title="Spotify" off={{ big: "Musik", text: "Styr uppspelningen härifrån." }} icon="note" state={as(state)} now={now} className="spotify" render={(d) => ({
     pill: { text: d.playing ? "Spelar" : "Pausad", tone: d.playing ? "ok" : undefined },
     body: <>
       <div className="sp-top">
@@ -89,7 +89,7 @@ export const SpotifyCard = ({ state, now, sonos = null }: P & { sonos?: SonosInf
 );
 
 export const AegCard = ({ state, now }: P) => (
-  <CardShell<AegData> title="AEG" icon="wash" state={as(state)} now={now} render={(d) => {
+  <CardShell<AegData> title="AEG" off={{ big: "Maskinen", text: "Följ programmet och starta eller stoppa." }} icon="wash" state={as(state)} now={now} render={(d) => {
     const active = d.state === "RUNNING" || d.state === "PAUSED" || d.state === "DELAYED_START";
     return {
       // Stor text visar läget; pillret visar uppkoppling, eller läget när maskinen kör (då är stora texten tiden kvar).
@@ -169,7 +169,7 @@ export const WeatherCard = ({ state, now }: P) => (
 );
 
 export const TadoCard = ({ state, now }: P) => (
-  <CardShell<TadoData> title="Inomhus" icon="temp" state={as(state)} now={now} render={(d) => {
+  <CardShell<TadoData> title="Inomhus" off={{ big: "Värmen", text: "Se temperaturen i varje rum." }} icon="temp" state={as(state)} now={now} render={(d) => {
     const heating = d.rooms.filter((r) => r.heating).length;
     const rooms = tadoView(d.rooms);
     const sum = tadoSummary(d.rooms);
@@ -203,7 +203,7 @@ const CalAllDay = ({ title, color }: { title: string; color: string }) => (
 
 /** Kalender: nästa händelse stort, resten av dagen och imorgon under. */
 export const CalendarCard = ({ state, now }: P) => (
-  <CardShell<CalendarData> title="Kalender" icon="cal" state={as(state)} now={now} className="calendar" render={(d) => {
+  <CardShell<CalendarData> title="Kalender" off={{ big: "Dagen", text: "Se dagens händelser från iCloud eller Google.", cta: "Lägg till kalender" }} icon="cal" state={as(state)} now={now} className="calendar" render={(d) => {
     const v = calendarView(d, now);
     return {
       pill: { text: v.pill },

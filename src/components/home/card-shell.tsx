@@ -11,6 +11,8 @@ interface Props<T> {
   now: Date;
   /** Innehåll för ok och stale. Returnerar även statuspillret. */
   render: (data: T) => { pill?: Pill; body: React.ReactNode };
+  /** Texten på kortet innan tjänsten är ansluten: en kort rubrik, en mening om vad kortet ger och knappens text. */
+  off?: { big: string; text: string; cta?: string };
   /** Extra klass, t.ex. för kort som tar två kolumner. */
   className?: string;
   /** Extra stil på kortet, t.ex. en färgton (--wx-tint) som beror på datan. */
@@ -18,14 +20,14 @@ interface Props<T> {
 }
 
 /** Gemensam ram som hanterar alla fyra lägen. Tjänsterna renderar bara sin egen data. */
-export function CardShell<T>({ title, icon, state, now, render, className = "", style }: Props<T>) {
+export function CardShell<T>({ title, icon, state, now, render, off, className = "", style }: Props<T>) {
   if (!state || state.status === "not_connected") {
     return (
       <section className={`card off ${className}`} aria-label={title}>
         <div className="card-head"><Icon name={icon} /><span className="name">{title}</span><span className="pill">Ej ansluten</span></div>
-        <div className="big">Anslut</div>
-        <div className="mid">Visa {title} här.</div>
-        <a className="btn" href="/installningar">Anslut {title}</a>
+        <div className="big">{off?.big ?? "Anslut"}</div>
+        <div className="mid">{off?.text ?? `Visa ${title} här.`}</div>
+        <a className="btn" href="/installningar">{off?.cta ?? `Anslut ${title}`}</a>
       </section>
     );
   }
@@ -34,7 +36,8 @@ export function CardShell<T>({ title, icon, state, now, render, className = "", 
       <section className={`card off ${className}`} aria-label={title}>
         <div className="card-head"><Icon name={icon} /><span className="name">{title}</span><span className="pill bad">Ej tillgänglig</span></div>
         <div className="mid">Tjänsten svarar inte just nu.</div>
-        <div className="foot">{state.reason}</div>
+        {/* Den tekniska orsaken (ofta på engelska) visas inte; den finns kvar som tooltip och i diagnosen. */}
+        <div className="foot" title={state.reason}>Försöker igen om en stund.</div>
       </section>
     );
   }
@@ -43,7 +46,7 @@ export function CardShell<T>({ title, icon, state, now, render, className = "", 
     <section className={`card ${className}`} aria-label={title} style={style?.(state.data)}>
       <div className="card-head">
         <Icon name={icon} /><span className="name">{title}</span>
-        {state.status === "stale" ? <span className="pill bad">Ej tillgänglig</span> : pill && <span className={`pill ${pill.tone ?? ""}`}>{pill.text}</span>}
+        {state.status === "stale" ? <span className="pill warn">Gammal data</span> : pill && <span className={`pill ${pill.tone ?? ""}`}>{pill.text}</span>}
       </div>
       {body}
       <div className="foot">{state.status === "stale" ? `Visar senast kända data (${formatAgo(state.fetchedAt, now)})` : `Uppdaterad ${formatAgo(state.fetchedAt, now)}`}</div>
