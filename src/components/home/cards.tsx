@@ -210,6 +210,7 @@ export const CalendarCard = ({ state, now }: P) => (
       body: (
         <div className="cal">
           {v.allDayToday.map((a, i) => <CalAllDay key={`t${i}`} {...a} />)}
+          {v.allDayMore > 0 && <p className="cal-more">+{v.allDayMore} heldag</p>}
           {v.empty && <div className="cal-empty"><b>Inget i kalendern</b><span className="mid">Ingenting idag eller imorgon.</span></div>}
           {v.hero && (
             <div className="cal-next" style={{ "--cal": `var(--c-${v.hero.color})` } as React.CSSProperties}>
@@ -218,12 +219,13 @@ export const CalendarCard = ({ state, now }: P) => (
               <div className="cal-meta">{v.hero.meta}</div>
             </div>
           )}
-          {v.later.length > 0 && <><div className="cal-grp">Senare idag</div>{v.later.map((e) => <CalRow key={e.key} e={e} />)}</>}
+          {v.later.length > 0 && <><div className="cal-grp">Senare idag</div>{v.later.map((e) => <CalRow key={e.key} e={e} />)}{v.laterMore > 0 && <p className="cal-more">+{v.laterMore} till idag</p>}</>}
           {(v.tomorrow.allDay.length > 0 || v.tomorrow.events.length > 0) && (
             <>
               <div className="cal-grp">Imorgon</div>
               {v.tomorrow.allDay.map((a, i) => <CalAllDay key={`m${i}`} {...a} />)}
               {v.tomorrow.events.map((e) => <CalRow key={e.key} e={e} />)}
+              {v.tomorrow.more > 0 && <p className="cal-more">+{v.tomorrow.more} till imorgon</p>}
             </>
           )}
           {v.note && <p className="mid small">{v.note}</p>}

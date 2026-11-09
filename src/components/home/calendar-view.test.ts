@@ -87,3 +87,33 @@ describe("calendarView lists and pill", () => {
     expect(calendarView(data(TODAY), NOW("07:00")).note).toBeNull();
   });
 });
+
+describe("calendarView tak på antal rader", () => {
+  const many = Array.from({ length: 9 }, (_, i) => timed(`Möte ${i + 1}`, `${String(8 + i).padStart(2, "0")}:00`, `${String(8 + i).padStart(2, "0")}:30`));
+  it("senare idag visar högst fyra och räknar resten", () => {
+    const v = calendarView(data(many), NOW("07:00"));
+    expect(v.hero?.title).toBe("Möte 1");
+    expect(v.later.map((e) => e.title)).toEqual(["Möte 2", "Möte 3", "Möte 4", "Möte 5"]);
+    expect(v.laterMore).toBe(4);
+  });
+  it("precis fyra rader ger ingen räknare", () => {
+    const v = calendarView(data(many.slice(0, 5)), NOW("07:00"));
+    expect(v.later).toHaveLength(4);
+    expect(v.laterMore).toBe(0);
+  });
+  it("heldagshändelser: högst tre idag och två imorgon, resten räknas", () => {
+    const ad = (n: number, day = "2026-11-08") => Array.from({ length: n }, (_, i) => allDay(`Dag ${i}`, day, "2026-11-10"));
+    const v = calendarView(data(ad(5), ad(4, "2026-11-09")), NOW("07:00"));
+    expect(v.allDayToday).toHaveLength(3);
+    expect(v.allDayMore).toBe(2);
+    expect(v.tomorrow.allDay).toHaveLength(2);
+    expect(v.tomorrow.more).toBe(2);
+  });
+  it("imorgon räknar även tidsatta händelser som inte får plats", () => {
+    const tom = Array.from({ length: 5 }, (_, i) => timed(`M${i}`, `${String(9 + i).padStart(2, "0")}:00`, `${String(9 + i).padStart(2, "0")}:30`, "fam", "2026-11-09"));
+    const v = calendarView(data([], tom), NOW("07:00"));
+    expect(v.hero?.when).toBe("Imorgon 09:00");
+    expect(v.tomorrow.events).toHaveLength(2);
+    expect(v.tomorrow.more).toBe(2);
+  });
+});

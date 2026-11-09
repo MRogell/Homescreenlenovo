@@ -12,12 +12,21 @@ export interface CalendarView {
   empty: boolean;
   hero: CalHero | null;
   allDayToday: CalAllDay[];
-  /** Senare idag, utan det som redan är hjälte. */
+  /** Heldagshändelser idag utöver de som visas. */
+  allDayMore: number;
+  /** Senare idag, utan det som redan är hjälte. Högst MAX_LATER rader. */
   later: CalEventRow[];
-  tomorrow: { allDay: CalAllDay[]; events: CalEventRow[] };
+  /** Händelser senare idag utöver de som visas. */
+  laterMore: number;
+  tomorrow: { allDay: CalAllDay[]; events: CalEventRow[]; /** Imorgon-händelser utöver de som visas. */ more: number };
   /** T.ex. "1 kalender svarade inte". */
   note: string | null;
 }
+
+/** Så mycket får kortet växa: fler händelser samlas i "+N till". Annars blir hela raden lika hög som kortet (rader är lika höga på plattan). */
+export const MAX_LATER = 4;
+export const MAX_ALL_DAY = 3;
+export const MAX_TOMORROW_ALL_DAY = 2;
 
 const TZ = "Europe/Stockholm";
 const hm = new Intl.DateTimeFormat("sv-SE", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -55,13 +64,23 @@ export function calendarView(d: CalendarData, now: Date): CalendarView {
   const pill = remaining.length > 0 ? `${remaining.length} kvar idag` : d.today.events.length > 0 ? "Klart för idag" : "Inget idag";
   const rest = tomorrowTimed.filter((e) => e !== heroTomorrow).slice(0, heroToday ? 1 : 2);
 
+  const allDayToday = d.today.events.filter((e) => e.allDay).map(toAllDay);
+  const tomorrowAllDay = d.tomorrow.events.filter((e) => e.allDay).map(toAllDay);
+  const later = remaining.filter((e) => e !== nextToday).map(row);
+
   return {
     pill,
     empty: d.today.events.length === 0 && d.tomorrow.events.length === 0,
     hero,
-    allDayToday: d.today.events.filter((e) => e.allDay).map(toAllDay),
-    later: remaining.filter((e) => e !== nextToday).map(row),
-    tomorrow: { allDay: d.tomorrow.events.filter((e) => e.allDay).map(toAllDay), events: rest.map(row) },
+    allDayToday: allDayToday.slice(0, MAX_ALL_DAY),
+    allDayMore: Math.max(0, allDayToday.length - MAX_ALL_DAY),
+    later: later.slice(0, MAX_LATER),
+    laterMore: Math.max(0, later.length - MAX_LATER),
+    tomorrow: {
+      allDay: tomorrowAllDay.slice(0, MAX_TOMORROW_ALL_DAY),
+      events: rest.map(row),
+      more: Math.max(0, tomorrowAllDay.length - MAX_TOMORROW_ALL_DAY) + Math.max(0, tomorrowTimed.filter((e) => e !== heroTomorrow).length - rest.length),
+    },
     note: d.failed > 0 ? `${d.failed} ${d.failed === 1 ? "kalender svarade" : "kalendrar svarade"} inte` : null,
   };
 }
