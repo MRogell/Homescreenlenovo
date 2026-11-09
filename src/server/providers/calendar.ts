@@ -30,7 +30,7 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
   const now = deps.nowMs ?? Date.now;
   return {
     id: "calendar",
-    ttlSeconds: 600,
+    ttlSeconds: 120,
     timeoutMs: 20_000,
     schema: calendarSchema,
     isConnected: async () => (await deps.loadCalendars()).length > 0,

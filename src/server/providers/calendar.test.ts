@@ -67,7 +67,7 @@ describe("calendar provider", () => {
   it("is connected only when a calendar exists, refreshes every 10 minutes and has its own id", async () => {
     const t = make([cal("a", "Familj")], {});
     expect(t.p.id).toBe("calendar");
-    expect(t.p.ttlSeconds).toBe(600);
+    expect(t.p.ttlSeconds).toBe(120);
     expect(await t.p.isConnected?.()).toBe(true);
     expect(await make([], {}).p.isConnected?.()).toBe(false);
   });
