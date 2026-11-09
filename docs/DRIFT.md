@@ -71,3 +71,11 @@ Notiser skickas med Web Push och kräver ingen extra tjänst eller miljövariabe
 - **Dubbletter:** Varje händelse har en unik nyckel i `notification_event`, så den skickas bara en gång även om flera enheter märker den samtidigt.
 - **Enheter:** Högst 10. Döda prenumerationer (404/410 från Apple eller Google) tas bort automatiskt.
 - **Migrering:** `push_notiser` skapar tabellerna `push_subscription` och `notification_event`; produktionsbygget kör den.
+
+## Vädervarningar (SMHI)
+Raden under hälsningen visar SMHI:s gula, orange och röda varningar som gäller den valda väderplatsen (Inställningar → Utseende). Färgen följer den allvarligaste.
+- **Källa:** `https://opendata-download-warnings.smhi.se/ibww/api/version/1/warning.json` (en fil för hela landet, ingen nyckel). Servern matchar platsen mot varningsområdenas polygoner.
+- **Villkor:** SMHI:s villkor för konsekvensbaserade varningar kräver att informationen inte ändras, att SMHI anges som källa och att tiderna visas. Rubrik och nivåtext förs därför vidare oförändrade, raden säger "(SMHI)" och visar sluttid (eller starttid om varningen inte börjat). Se https://www.smhi.se/data/om-smhis-data/villkor-for-anvandning
+- **Hämtning:** Följer vädrets cache, var 15:e minut, och var 5:e minut medan en varning gäller. "Meddelande" (t.ex. risk för vattenbrist) räknas inte som varning. Varningar som börjar mer än två dygn fram visas inte än.
+- **Fel:** Går SMHI inte att nå visas vädret ändå och inga varningar. En trasig post hoppas över utan att övriga påverkas.
+- **Utanför Sverige:** Platser utanför SMHI:s områden får inga varningar.

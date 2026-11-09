@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { warningSchema } from "./smhi";
 
 export const skodaSchema = z.object({
   rangeKm: z.number().nullable(),
@@ -98,6 +99,8 @@ export const weatherSchema = z.object({
   })).default([]),
   sunrise: z.string().nullable().default(null),
   sunset: z.string().nullable().default(null),
+  /** SMHI:s gula, orange och röda varningar som gäller platsen. null = kunde inte hämtas (vädret visas ändå). */
+  warnings: z.array(warningSchema).nullable().default(null),
 });
 export type WeatherData = z.infer<typeof weatherSchema>;
 

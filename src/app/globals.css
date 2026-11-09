@@ -5,13 +5,13 @@
   --bg: #0f1419; --surface: #182029; --surface-2: #1f2a35; --line: #2a3745;
   --fg: #eef2f6; --muted: #93a3b4; --accent: #e9c98f; --accent-ink: #1b1608;
   --ok: #6fd3a0; --warn: #f0b45a; --bad: #f08a7e;
-  --c-blue: #6fa8f0; --c-green: #6fd3a0; --c-yellow: #e9c98f; --c-red: #f08a7e; --c-purple: #b49ad8;
+  --w-orange: #f0a060; --c-blue: #6fa8f0; --c-green: #6fd3a0; --c-yellow: #e9c98f; --c-red: #f08a7e; --c-purple: #b49ad8;
   --display: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
   --body: "DM Sans", "Segoe UI", system-ui, sans-serif;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
-  :root { --bg: #eef1f4; --surface: #ffffff; --surface-2: #f3f5f8; --line: #d8dee5; --fg: #141b22; --muted: #566676; --accent: #8a5a12; --accent-ink: #ffffff; --ok: #17794a; --warn: #8f5a00; --bad: #b3372b; --c-blue: #2f6fb8; --c-green: #17794a; --c-yellow: #8a5a12; --c-red: #b3372b; --c-purple: #6b4fa0; color-scheme: light; }
+  :root { --bg: #eef1f4; --surface: #ffffff; --surface-2: #f3f5f8; --line: #d8dee5; --fg: #141b22; --muted: #566676; --accent: #8a5a12; --accent-ink: #ffffff; --ok: #17794a; --warn: #8f5a00; --bad: #b3372b; --w-orange: #a8480b; --c-blue: #2f6fb8; --c-green: #17794a; --c-yellow: #8a5a12; --c-red: #b3372b; --c-purple: #6b4fa0; color-scheme: light; }
 }
 * { box-sizing: border-box; }
 /* Ingen zoom: dubbeltryck-zoom av, ingen automatisk textförstoring i liggande läge, ingen studs i sidled. */
@@ -24,6 +24,9 @@ header.top-bar { display: flex; flex-wrap: wrap; align-items: end; justify-conte
 h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap: balance; }
 .sub { color: var(--muted); margin-top: 4px; min-height: 1.4em; }
 .sub:not(:empty) { text-wrap: balance; }
+.sub[data-tone="yellow"] { color: var(--warn); }
+.sub[data-tone="orange"] { color: var(--w-orange); }
+.sub[data-tone="red"] { color: var(--bad); font-weight: 600; }
 .clock { text-align: right; font-family: var(--display); }
 .clock b { display: block; font-size: clamp(36px, 5vw, 64px); line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
 .clock span { color: var(--muted); font-family: var(--body); }

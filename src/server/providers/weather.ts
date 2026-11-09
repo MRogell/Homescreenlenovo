@@ -1,5 +1,6 @@
 import { aqiLabel, weatherText } from "@/lib/weather";
 import { weatherSchema, type WeatherData } from "./schemas";
+import { fetchWarnings } from "./smhi";
 import type { Provider } from "./types";
 
 // Open-Meteo: öppna väder- och luftkvalitetsdata, gratis för icke-kommersiellt bruk och utan nyckel.
@@ -99,6 +100,8 @@ export function createWeatherProvider(deps: WeatherDeps): Provider<WeatherData> 
   return {
     id: "weather",
     ttlSeconds: 900,
+    // Gäller en varning hämtas oftare så att den släcks och uppdateras snabbt.
+    ttlFor: (d: WeatherData) => (d.warnings && d.warnings.length > 0 ? 300 : 900),
     schema: weatherSchema,
     async getSummary() {
       const place = await deps.getPlace();
@@ -118,7 +121,8 @@ export function createWeatherProvider(deps: WeatherDeps): Provider<WeatherData> 
       airUrl.searchParams.set("timezone", "Europe/Stockholm");
 
       // Luftkvaliteten är valfri: misslyckas den visas vädret ändå.
-      const [forecast, air] = await Promise.allSettled([getJson(forecastUrl), getJson(airUrl)]);
+      // Varningarna (SMHI) är också valfria: går de inte att hämta blir de null och vädret visas ändå.
+      const [forecast, air, warnings] = await Promise.allSettled([getJson(forecastUrl), getJson(airUrl), fetchWarnings(place, new Date(), deps.fetchFn)]);
       if (forecast.status === "rejected") throw new Error("Vädertjänsten svarade inte");
       const cur = forecast.value.current as Record<string, unknown> | undefined;
       const tempC = num(cur?.temperature_2m);
@@ -134,6 +138,7 @@ export function createWeatherProvider(deps: WeatherDeps): Provider<WeatherData> 
         aqi: aqi === null ? null : Math.round(aqi),
         aqiLabel: aqi === null ? null : aqiLabel(aqi),
         ...parseForecast(forecast.value),
+        warnings: warnings.status === "fulfilled" ? warnings.value : null,
       };
     },
   };

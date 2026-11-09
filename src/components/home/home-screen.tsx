@@ -5,7 +5,7 @@ import type { HomeStates } from "@/server/snapshots";
 import { resolveCards, type AppSettings } from "@/lib/settings";
 import { NightVeil } from "./night-veil";
 import { Settings as SettingsIcon } from "lucide-react";
-import { attentionLine } from "./attention";
+import { attentionLine, attentionTone } from "./attention";
 import type { SonosInfo } from "./spotify-view";
 import { Clock } from "./clock";
 import { RefreshContext, SpotifyRefreshContext } from "./refresh-context";
@@ -73,7 +73,7 @@ export function HomeScreen({ initial, initialNow, initialSettings }: { initial: 
     <div className="wrap">
       <NightVeil night={settings.night} />
       <header className="top-bar">
-        <Clock note={attentionLine(states)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
+        <Clock note={attentionLine(states, now)} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
       </header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
       {visible.length === 0 && <p className="mid empty-note">Alla kort är dolda. Slå på något under Inställningar.</p>}

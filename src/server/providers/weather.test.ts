@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import real from "./__fixtures__/smhi-warning.json";
 import { safeSummary } from "./safe";
 import { createWeatherProvider, parseForecast } from "./weather";
 
@@ -24,7 +25,7 @@ describe("weather provider", () => {
     const { p } = make({ status: 200, body: FORECAST }, { status: 200, body: AIR });
     expect(await p.getSummary()).toEqual({
       place: "Luleå", tempC: 7.2, code: 3, text: "Mulet", windMs: 4.4, aqi: 51, aqiLabel: "Måttlig",
-      isDay: null, feelsLikeC: null, gustMs: null, hourly: [], daily: [], sunrise: null, sunset: null,
+      isDay: null, feelsLikeC: null, gustMs: null, hourly: [], daily: [], sunrise: null, sunset: null, warnings: null,
     });
   });
   it("asks for the right fields, place and units", async () => {
@@ -144,5 +145,37 @@ describe("weather provider place", () => {
     const f = new URL(calls.find((u) => u.includes("api.open-meteo.com/v1/forecast"))!);
     expect(f.searchParams.get("latitude")).toBe("63.8284");
     expect(f.searchParams.get("longitude")).toBe("20.2597");
+  });
+});
+
+describe("SMHI-varningar i vädret", () => {
+  const ABISKO = { name: "Abisko", lat: 68.35, lon: 18.83 };
+  const run = (smhi: () => Response | Promise<Response>, place = ABISKO) => {
+    const fetchFn = (async (url: string) => {
+      if (url.includes("smhi.se")) return smhi();
+      if (url.includes("air-quality")) return new Response(JSON.stringify(AIR));
+      return new Response(JSON.stringify(FORECAST));
+    }) as unknown as typeof fetch;
+    return createWeatherProvider({ getPlace: () => place, fetchFn });
+  };
+  it("varningar som gäller platsen följer med", async () => {
+    // Fixturen gäller 9 nov; kollas mot den riktiga klockan nedan, så bara strukturen prövas här.
+    const p = run(() => new Response(JSON.stringify(real)));
+    const d = await p.getSummary();
+    expect(d.tempC).toBe(7.2);
+    expect(Array.isArray(d.warnings)).toBe(true);
+  });
+  it("SMHI nere: vädret visas ändå och varningar är null", async () => {
+    const d = await run(() => new Response("x", { status: 503 })).getSummary();
+    expect(d).toMatchObject({ tempC: 7.2, warnings: null });
+    const d2 = await run(() => { throw new Error("nere"); }).getSummary();
+    expect(d2.warnings).toBeNull();
+  });
+  it("hämtar oftare medan en varning gäller", () => {
+    const p = run(() => new Response("[]"));
+    const base = { place: "x", tempC: 1, code: 1, text: "", windMs: null, aqi: null, aqiLabel: null, isDay: null, feelsLikeC: null, gustMs: null, hourly: [], daily: [], sunrise: null, sunset: null };
+    expect(p.ttlFor?.({ ...base, warnings: null } as never)).toBe(900);
+    expect(p.ttlFor?.({ ...base, warnings: [] } as never)).toBe(900);
+    expect(p.ttlFor?.({ ...base, warnings: [{ id: 1, level: "yellow", levelText: "Gul", title: "t", area: "a", start: null, end: null }] } as never)).toBe(300);
   });
 });
