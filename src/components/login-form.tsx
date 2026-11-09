@@ -24,13 +24,15 @@ export function LoginForm({ canRegister }: { canRegister: boolean }) {
   }
 
   return (
-    <form className="form" onSubmit={onSubmit}>
-      <h1>{canRegister ? "Skapa familjens konto" : "Logga in"}</h1>
-      {canRegister && <p className="sub">Första kontot blir det enda: därefter stängs registreringen.</p>}
-      <label htmlFor="email">E-post<input id="email" name="email" type="email" autoComplete="username" required /></label>
-      <label htmlFor="password">Lösenord<input id="password" name="password" type="password" autoComplete={canRegister ? "new-password" : "current-password"} minLength={canRegister ? 10 : undefined} required /></label>
-      {error && <p className="err" role="alert">{error}</p>}
-      <button className="btn" type="submit" disabled={busy}>{busy ? "Vänta…" : canRegister ? "Skapa konto" : "Logga in"}</button>
-    </form>
+    <main className="landmark">
+      <form className="form" onSubmit={onSubmit}>
+        <h1>{canRegister ? "Skapa familjens konto" : "Logga in"}</h1>
+        {canRegister && <p className="sub">Första kontot blir det enda: därefter stängs registreringen.</p>}
+        <label htmlFor="email">E-post<input id="email" name="email" type="email" autoComplete="username" required /></label>
+        <label htmlFor="password">Lösenord<input id="password" name="password" type="password" autoComplete={canRegister ? "new-password" : "current-password"} minLength={canRegister ? 10 : undefined} required /></label>
+        {error && <p className="err" role="alert">{error}</p>}
+        <button className="btn" type="submit" disabled={busy}>{busy ? "Vänta…" : canRegister ? "Skapa konto" : "Logga in"}</button>
+      </form>
+    </main>
   );
 }

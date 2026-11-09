@@ -47,6 +47,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   return (
     <div className="wrap">
       <header className="top-bar"><div><h1>Inställningar</h1><div className="sub">Inloggad som {user.email}</div></div><Link className="back-link" href="/"><ArrowLeft aria-hidden="true" />Hemskärmen</Link></header>
+      <main className="landmark">
       {notice && <p className={sp.ok ? "mid" : "err"} role="status">{notice}</p>}
       <section className="card" aria-label="Anslutningar">
         <div className="card-head"><span className="name">Anslutningar</span></div>
@@ -127,6 +128,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
         <div className="card-head"><span className="name">Konto</span></div>
         <SignOutButton />
       </section>
+      </main>
     </div>
   );
 }

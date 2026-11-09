@@ -119,7 +119,7 @@ export function SonosNow({ groups }: { groups: Group[] }) {
             const g = groups.find((x) => x.id === c.id)!;
             const on = isPlaying(g);
             return (
-              <button key={c.id} type="button" className={`sn-chip${on ? " on" : ""}`} disabled={busy} aria-pressed={on} aria-label={`${on ? "Pausa" : "Spela"} i ${c.label}`} onClick={() => send(c.id, on ? "pause" : "play")}>
+              <button key={c.id} type="button" className={`sn-chip${on ? " on" : ""}`} disabled={busy} aria-label={on ? `${c.label}, spelar. Tryck för att pausa` : undefined} onClick={() => send(c.id, on ? "pause" : "play")}>
                 {on ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
                 {c.label}
                 {!on && <small>spela här</small>}
