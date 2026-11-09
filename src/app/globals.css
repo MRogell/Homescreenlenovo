@@ -174,7 +174,9 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .skoda-climate.on .skoda-climate-status { color: var(--ok); }
 .skoda-climate.pending .skoda-climate-status { color: var(--warn); }
 .skoda-climate-status svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-.skoda-dial { position: relative; width: min(100%, 250px); aspect-ratio: 200 / 172; }
+/* Höjden via padding-top (172/200) i stället för aspect-ratio: Safari räknar kortets höjd rätt med den vägen. */
+.skoda-dial { position: relative; width: 100%; max-width: 250px; }
+.skoda-dial::before { content: ""; display: block; padding-top: 86%; }
 .skoda-dial svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .skoda-dial .track { fill: none; stroke: url(#skoda-dial-grad); stroke-width: 14; stroke-linecap: round; }
 .skoda-climate:not(.on):not(.pending) .skoda-dial .track { opacity: .75; }
@@ -200,7 +202,9 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
 /* Škoda-kortet är dubbelt så brett på surfplatta och dator: bilinfo till vänster, klimat till höger. Telefon: en kolumn. */
 .card.skoda { grid-column: span 2; }
-.skoda-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; flex: 1; }
+.skoda-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch;
+  /* flex-basis auto, inte 0: Safari på iPhone räknar annars ut kortets höjd utan innehållet och lämnar 'Uppdaterad' utanför kortet. */
+  flex: 1 1 auto; }
 .skoda-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .skoda-info .skoda-place { margin-top: auto; }
 .skoda-body .skoda-climate { justify-content: center; }
