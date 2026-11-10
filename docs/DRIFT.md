@@ -117,3 +117,6 @@ Avresetid per veckodag (olika tider möjliga), förvärmning startar `leadMin` m
 
 ## Väder på surfplatta (allt på en skärm)
 Väder-kortet går över två rader i första kolumnen och visar allt som i den vanliga vyn: nu, timmar, femdagarsprognos, sol och vind. Sonos är en kolumn bred i det läget. Förvärm-raden ligger i Škoda-kortets vänstra kolumn, så att klimatdialen behåller sin storlek.
+
+## Škoda-klimat på surfplatta
+Klimatrutan har samma design som på telefon: stor halvcirkel, minus och plus centrerade under värdet och Starta under. Dialens storlek följer kortets höjd (`cqh`). Mittenraden i rutnätet är därför högre (Škoda har mest att visa), och "Temperatur"-etiketten döljs när dialen blir liten.

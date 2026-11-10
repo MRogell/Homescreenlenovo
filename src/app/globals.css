@@ -578,7 +578,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .sub[data-tone] { font-size: 17px; padding: 5px 12px; margin-top: 2px; }
   .settings-link { width: 44px; height: 44px; }
   /* Tre rader: de två översta lite högre än den nedre (AEG och Inomhus behöver minst). */
-  .grid { gap: 12px; grid-auto-rows: minmax(224px, 1fr); grid-template-rows: minmax(224px, 1.08fr) minmax(224px, 1.08fr) minmax(176px, .84fr); min-height: 0; }
+  .grid { gap: 12px; grid-auto-rows: minmax(224px, 1fr); grid-template-rows: minmax(190px, 1fr) minmax(280px, 1.4fr) minmax(182px, .7fr); min-height: 0; }
   .card { container: card / size; overflow: hidden; padding: 12px 14px; gap: 6px; min-height: 0; border-radius: 18px; }
   .card-head svg { width: 20px; height: 20px; }
   .card .foot { display: none; }
@@ -623,25 +623,22 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-checks li { flex-direction: column; text-align: center; padding: 6px 4px; gap: 3px; }
   .skoda-checks li span { align-items: center; }
   .skoda-place small { display: none; }
-  .skoda-climate { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); grid-template-rows: 1fr; gap: 0 10px; padding: 34px 10px 10px; align-items: center; }
-  .skoda-climate-status { top: 8px; }
-  .skoda-dial { max-width: 200px; justify-self: center; }
   .skoda-info .dep { min-height: 42px; margin-top: auto; padding: 2px 6px 2px 12px; }
   .skoda-info .skoda-checks li { padding-top: 3px; padding-bottom: 3px; }
   .skoda-info .skoda-place { margin-top: 0; }
+  /* Klimatrutan som vanligt (stor halvcirkel, Starta under). Dialens storlek följer kortets höjd. */
+  .skoda-climate { padding: 14px 12px 12px; }
+  .skoda-dial { max-width: clamp(110px, calc((100cqh - 160px) / .86), 300px); }
+  /* Mindre dial än på telefon: minus och plus ligger i halvcirkelns öppning, under värdet och centrerade, så att de inte hamnar på bågen. */
+  .skoda-dial-center { top: 55%; }
+  .skoda-dial-value { display: grid; grid-template-columns: auto auto; justify-content: center; gap: 4px 16px; }
+  .skoda-dial-value output { grid-column: 1 / -1; grid-row: 1; }
+  .skoda-dial-value button { width: 40px; height: 40px; grid-row: 2; }
+  .skoda-dial-value .minus { grid-column: 1; } .skoda-dial-value .plus { grid-column: 2; }
   .skoda-info .dep-text { gap: 1px; }
   .skoda-info .dep + .skoda-place { margin-top: 0; }
   .skoda-info .dep-main { min-height: 36px; }
   /* Minus och plus ligger i halvcirkelns öppning under temperaturen, så att de inte krockar med bågen. */
-  .skoda-dial-center { inset: 0; left: 0; top: 0; width: auto; transform: none; display: grid; place-content: center; justify-items: center; padding-bottom: 20%; pointer-events: none; }
-  .skoda-dial-value { display: block; width: auto; }
-  .skoda-dial-value output { font-size: 30px; min-width: 0; display: block; }
-  .skoda-dial-value button { position: absolute; bottom: 5%; width: 38px; height: 38px; font-size: 22px; pointer-events: auto; }
-  .skoda-dial-value .minus { left: calc(50% - 43px); }
-  .skoda-dial-value .plus { left: calc(50% + 5px); }
-  .skoda-dial-center .label { font-size: 11px; }
-  .skoda-climate-btn { margin-top: 0; align-self: center; min-height: 52px; }
-  .skoda-climate-error { grid-column: 1 / -1; }
 
   /* Spotify: omslag, titel, tid och uppspelningsknappar. Volym och val av enhet finns i vanliga vyn. */
   .sp-art { width: 64px; height: 64px; }
@@ -667,11 +664,13 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .ti-dial > svg { max-width: 72px; }
 
   /* Lägre kort (skärmar runt 800 px höga): ännu tätare. */
+  @container card (max-height: 330px) {
+    .skoda-dial-center .label { display: none; }
+  }
   @container card (max-height: 245px) {
     .big { font-size: 34px; }
     .skoda-main .big { font-size: 34px; }
     .skoda-checks li { padding: 4px 4px; }
-    .skoda-dial { max-width: 160px; }
     .skoda-info { gap: 4px; }
     .skoda-info .dep { min-height: 36px; }
     .skoda-info .dep-main { min-height: 34px; }
