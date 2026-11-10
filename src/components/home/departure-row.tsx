@@ -115,7 +115,9 @@ export function DepartureRow({ view, onChange }: { view: DepartureView; onChange
               <button type="button" aria-label="Höj" onClick={() => target(0.5)} disabled={form.targetC >= 29.5}><Plus aria-hidden="true" /></button>
             </span>
           </div>
-          <p className="mid small">Plattan (eller någon öppen skärm) måste vara på och ha nät vid starttiden. Är utetemperaturen okänd startar klimatet ändå.</p>
+          {view.timer?.active
+            ? <p className="mid small dep-timer ok">Servertimern är aktiv{view.timer.lastAt ? ` (senast ${new Date(view.timer.lastAt).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })})` : ""}. Klimatet startas även när alla skärmar är av. Är utetemperaturen okänd startar det ändå.</p>
+            : <p className="mid small dep-timer warn">Ingen servertimer hittad. Utan den startar klimatet bara om en skärm är öppen, påslagen och uppkopplad vid starttiden. Stäng av skärmens sparläge eller sätt upp timern (se Drift).</p>}
           {error && <p className="err" role="alert">{error}</p>}
           <div className="dep-actions">
             <button type="button" className="sm-btn primary" disabled={busy} onClick={() => void save(form, true)}>Spara</button>

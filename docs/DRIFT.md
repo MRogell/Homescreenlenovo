@@ -106,7 +106,7 @@ Fliken "Middag" i inköpskortet (och på `/handla` i stor vy). Planen ligger i s
 
 ## Förvärm till avresa
 Avresetid per veckodag (olika tider möjliga), förvärmning startar `leadMin` minuter före om det är kallare än gränsen. Inställningarna ligger i `AppSetting` ("departure") och nås från raden under klimatrutan i Škoda-kortet.
-- **Hur:** Det finns ingen bakgrundsjobbare på Vercel Hobby. Det är därför en öppen och uppkopplad skärm (surfplattan) som, vid sin ordinarie hämtning var 30:e sekund, får servern att kontrollera tiden och starta klimatet (`after()` i `/api/home`). Stängs alla skärmar eller tappar de nätet startar inget.
+- **Hur:** Det finns ingen bakgrundsjobbare på Vercel Hobby (cron där går bara en gång per dygn). Därför startas klimatet av två saker: (1) en extern timer som ropar `/api/cron/preheat` varje minut (se Servertimer nedan), och (2) som reserv en öppen och uppkopplad skärm som vid sin hämtning var 30:e sekund får servern att kontrollera tiden (`after()` i `/api/home`). Utan timer startar inget när skärmarna är avstängda, och bbakgrundsflikar och sovande plattor hämtar inte alls.
 - **Bara en gång:** Start görs under advisory lock (727003), så flera skärmar startar bilen en gång. Upp till tre försök.
 - **Alltid när på och kallt:** Škoda-datat har ingen laddkabelflagga, så det finns inget "bara när inkopplad".
 - **Notis:** Egen notistyp "Förvärm" (av/på under Notiser). "Hoppa över idag" nollställs nästa dygn.
@@ -127,3 +127,11 @@ Klimatrutan har samma design som på telefon: stor halvcirkel, minus och plus ce
 - Hemskärmen har en enda uppsättning av listorna (en `useLists`) som delas av Inköp-kortet och Vem hämtar.
 
 **Tänd och släck:** Vem hämtar? och märket Barnvecka kan stängas av var för sig under Inställningar → Familjen på hemskärmen (inställningen `show`). Vem hämtar? kan också döljas direkt från länken längst ned i panelen. Datat finns kvar när funktionen är släckt.
+
+## Servertimer för Förvärm (gratis)
+Utan den startar förvärm bara om en skärm är öppen i just starttidens fönster. Så här sätter du upp den, helt utan betalplan:
+1. Skapa en hemlighet: `openssl rand -base64 24` (minst 16 tecken).
+2. Lägg den som miljövariabeln `CRON_SECRET` i Vercel (projektet för hemskärmen, Production) och lägg ut på nytt.
+3. Skapa ett gratiskonto på cron-job.org och ett jobb: adress `https://<hemskärmens adress>/api/cron/preheat`, varje minut, med rubriken `Authorization: Bearer <hemligheten>`.
+4. Öppna Förvärm-inställningarna i appen: där står "Servertimern är aktiv (senast HH:MM)" när det fungerar.
+Anropet gör inget dyrt utanför ett förvärmfönster (inga anrop till Škoda eller vädret). Fel hemlighet ger 401, saknad `CRON_SECRET` 503.

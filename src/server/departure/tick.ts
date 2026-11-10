@@ -6,7 +6,7 @@ import { db as defaultDb } from "../db";
 import { dispatchEvents } from "../notify/push";
 import type { HomeStates } from "../snapshots";
 import { localClock } from "../calendar/time";
-import { claimDeparture, finishRun, loadDeparture } from "./store";
+import { claimDeparture, finishRun, loadDeparture, loadTimerAt, TIMER_ACTIVE_MS } from "./store";
 
 export interface TickDeps extends ControlFlowDeps {
   db?: PrismaClient;
@@ -25,7 +25,9 @@ export function contextOf(states: HomeStates): { tempC: number | null; climateOn
 
 /** Det som visas på kortet. */
 export async function getDepartureView(states: HomeStates, now: Date, db: PrismaClient = defaultDb): Promise<DepartureView> {
-  return departureView(await loadDeparture(db), now, contextOf(states));
+  const view = departureView(await loadDeparture(db), now, contextOf(states));
+  const lastAt = await loadTimerAt(db);
+  return { ...view, timer: { lastAt, active: lastAt !== null && now.getTime() - lastAt < TIMER_ACTIVE_MS } };
 }
 
 /**

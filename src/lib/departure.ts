@@ -120,6 +120,8 @@ export interface DepartureView {
   /** Förklaring under raden. */
   sub: string | null;
   tone: "idle" | "wait" | "ok" | "warn" | "bad";
+  /** Servertimern (extern timer som ropar varje minut). Sätts av servern. */
+  timer?: { active: boolean; lastAt: number | null };
 }
 
 const fmtTemp = (t: number | null) => (t === null ? "okänt" : `${String(Math.round(t)).replace("-", "−")}°`);

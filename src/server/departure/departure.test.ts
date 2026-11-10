@@ -3,7 +3,8 @@ import { DEFAULT_DEPARTURE } from "@/lib/departure";
 import { db } from "../db";
 import { handleDeparture, type DepartureRequest } from "./flow";
 import { claimDeparture, finishRun, loadDeparture, saveDeparture, setSkipToday } from "./store";
-import { contextOf, preheatTick } from "./tick";
+import { contextOf, getDepartureView, preheatTick } from "./tick";
+import { handlePreheatCron } from "./cron";
 
 // Måndag 9 november 2026, svensk tid (UTC+1). Avresa 07:30, start 07:15.
 const at = (hm: string, day = "2026-11-09") => new Date(`${day}T${hm}:00+01:00`);
@@ -140,5 +141,46 @@ describe("handleDeparture", () => {
     expect(r.json.departure).toMatchObject({ line: "Avresa 07:30 · mån, tis", tone: "wait", settings: { enabled: true } });
     const s = await handleDeparture({ ...ok, body: { skip: true } }, deps);
     expect(s.json.departure?.settings.skippedToday).toBe(true);
+  });
+});
+
+describe("servertimern (cron)", () => {
+  const secret = "hemlig-nyckel-1234567890";
+  const auth = { authorization: `Bearer ${secret}` };
+  it("saknad eller fel hemlighet ger 503 och 401 och rör ingenting", async () => {
+    await saveDeparture(patch, db);
+    expect((await handlePreheatCron(auth, undefined, { db, now: () => at("07:20") })).status).toBe(503);
+    for (const a of [null, "Bearer fel", "hemlig-nyckel-1234567890", "Bearer "]) {
+      expect((await handlePreheatCron({ authorization: a }, secret, { db, now: () => at("07:20") })).status).toBe(401);
+    }
+    expect(await db.appSetting.findUnique({ where: { key: "departureTimer" } })).toBeNull();
+  });
+  it("utanför förvärmfönstret görs inget (inga anrop) men timern märks som aktiv", async () => {
+    await saveDeparture(patch, db);
+    const getStates = vi.fn(async () => states(-4, false));
+    const r = await handlePreheatCron(auth, secret, { db, now: () => at("12:00"), states: getStates });
+    expect(r).toEqual({ status: 200, json: { ok: true, action: "none" } });
+    expect(getStates).not.toHaveBeenCalled();
+    const view = await getDepartureView(states(-4, false), at("12:00"), db);
+    expect(view.timer?.active).toBe(true);
+    expect((await getDepartureView(states(-4, false), at("12:10"), db)).timer?.active).toBe(false);
+  });
+  it("i fönstret startas klimatet utan att någon skärm är öppen, en gång", async () => {
+    await saveDeparture({ ...patch, targetC: 22 }, db);
+    const start = vi.fn(async () => null);
+    const notify = vi.fn(async () => {});
+    const getStates = vi.fn(async () => states(-4, false));
+    await handlePreheatCron(auth, secret, { db, now: () => at("07:16"), states: getStates, start, notify });
+    await handlePreheatCron(auth, secret, { db, now: () => at("07:17"), states: getStates, start, notify });
+    expect(start).toHaveBeenCalledOnce();
+    expect(start).toHaveBeenCalledWith(22);
+    expect((await loadDeparture(db)).last?.status).toBe("started");
+  });
+  it("varmt ute: hoppar över och startar inte", async () => {
+    await saveDeparture(patch, db);
+    const start = vi.fn(async () => null);
+    await handlePreheatCron(auth, secret, { db, now: () => at("07:16"), states: async () => states(12, false), start });
+    expect(start).not.toHaveBeenCalled();
+    expect((await loadDeparture(db)).last?.status).toBe("skipped_warm");
   });
 });

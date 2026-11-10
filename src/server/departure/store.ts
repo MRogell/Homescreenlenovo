@@ -73,3 +73,13 @@ export async function finishRun(ok: boolean, now: Date, db: PrismaClient = defau
     await save({ ...cur, last: { ...cur.last, status: ok ? "started" : "failed", at: now.getTime() } });
   });
 }
+
+export const TIMER_KEY = "departureTimer";
+/** Räknas som aktiv om servertimern hörts av så här nyligen (den ska ropa varje minut). */
+export const TIMER_ACTIVE_MS = 3 * 60_000;
+
+/** Senaste gången servertimern ropade, eller null. */
+export async function loadTimerAt(db: PrismaClient = defaultDb): Promise<number | null> {
+  const v = (await db.appSetting.findUnique({ where: { key: TIMER_KEY } }))?.value as { at?: unknown } | null | undefined;
+  return v && typeof v.at === "number" ? v.at : null;
+}
