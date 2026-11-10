@@ -6,6 +6,7 @@ import { Icon, type IconName } from "./icons";
 import type { DepartureView } from "@/lib/departure";
 import { skodaView } from "./skoda-view";
 import { SkodaClimate } from "./skoda-climate";
+import { DepartureRow } from "./departure-row";
 import { weatherView, wxTint } from "./weather-view";
 import { WeatherIcon } from "./weather-icon";
 import { Droplets, Moon, Snowflake, Sun, Sunrise, Sunset, Wind } from "lucide-react";
@@ -50,12 +51,13 @@ export const SkodaCard = ({ state, now, departure, onDeparture }: P & { departur
             ))}
           </ul>
         )}
+        {departure && onDeparture && <DepartureRow view={departure} onChange={onDeparture} />}
         <div className="skoda-place">
           <Icon name="pin" />
           <span><span className="addr" title={v.placeFull ?? undefined}>{v.place}</span>{v.reported && <small>{v.reported}</small>}{v.batteryNote && <small className="stale">{v.batteryNote}</small>}</span>
         </div>
       </div>
-        <SkodaClimate on={v.climate.on} targetC={v.climate.targetC} text={v.climate.text} pending={v.climate.pending} departure={departure} onDeparture={onDeparture} />
+        <SkodaClimate on={v.climate.on} targetC={v.climate.targetC} text={v.climate.text} pending={v.climate.pending} />
       </div>,
     };
   }} />

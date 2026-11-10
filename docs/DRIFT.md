@@ -114,3 +114,6 @@ Avresetid per veckodag (olika tider möjliga), förvärmning startar `leadMin` m
 ## Två avresetider per dag och personer per vecka
 - **Avresa:** Varje dag kan ha upp till två tider (till exempel morgon och kväll). Varje tid är en egen körning (`last.slot`), så morgonens start spärrar inte kvällens. "Hoppa över idag" gäller båda. Äldre inställningar med en tid per dag läses som en lista med en tid.
 - **Personer:** Middagsplanen räknar 6 personer i udda ISO-veckor och 2 i jämna (ändras under Recept i Middag-fliken). Mängderna skalas per dag, och samma rätt över en veckogräns summeras till en rad på inköpslistan. Äldre data med ett enda antal får grundinställningen 6/2.
+
+## Väder på surfplatta (allt på en skärm)
+Väder-kortet går över två rader i första kolumnen och visar allt som i den vanliga vyn: nu, timmar, femdagarsprognos, sol och vind. Sonos är en kolumn bred i det läget. Förvärm-raden ligger i Škoda-kortets vänstra kolumn, så att klimatdialen behåller sin storlek.

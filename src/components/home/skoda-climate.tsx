@@ -3,8 +3,6 @@ import { useState, useSyncExternalStore } from "react";
 import { useRefresh } from "./refresh-context";
 import { Icon } from "./icons";
 import { clampTemp, dialAngle, formatTempC, MAX_TEMP_C, MIN_TEMP_C } from "./skoda-view";
-import type { DepartureView } from "@/lib/departure";
-import { DepartureRow } from "./departure-row";
 
 const STORE_KEY = "skoda-climate-temp";
 
@@ -25,7 +23,7 @@ function storeTemp(t: number) {
 }
 
 /** Starta/stoppa bilens klimatisering med vald temperatur. Ingen bekräftelse: ofarligt och lätt att stoppa. */
-export function SkodaClimate({ on, targetC, text, pending, departure, onDeparture }: { on: boolean | null; targetC: number | null; text: string | null; pending: boolean; departure?: DepartureView | null; onDeparture?: (v: DepartureView) => void }) {
+export function SkodaClimate({ on, targetC, text, pending }: { on: boolean | null; targetC: number | null; text: string | null; pending: boolean }) {
   const refresh = useRefresh();
   // Vald temperatur: det du valt nu, annars senast valda i den här webbläsaren, annars bilens måltemperatur, annars 21.
   const stored = useSyncExternalStore(noSubscribe, readStored, () => null);
@@ -97,7 +95,6 @@ export function SkodaClimate({ on, targetC, text, pending, departure, onDepartur
         <button className="skoda-climate-btn start" type="button" disabled={!!busy} onClick={() => send("start")}>{busy === "start" ? "Startar…" : "Starta"}</button>
       )}
       {error && <p className="mid small skoda-climate-error" role="alert">{error}</p>}
-      {departure && onDeparture && <DepartureRow view={departure} onChange={onDeparture} />}
     </div>
   );
 }

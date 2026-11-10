@@ -218,6 +218,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-body { display: flex; flex-direction: column; gap: 8px; }
   .skoda-info { display: contents; }
   .skoda-info .skoda-place { order: 2; margin-top: 4px; }
+  .skoda-info .dep { order: 1; margin-top: 0; }
 }
 
 /* Spotify: omslag, förlopp, rund spela-knapp, volym med ikoner och enhetsknapp. Kortet tonas av omslagets färg (--sp-tint). */
@@ -585,11 +586,9 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .big { font-size: 40px; }
   .big.text { font-size: 24px; }
 
-  /* Väder: nu, kommande timmar och sol/vind. Femdagarsprognosen ryms inte. */
-  .wx-days { display: none; }
-  .wx-now-icon { width: 48px; height: 48px; }
-  .wx-now { gap: 12px; }
-  .wx-hours { padding-top: 8px; margin-top: 2px; }
+  /* Väder: högt kort över två rader i första kolumnen, så att allt visas som i den vanliga vyn (nu, timmar, femdagars, sol och vind). Sonos blir en kolumn så att raderna går ihop. */
+  .card.weather { grid-row: span 2; }
+  .card.sonos { grid-column: span 1; }
 
   /* Kalender: nästa händelse och de två följande. Imorgon visas bara när inget är kvar idag. */
   .cal { gap: 6px; }
@@ -624,12 +623,13 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-checks li { flex-direction: column; text-align: center; padding: 6px 4px; gap: 3px; }
   .skoda-checks li span { align-items: center; }
   .skoda-place small { display: none; }
-  .skoda-climate { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); grid-template-rows: minmax(0, 1fr) auto; gap: 0 10px; padding: 34px 10px 10px; align-items: center; }
+  .skoda-climate { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); grid-template-rows: 1fr; gap: 0 10px; padding: 34px 10px 10px; align-items: center; }
   .skoda-climate-status { top: 8px; }
-  .skoda-dial { max-width: min(200px, 100%, max(78px, calc((100cqh - 178px) / .86))); justify-self: center; }
-  .skoda-climate .dep { grid-column: 1 / -1; min-height: 40px; margin-top: 6px; }
-  .skoda-climate .dep-main { min-height: 38px; }
-  .skoda-climate .dep-text small { display: none; }
+  .skoda-dial { max-width: 200px; justify-self: center; }
+  .skoda-info .dep { min-height: 40px; margin-top: auto; }
+  .skoda-info .dep + .skoda-place { margin-top: 4px; }
+  .skoda-info .dep-main { min-height: 38px; }
+  .skoda-info .dep-text small { display: none; }
   /* Minus och plus ligger i halvcirkelns öppning under temperaturen, så att de inte krockar med bågen. */
   .skoda-dial-center { inset: 0; left: 0; top: 0; width: auto; transform: none; display: grid; place-content: center; justify-items: center; padding-bottom: 20%; pointer-events: none; }
   .skoda-dial-value { display: block; width: auto; }
@@ -666,20 +666,22 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
   /* Lägre kort (skärmar runt 800 px höga): ännu tätare. */
   @container card (max-height: 245px) {
-    .wx-meta { display: none; }
-    .wx-now-icon { width: 40px; height: 40px; }
-    .wx-hours .wx-icon { width: 20px; height: 20px; }
-    .wx-hours { gap: 0; padding-top: 6px; }
     .big { font-size: 34px; }
     .skoda-main .big { font-size: 34px; }
     .skoda-checks li { padding: 4px 4px; }
-    .skoda-climate { padding: 30px 10px 8px; }
-    .skoda-climate .dep { min-height: 36px; margin-top: 4px; }
-    .skoda-climate .dep-main { min-height: 34px; }
-    .skoda-climate-btn { min-height: 46px; }
+    .skoda-dial { max-width: 160px; }
+    .skoda-info { gap: 4px; }
+    .skoda-info .dep { min-height: 32px; }
+    .skoda-info .dep-main { min-height: 30px; }
+    .skoda-info .dep-text b { font-size: 14px; }
+    .skoda-checks li strong { font-size: 13px; }
+    .skoda-body { gap: 10px; }
     .sn-hero { grid-template-columns: 52px minmax(0, 1fr); }
     .sn-art { width: 52px; height: 52px; }
     .sn-chip { min-height: 38px; }
+    .sn { gap: 4px; }
+    .sn .sn-ctl .ctl.sn-play { min-width: 48px; min-height: 48px; }
+    .sn .sn-ctl .ctl { min-height: 40px; }
     .sn .sn-ctl { gap: 6px; }
     .card.spotify .ctl.main { min-width: 48px; min-height: 48px; }
     .card.spotify .ctl { min-width: 40px; min-height: 40px; }
