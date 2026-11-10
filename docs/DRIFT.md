@@ -110,3 +110,7 @@ Avresetid per veckodag (olika tider möjliga), förvärmning startar `leadMin` m
 - **Bara en gång:** Start görs under advisory lock (727003), så flera skärmar startar bilen en gång. Upp till tre försök.
 - **Alltid när på och kallt:** Škoda-datat har ingen laddkabelflagga, så det finns inget "bara när inkopplad".
 - **Notis:** Egen notistyp "Förvärm" (av/på under Notiser). "Hoppa över idag" nollställs nästa dygn.
+
+## Två avresetider per dag och personer per vecka
+- **Avresa:** Varje dag kan ha upp till två tider (till exempel morgon och kväll). Varje tid är en egen körning (`last.slot`), så morgonens start spärrar inte kvällens. "Hoppa över idag" gäller båda. Äldre inställningar med en tid per dag läses som en lista med en tid.
+- **Personer:** Middagsplanen räknar 6 personer i udda ISO-veckor och 2 i jämna (ändras under Recept i Middag-fliken). Mängderna skalas per dag, och samma rätt över en veckogräns summeras till en rad på inköpslistan. Äldre data med ett enda antal får grundinställningen 6/2.

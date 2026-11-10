@@ -15,7 +15,7 @@ export interface DepartureDeps { db?: PrismaClient; states?: () => Promise<HomeS
 const settings = z.object({
   enabled: z.boolean(),
   /** Veckodag (1–7) till avresetid. Minst en dag. */
-  times: z.record(z.string().regex(/^[1-7]$/), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)).refine((t) => Object.keys(t).length >= 1),
+  times: z.record(z.string().regex(/^[1-7]$/), z.array(z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)).min(1).max(2).refine((a) => new Set(a).size === a.length)).refine((t) => Object.keys(t).length >= 1),
   leadMin: z.number().refine((n) => (LEAD_OPTIONS as readonly number[]).includes(n)),
   belowC: z.number().int().min(-20).max(25),
   targetC: z.number().min(16).max(29.5).refine((t) => Number.isInteger(t * 2)),

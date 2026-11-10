@@ -1,7 +1,7 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { addDays } from "@/lib/dinner";
-import { applyOps, CATEGORY_IDS, DEFAULT_PEOPLE, EMPTY_LISTS, MAX_DINNERS, MAX_HISTORY, MAX_ITEMS, MAX_NOTES, MAX_PEOPLE, pruneHistory, type CategoryId, type Dinner, type HistoryEntry, type ListsState, type Op } from "@/lib/shopping";
+import { applyOps, CATEGORY_IDS, DEFAULT_PEOPLE, DEFAULT_PEOPLE_EVEN, EMPTY_LISTS, MAX_DINNERS, MAX_HISTORY, MAX_ITEMS, MAX_NOTES, MAX_PEOPLE, pruneHistory, type CategoryId, type Dinner, type HistoryEntry, type ListsState, type Op } from "@/lib/shopping";
 import { localDate } from "../calendar/time";
 import { db as defaultDb } from "../db";
 
@@ -56,8 +56,11 @@ export function normalizeLists(raw: unknown): ListsState {
   }
   const habits: Record<string, string> = {};
   if (isRec(raw.habits)) for (const [k, v] of Object.entries(raw.habits)) { const dish = str(v, 60); if (/^[1-7]$/.test(k) && dish) habits[k] = dish; }
-  const people = typeof raw.people === "number" && Number.isInteger(raw.people) && raw.people >= 1 && raw.people <= MAX_PEOPLE ? raw.people : DEFAULT_PEOPLE;
-  return { items, notes, history, dinners, recipes, habits, people };
+  const validPeople = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= MAX_PEOPLE;
+  // Äldre data hade ett enda antal: då gäller familjens grundinställning (6 udda veckor, 2 jämna).
+  const people = validPeople(raw.peopleEven) && validPeople(raw.people) ? raw.people : DEFAULT_PEOPLE;
+  const peopleEven = validPeople(raw.peopleEven) ? raw.peopleEven : DEFAULT_PEOPLE_EVEN;
+  return { items, notes, history, dinners, recipes, habits, people, peopleEven };
 }
 
 export async function loadLists(db: PrismaClient = defaultDb): Promise<ListsState> {

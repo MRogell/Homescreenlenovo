@@ -180,7 +180,7 @@ export function useLists(initial: ListsState | null, opts: ListsOptions = {}) {
   const noteRemove = useCallback((id: string) => enqueue([{ op: "noteRemove", id }]), [enqueue]);
   const setDinner = useCallback((date: string, dish: string) => enqueue([{ op: "dinner", date, dish, at: Date.now() }]), [enqueue]);
   const setHabit = useCallback((weekday: number, dish: string | null) => enqueue([{ op: "habit", weekday, dish }]), [enqueue]);
-  const setPeople = useCallback((n: number) => enqueue([{ op: "people", n }]), [enqueue]);
+  const setPeople = useCallback((n: number, even = false) => enqueue([{ op: "people", n, even }]), [enqueue]);
   const saveRecipe = useCallback((name: string, ingredients: string[]) => enqueue([{ op: "recipe", name, ingredients }]), [enqueue]);
   const removeRecipe = useCallback((name: string) => enqueue([{ op: "recipeRemove", name }]), [enqueue]);
   /** Lägger ingredienserna på inköpslistan (utan dubbletter) och markerar att middagarna har sina ingredienser där. */

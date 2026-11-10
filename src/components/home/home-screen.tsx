@@ -10,7 +10,7 @@ import { ListsCard } from "./lists-card";
 import { attentionLine, attentionTone } from "./attention";
 import type { SonosInfo } from "./spotify-view";
 import { Clock } from "./clock";
-import { dinnerTodayLine } from "@/lib/dinner";
+import { dinnerTodayLine, peopleFor } from "@/lib/dinner";
 import { listsSchema } from "@/server/providers/schemas";
 import { localDate } from "@/server/calendar/time";
 import { RefreshContext, SpotifyRefreshContext } from "./refresh-context";
@@ -75,7 +75,7 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
   const sonosInfo = sonosState && (sonosState.status === "ok" || sonosState.status === "stale") ? (sonosState.data as SonosInfo) : null;
 
   const listsParsed = states.lists && (states.lists.status === "ok" || states.lists.status === "stale") ? listsSchema.safeParse(states.lists.data) : null;
-  const dinnerLine = listsParsed?.success && visible.includes("lists") ? dinnerTodayLine(listsParsed.data.dinners, listsParsed.data.people, localDate(now)) : null;
+  const dinnerLine = listsParsed?.success && visible.includes("lists") ? dinnerTodayLine(listsParsed.data.dinners, peopleFor(localDate(now), listsParsed.data.people, listsParsed.data.peopleEven), localDate(now)) : null;
 
   return (
     <RefreshContext.Provider value={refresh}>

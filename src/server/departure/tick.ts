@@ -41,7 +41,7 @@ export async function preheatTick(states: HomeStates, now: Date, deps: TickDeps 
     const code = deps.start ? await deps.start(s.targetC) : await startSkodaClimateNow(s.targetC, { ...deps, db });
     await finishRun(code === null, now, db);
     if (code === null) {
-      await (deps.notify ?? dispatchEvents)([{ kind: "preheat", key: `preheat:${claim.settings.last?.date}`, title: "Bilen förvärms", body: `Klimatet startade, klart ca ${s.times[String(localClock(now).weekday)] ?? ""} (${String(s.targetC).replace(".", ",")} °C).` }], { db }, now);
+      await (deps.notify ?? dispatchEvents)([{ kind: "preheat", key: `preheat:${claim.settings.last?.date}:${claim.settings.last?.slot ?? 0}`, title: "Bilen förvärms", body: `Klimatet startade, klart ca ${s.times[String(localClock(now).weekday)]?.[s.last?.slot ?? 0] ?? ""} (${String(s.targetC).replace(".", ",")} °C).` }], { db }, now);
     }
   } catch {
     // Förvärmningen är en extra; hemskärmen går före.

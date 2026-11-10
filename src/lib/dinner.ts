@@ -56,6 +56,19 @@ export function ingredientLines(recipe: Recipe, people: number): string[] {
   return recipe.ingredients.map((i) => { const q = scaleQty(i, people); return q ? `${i.name} ${q}` : i.name; });
 }
 
+/** ISO-veckonummer för ett datum ("YYYY-MM-DD"). */
+export function isoWeek(date: string): number {
+  const [y, m, d] = date.split("-").map(Number);
+  const t = new Date(Date.UTC(y!, m! - 1, d!));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const yearStart = Date.UTC(t.getUTCFullYear(), 0, 1);
+  return Math.ceil(((t.getTime() - yearStart) / 86_400_000 + 1) / 7);
+}
+
+/** Antal personer ett visst datum: udda veckor `odd`, jämna veckor `even`. */
+export const peopleFor = (date: string, odd: number, even: number): number => (isoWeek(date) % 2 === 1 ? odd : even);
+
 export interface FoundRecipe { name: string; ingredients: string[]; custom: boolean }
 
 /** Hittar ingredienser till en rätt: egna recept först (exakt namn), sedan de inbyggda (längsta träffande ord vinner). */
@@ -73,6 +86,26 @@ export function findRecipe(dish: string, custom: Record<string, CustomRecipe>, p
     }
   }
   return best ? { name: best.r.name, ingredients: ingredientLines(best.r, people), custom: false } : null;
+}
+
+/**
+ * Ingredienser för flera dagar: samma rätt på flera dagar slås ihop med det sammanlagda antalet personer
+ * ("Nötfärs 800 g", inte två rader), egna recept (fasta rader) läggs en gång.
+ */
+export function ingredientsForDays(days: { dish: string; date: string }[], custom: Record<string, CustomRecipe>, odd: number, even: number): string[] {
+  const people = new Map<string, number>();
+  const out = new Set<string>();
+  for (const { dish, date } of days) {
+    const f = findRecipe(dish, custom, 1);
+    if (!f) continue;
+    if (f.custom) { f.ingredients.forEach((l) => out.add(l)); continue; }
+    people.set(f.name, (people.get(f.name) ?? 0) + peopleFor(date, odd, even));
+  }
+  for (const [name, n] of people) {
+    const r = BUILTIN_RECIPES.find((x) => x.name === name);
+    if (r) ingredientLines(r, n).forEach((l) => out.add(l));
+  }
+  return [...out];
 }
 
 /** Namn att föreslå som rätter: egna först, sedan de inbyggda. */

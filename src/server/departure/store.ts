@@ -1,6 +1,6 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { decide, normalizeDeparture, type Decision, type DeparturePatch, type DepartureSettings, type LastRun } from "@/lib/departure";
+import { currentSlot, normalizeDeparture, type Decision, type DeparturePatch, type DepartureSettings, type LastRun } from "@/lib/departure";
 import { localClock } from "../calendar/time";
 import { db as defaultDb } from "../db";
 
@@ -48,17 +48,18 @@ export type Claim = { action: "start"; settings: DepartureSettings } | { action:
  */
 export async function claimDeparture(now: Date, ctx: { tempC: number | null; climateOn: boolean | null }, db: PrismaClient = defaultDb): Promise<Claim> {
   return withLock(db, async (cur, save) => {
-    const d = decide(cur, now, ctx);
+    const { decision: d, slot } = currentSlot(cur, now, ctx);
     const date = localClock(now).date;
+    const same = cur.last && cur.last.date === date && cur.last.slot === slot ? cur.last : null;
     if (d.kind === "start") {
-      const attempts = (cur.last && cur.last.date === date ? cur.last.attempts : 0) + 1;
-      const last: LastRun = { date, status: "starting", attempts, at: now.getTime(), tempC: ctx.tempC };
+      const attempts = (same?.attempts ?? 0) + 1;
+      const last: LastRun = { date, slot, status: "starting", attempts, at: now.getTime(), tempC: ctx.tempC };
       await save({ ...cur, last });
       return { action: "start" as const, settings: { ...cur, last } };
     }
     if (d.kind === "skip") {
-      const attempts = cur.last && cur.last.date === date ? cur.last.attempts : 0;
-      await save({ ...cur, last: { date, status: d.reason === "warm" ? "skipped_warm" : "skipped_on", attempts, at: now.getTime(), tempC: ctx.tempC } });
+      const attempts = same?.attempts ?? 0;
+      await save({ ...cur, last: { date, slot, status: d.reason === "warm" ? "skipped_warm" : "skipped_on", attempts, at: now.getTime(), tempC: ctx.tempC } });
     }
     return { action: "other" as const, decision: d };
   });

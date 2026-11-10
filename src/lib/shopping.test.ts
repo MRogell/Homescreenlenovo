@@ -205,7 +205,8 @@ describe("middagsplan i reducern", () => {
   });
   it("antal personer: 1–12", () => {
     expect(run([{ op: "people", n: 6 }]).people).toBe(6);
-    for (const n of [0, 13, 2.5, -1]) expect(run([{ op: "people", n }]).people).toBe(4);
+    for (const n of [0, 13, 2.5, -1]) expect(run([{ op: "people", n }]).people).toBe(6);
+    expect(run([{ op: "people", n: 3, even: true }])).toMatchObject({ people: 6, peopleEven: 3 });
   });
   it("egna recept: sparas på namnet, skrivs över, tas bort; tomma ignoreras", () => {
     let s = run([{ op: "recipe", name: "Mormors Gryta", ingredients: ["Nötkött 500 g", " ", "Lök"] }]);

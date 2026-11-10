@@ -12,12 +12,12 @@ export const MAX_ATTEMPTS = 3;
 export const STARTING_STALE_MS = 2 * 60_000;
 
 export type RunStatus = "starting" | "started" | "failed" | "skipped_warm" | "skipped_on";
-export interface LastRun { date: string; status: RunStatus; attempts: number; at: number; tempC: number | null }
+export interface LastRun { date: string; /** Vilken av dagens avresor (0 = första) körningen gäller. */ slot: number; status: RunStatus; attempts: number; at: number; tempC: number | null }
 
 export interface DepartureSettings {
   enabled: boolean;
-  /** Avresetid per veckodag ("HH:MM", svensk tid). 1 = måndag … 7 = söndag. Saknas dagen sker ingen förvärmning den dagen. */
-  times: Record<string, string>;
+  /** Avresetid per veckodag ("HH:MM", svensk tid). 1 = måndag … 7 = söndag. Högst två per dag (till exempel morgon och kväll), sorterade. Saknas dagen sker ingen förvärmning den dagen. */
+  times: Record<string, string[]>;
   leadMin: number;
   /** Startar bara när utetemperaturen är högst så här många grader. */
   belowC: number;
@@ -27,28 +27,32 @@ export interface DepartureSettings {
   last: LastRun | null;
 }
 
-export const DEFAULT_DEPARTURE: DepartureSettings = { enabled: false, times: { "1": "07:30", "2": "07:30", "3": "07:30", "4": "07:30", "5": "07:30" }, leadMin: 15, belowC: 5, targetC: 21, skipDate: null, last: null };
+export const DEFAULT_DEPARTURE: DepartureSettings = { enabled: false, times: { "1": ["07:30"], "2": ["07:30"], "3": ["07:30"], "4": ["07:30"], "5": ["07:30"] }, leadMin: 15, belowC: 5, targetC: 21, skipDate: null, last: null };
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const isRec = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 const minutesOf = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+export const MAX_TIMES_PER_DAY = 2;
+/** Giltiga tider, sorterade och utan dubbletter, högst två. */
+export const cleanTimes = (v: unknown): string[] => [...new Set((Array.isArray(v) ? v : [v]).filter((t): t is string => typeof t === "string" && TIME.test(t)))].sort().slice(0, MAX_TIMES_PER_DAY);
 const RUN: RunStatus[] = ["starting", "started", "failed", "skipped_warm", "skipped_on"];
 
 /** Tolerant tolkning av det som ligger i databasen: trasigt blir grundvärdet. */
 export function normalizeDeparture(raw: unknown): DepartureSettings {
   const r = isRec(raw) ? raw : {};
   const num = (v: unknown, min: number, max: number, fb: number) => (typeof v === "number" && Number.isFinite(v) && v >= min && v <= max ? v : fb);
-  const times: Record<string, string> = {};
+  const times: Record<string, string[]> = {};
   if (isRec(r.times)) {
-    for (const [k, v] of Object.entries(r.times)) if (/^[1-7]$/.test(k) && typeof v === "string" && TIME.test(v)) times[k] = v;
+    // En sträng är det äldre formatet (en tid per dag).
+    for (const [k, v] of Object.entries(r.times)) { const t = cleanTimes(v); if (/^[1-7]$/.test(k) && t.length > 0) times[k] = t; }
   } else if (Array.isArray(r.days) && typeof r.time === "string" && TIME.test(r.time)) {
     // Äldre format: en tid för flera dagar.
-    for (const d of r.days) if (Number.isInteger(d) && d >= 1 && d <= 7) times[String(d)] = r.time;
+    for (const d of r.days) if (Number.isInteger(d) && d >= 1 && d <= 7) times[String(d)] = [r.time];
   }
   const lead = typeof r.leadMin === "number" && (LEAD_OPTIONS as readonly number[]).includes(r.leadMin) ? r.leadMin : DEFAULT_DEPARTURE.leadMin;
   const target = Math.round(num(r.targetC, 16, 29.5, 21) * 2) / 2;
   const l = isRec(r.last) ? r.last : null;
-  const last: LastRun | null = l && typeof l.date === "string" && RUN.includes(l.status as RunStatus) ? { date: l.date, status: l.status as RunStatus, attempts: Math.max(0, Math.floor(num(l.attempts, 0, 99, 1))), at: typeof l.at === "number" ? l.at : 0, tempC: typeof l.tempC === "number" ? l.tempC : null } : null;
+  const last: LastRun | null = l && typeof l.date === "string" && RUN.includes(l.status as RunStatus) ? { date: l.date, slot: Math.max(0, Math.min(MAX_TIMES_PER_DAY - 1, Math.floor(num(l.slot, 0, 9, 0)))), status: l.status as RunStatus, attempts: Math.max(0, Math.floor(num(l.attempts, 0, 99, 1))), at: typeof l.at === "number" ? l.at : 0, tempC: typeof l.tempC === "number" ? l.tempC : null } : null;
   return {
     enabled: r.enabled === true,
     times: Object.keys(times).length > 0 || isRec(r.times) ? times : { ...DEFAULT_DEPARTURE.times },
@@ -77,25 +81,36 @@ const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:
  * `climateOn` är bilens läge (true = klimatiseringen går redan).
  */
 export function decide(s: DepartureSettings, now: Date, ctx: { tempC: number | null; climateOn: boolean | null }): Decision {
-  if (!s.enabled) return { kind: "off" };
+  const slot = currentSlot(s, now, ctx);
+  return slot.decision;
+}
+
+/** Avgör vilken av dagens avresor det gäller just nu och vad som ska hända med den. */
+export function currentSlot(s: DepartureSettings, now: Date, ctx: { tempC: number | null; climateOn: boolean | null }): { decision: Decision; slot: number } {
+  if (!s.enabled) return { decision: { kind: "off" }, slot: 0 };
   const c = localClock(now);
-  const time = s.times[String(c.weekday)];
-  if (!time) return { kind: "idle" };
-  const depart = minutesOf(time);
-  const start = Math.max(0, depart - s.leadMin);
-  if (s.skipDate === c.date) return { kind: "skipped_user" };
-  const run = s.last && s.last.date === c.date ? s.last : null;
-  if (run) {
-    if (run.status === "started" || run.status === "skipped_warm" || run.status === "skipped_on") return { kind: "done", run };
-    const stale = run.status === "starting" && now.getTime() - run.at < STARTING_STALE_MS;
-    if (stale) return { kind: "done", run };
-    if (run.attempts >= MAX_ATTEMPTS) return { kind: "done", run: { ...run, status: "failed" } };
+  const times = s.times[String(c.weekday)] ?? [];
+  if (times.length === 0) return { decision: { kind: "idle" }, slot: 0 };
+  if (s.skipDate === c.date) return { decision: { kind: "skipped_user" }, slot: 0 };
+  let lastDone: { run: LastRun; slot: number } | null = null;
+  let missed = false;
+  for (let i = 0; i < times.length; i++) {
+    const depart = minutesOf(times[i]!);
+    const start = Math.max(0, depart - s.leadMin);
+    const run = s.last && s.last.date === c.date && s.last.slot === i ? s.last : null;
+    if (run) {
+      if (run.status === "started" || run.status === "skipped_warm" || run.status === "skipped_on") { lastDone = { run, slot: i }; continue; }
+      if (run.status === "starting" && now.getTime() - run.at < STARTING_STALE_MS) return { decision: { kind: "done", run }, slot: i };
+      if (run.attempts >= MAX_ATTEMPTS) { lastDone = { run: { ...run, status: "failed" }, slot: i }; continue; }
+    }
+    if (c.minutes > depart + GRACE_MIN) { missed = true; continue; }
+    if (c.minutes < start) return { decision: { kind: "wait", startsAt: hhmm(start) }, slot: i };
+    if (ctx.tempC !== null && ctx.tempC > s.belowC) return { decision: { kind: "skip", reason: "warm" }, slot: i };
+    if (ctx.climateOn === true) return { decision: { kind: "skip", reason: "on" }, slot: i };
+    return { decision: { kind: "start" }, slot: i };
   }
-  if (c.minutes < start) return { kind: "wait", startsAt: hhmm(start) };
-  if (c.minutes > depart + GRACE_MIN) return { kind: "missed" };
-  if (ctx.tempC !== null && ctx.tempC > s.belowC) return { kind: "skip", reason: "warm" };
-  if (ctx.climateOn === true) return { kind: "skip", reason: "on" };
-  return { kind: "start" };
+  if (lastDone) return { decision: { kind: "done", run: lastDone.run }, slot: lastDone.slot };
+  return { decision: missed ? { kind: "missed" } : { kind: "idle" }, slot: 0 };
 }
 
 export interface DepartureView {
@@ -117,16 +132,16 @@ export function daysText(days: readonly number[]): string {
   return d.map((x) => DAYS[x]).join(", ");
 }
 
-/** Raden: en gemensam tid skrivs med dagarna, annars visas dagens (eller nästa) avresa. */
+/** Raden: en gemensam tid (eller två) skrivs med dagarna, annars visas dagens (eller nästa) avresa. */
 function lineOf(s: DepartureSettings, weekday: number): string {
   const days = Object.keys(s.times).map(Number).sort();
-  const set = new Set(Object.values(s.times));
+  const text = (d: number) => (s.times[String(d)] ?? []).join(" och ");
+  const set = new Set(days.map(text));
   if (days.length === 0) return "Inga dagar valda";
   if (set.size === 1) return `Avresa ${[...set][0]} · ${daysText(days)}`;
-  const today = s.times[String(weekday)];
-  if (today) return `Avresa idag ${today}`;
+  if (s.times[String(weekday)]) return `Avresa idag ${text(weekday)}`;
   const next = [...days.filter((d) => d > weekday), ...days.filter((d) => d < weekday)][0]!;
-  return `Nästa avresa ${DAYS[next]} ${s.times[String(next)]}`;
+  return `Nästa avresa ${DAYS[next]} ${text(next)}`;
 }
 
 /** Texterna som visas på kortet. */
@@ -135,8 +150,8 @@ export function departureView(s: DepartureSettings, now: Date, ctx: { tempC: num
   const base = { settings: { enabled: s.enabled, times: s.times, leadMin: s.leadMin, belowC: s.belowC, targetC: s.targetC, skippedToday: s.skipDate === c.date } };
   if (!s.enabled) return { ...base, line: "Förvärm till avresa", sub: "Av", tone: "idle" };
   const line = lineOf(s, c.weekday);
-  const today = s.times[String(c.weekday)] ?? "";
-  const d = decide(s, now, ctx);
+  const { decision: d, slot } = currentSlot(s, now, ctx);
+  const today = s.times[String(c.weekday)]?.[slot] ?? "";
   switch (d.kind) {
     case "idle": return { ...base, line, sub: "Ingen avresa idag", tone: "idle" };
     case "wait": return { ...base, line, sub: `Startar ${d.startsAt} om det är ${s.belowC}° eller kallare (nu ${fmtTemp(ctx.tempC)})`, tone: "wait" };
@@ -157,4 +172,4 @@ export function departureView(s: DepartureSettings, now: Date, ctx: { tempC: num
 }
 
 /** Det som ändras när bilen ska hoppa över idag eller inställningarna sparas. */
-export interface DeparturePatch { enabled: boolean; times: Record<string, string>; leadMin: number; belowC: number; targetC: number }
+export interface DeparturePatch { enabled: boolean; times: Record<string, string[]>; leadMin: number; belowC: number; targetC: number }

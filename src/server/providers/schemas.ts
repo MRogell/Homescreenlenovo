@@ -131,6 +131,7 @@ export const listsSchema = z.object({
   dinners: z.record(z.string(), z.object({ dish: z.string(), by: z.string().optional(), at: z.number(), listed: z.boolean().optional() })).default({}),
   recipes: z.record(z.string(), z.object({ name: z.string(), ingredients: z.array(z.string()) })).default({}),
   habits: z.record(z.string(), z.string()).default({}),
-  people: z.number().int().min(1).max(12).default(4),
+  people: z.number().int().min(1).max(12).default(6),
+  peopleEven: z.number().int().min(1).max(12).default(2),
 });
 export type ListsData = z.infer<typeof listsSchema>;

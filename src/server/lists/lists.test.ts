@@ -23,8 +23,9 @@ describe("normalizeLists", () => {
     expect(s.dinners).toEqual({ "2026-11-11": { dish: "Tacos", at: 3, by: "Anna", listed: true } });
     expect(s.recipes).toEqual({ a: { name: "Gryta", ingredients: ["Lök"] } });
     expect(s.habits).toEqual({ "5": "Tacos" });
-    expect(s.people).toBe(4);
-    expect(normalizeLists({ people: 6 }).people).toBe(6);
+    expect(s.people).toBe(6);
+    expect(normalizeLists({ people: 5, peopleEven: 3 })).toMatchObject({ people: 5, peopleEven: 3 });
+    expect(normalizeLists({ people: 5 })).toMatchObject({ people: 6, peopleEven: 2 }); // äldre data: grundinställningen
   });
 });
 

@@ -8,7 +8,7 @@ import { contextOf, preheatTick } from "./tick";
 // Måndag 9 november 2026, svensk tid (UTC+1). Avresa 07:30, start 07:15.
 const at = (hm: string, day = "2026-11-09") => new Date(`${day}T${hm}:00+01:00`);
 const cold = { tempC: -4, climateOn: false };
-const patch = { enabled: true, times: { "1": "07:30", "2": "07:30" }, leadMin: 15, belowC: 5, targetC: 21 };
+const patch = { enabled: true, times: { "1": ["07:30"], "2": ["07:30"] }, leadMin: 15, belowC: 5, targetC: 21 };
 const states = (tempC: number | null, climateOn: boolean | null) => ({
   weather: tempC === null ? { status: "unavailable" as const, reason: "x" } : { status: "ok" as const, data: { tempC }, fetchedAt: "x" },
   skoda: { status: "ok" as const, data: { climateOn }, fetchedAt: "x" },
@@ -19,7 +19,7 @@ beforeEach(async () => { await db.appSetting.deleteMany(); await db.snapshot.del
 describe("store", () => {
   it("sparar inställningar och normaliserar", async () => {
     await saveDeparture(patch, db);
-    expect(await loadDeparture(db)).toMatchObject({ enabled: true, times: { "1": "07:30", "2": "07:30" }, leadMin: 15 });
+    expect(await loadDeparture(db)).toMatchObject({ enabled: true, times: { "1": ["07:30"], "2": ["07:30"] }, leadMin: 15 });
     expect((await loadDeparture(db)).last).toBeNull();
   });
   it("hoppa över idag och ångra", async () => {
@@ -76,7 +76,7 @@ describe("preheatTick", () => {
     await preheatTick(states(-4, false), at("07:20"), { db, start, notify });
     expect(start).toHaveBeenCalledWith(22.5);
     expect(notify).toHaveBeenCalledOnce();
-    expect(notify.mock.calls[0]![0]).toMatchObject([{ kind: "preheat", key: "preheat:2026-11-09", title: "Bilen förvärms" }]);
+    expect(notify.mock.calls[0]![0]).toMatchObject([{ kind: "preheat", key: "preheat:2026-11-09:0", title: "Bilen förvärms" }]);
     expect((await loadDeparture(db)).last?.status).toBe("started");
     // Nästa hämtning samma morgon gör ingenting mer.
     await preheatTick(states(-4, false), at("07:21"), { db, start, notify });

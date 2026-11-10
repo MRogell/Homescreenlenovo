@@ -122,7 +122,10 @@ export interface ListsState {
   /** Återkommande middagar: veckodag (1–7) till rätt, som föreslås varje vecka. */
   habits: Record<string, string>;
   /** Antal personer som mängderna räknas för. */
+  /** Antal personer på middag i udda veckor. */
   people: number;
+  /** Antal personer på middag i jämna veckor. */
+  peopleEven: number;
 }
 
 export const MAX_ITEMS = 300;
@@ -130,8 +133,10 @@ export const MAX_NOTES = 30;
 export const MAX_HISTORY = 400;
 export const MAX_DINNERS = 60;
 export const MAX_PEOPLE = 12;
-export const DEFAULT_PEOPLE = 4;
-export const EMPTY_LISTS: ListsState = { items: [], notes: [], history: {}, dinners: {}, recipes: {}, habits: {}, people: DEFAULT_PEOPLE };
+/** Udda veckor 6 personer (bonusbarnen hemma), jämna veckor 2. */
+export const DEFAULT_PEOPLE = 6;
+export const DEFAULT_PEOPLE_EVEN = 2;
+export const EMPTY_LISTS: ListsState = { items: [], notes: [], history: {}, dinners: {}, recipes: {}, habits: {}, people: DEFAULT_PEOPLE, peopleEven: DEFAULT_PEOPLE_EVEN };
 
 export type Op =
   | { op: "add"; id: string; name: string; qty?: string | null; at: number; by?: string }
@@ -145,7 +150,7 @@ export type Op =
   | { op: "dinner"; date: string; dish: string; at: number; by?: string }
   | { op: "dinnerListed"; dates: string[] }
   | { op: "habit"; weekday: number; dish: string | null }
-  | { op: "people"; n: number }
+  | { op: "people"; n: number; even?: boolean }
   | { op: "recipe"; name: string; ingredients: string[] }
   | { op: "recipeRemove"; name: string };
 
@@ -158,6 +163,7 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
   let recipes = { ...state.recipes };
   let habits = { ...state.habits };
   let people = state.people;
+  let peopleEven = state.peopleEven;
   for (const o of ops) {
     switch (o.op) {
       case "add": {
@@ -216,7 +222,7 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
         if (!dish) { const { [String(o.weekday)]: _gone, ...rest } = habits; void _gone; habits = rest; } else habits = { ...habits, [String(o.weekday)]: dish };
         break;
       }
-      case "people": if (Number.isInteger(o.n) && o.n >= 1 && o.n <= MAX_PEOPLE) people = o.n; break;
+      case "people": if (Number.isInteger(o.n) && o.n >= 1 && o.n <= MAX_PEOPLE) { if (o.even) peopleEven = o.n; else people = o.n; } break;
       case "recipe": {
         const name = tidy(o.name).slice(0, 60);
         const lines = o.ingredients.map((l) => tidy(l).slice(0, 60)).filter(Boolean).slice(0, MAX_RECIPE_LINES);
@@ -229,7 +235,7 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
       case "recipeRemove": { const { [recipeKey(o.name)]: _gone, ...rest } = recipes; void _gone; recipes = rest; break; }
     }
   }
-  return { items, notes, history, dinners, recipes, habits, people };
+  return { items, notes, history, dinners, recipes, habits, people, peopleEven };
 }
 
 /** Varor att visa: de som ska handlas grupperade i butikens ordning, och sist de avbockade. */

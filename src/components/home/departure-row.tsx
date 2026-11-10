@@ -1,11 +1,12 @@
 "use client";
 import { Clock, Minus, Plus, SkipForward, Undo2, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { LEAD_OPTIONS, type DepartureView } from "@/lib/departure";
+import { cleanTimes, LEAD_OPTIONS, MAX_TIMES_PER_DAY, type DepartureView } from "@/lib/departure";
 
 type Settings = DepartureView["settings"];
 const DAY_NAMES = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag", "Söndag"];
 const DEFAULT_TIME = "07:30";
+const DEFAULT_SECOND = "17:00";
 
 async function put(body: object): Promise<{ view?: DepartureView; error?: string }> {
   try {
@@ -17,7 +18,7 @@ async function put(body: object): Promise<{ view?: DepartureView; error?: string
     return { error: "Ingen kontakt med servern." };
   }
 }
-const toPatch = (s: Settings) => ({ enabled: s.enabled, times: s.times, leadMin: s.leadMin, belowC: s.belowC, targetC: s.targetC });
+const toPatch = (s: Settings) => ({ enabled: s.enabled, times: Object.fromEntries(Object.entries(s.times).map(([k, v]) => [k, cleanTimes(v)])), leadMin: s.leadMin, belowC: s.belowC, targetC: s.targetC });
 
 /** Raden under klimatrutan: avresetid och läge. Tryck på texten för inställningarna, på strömbrytaren för på/av. */
 export function DepartureRow({ view, onChange }: { view: DepartureView; onChange: (v: DepartureView) => void }) {
@@ -45,12 +46,14 @@ export function DepartureRow({ view, onChange }: { view: DepartureView; onChange
   const setDay = (d: number, on: boolean) => setForm((f) => {
     const times = { ...f.times };
     if (!on) { if (Object.keys(times).length > 1) delete times[String(d)]; }
-    else times[String(d)] = Object.values(times)[0] ?? DEFAULT_TIME;
+    else times[String(d)] = [Object.values(times)[0]?.[0] ?? DEFAULT_TIME];
     return { ...f, times };
   });
-  const setTime = (d: number, t: string) => { if (/^\d{2}:\d{2}$/.test(t)) setForm((f) => ({ ...f, times: { ...f.times, [String(d)]: t } })); };
-  const sameForAll = () => setForm((f) => { const first = Object.values(f.times)[0] ?? DEFAULT_TIME; return { ...f, times: Object.fromEntries(Object.keys(f.times).map((k) => [k, first])) }; });
-  const mixed = new Set(Object.values(form.times)).size > 1;
+  const setTime = (d: number, i: number, t: string) => { if (/^\d{2}:\d{2}$/.test(t)) setForm((f) => ({ ...f, times: { ...f.times, [String(d)]: (f.times[String(d)] ?? []).map((x, j) => (j === i ? t : x)) } })); };
+  const addTime = (d: number) => setForm((f) => { const cur = f.times[String(d)] ?? []; return cur.length >= MAX_TIMES_PER_DAY ? f : { ...f, times: { ...f.times, [String(d)]: [...cur, cur[0] && cur[0] >= "12:00" ? DEFAULT_TIME : DEFAULT_SECOND] } }; });
+  const removeTime = (d: number, i: number) => setForm((f) => { const cur = f.times[String(d)] ?? []; return cur.length <= 1 ? f : { ...f, times: { ...f.times, [String(d)]: cur.filter((_, j) => j !== i) } }; });
+  const sameForAll = () => setForm((f) => { const first = Object.values(f.times)[0] ?? [DEFAULT_TIME]; return { ...f, times: Object.fromEntries(Object.keys(f.times).map((k) => [k, [...first]])) }; });
+  const mixed = new Set(Object.values(form.times).map((v) => v.join())).size > 1;
   const target = (delta: number) => setForm((f) => ({ ...f, targetC: Math.min(29.5, Math.max(16, Math.round((f.targetC + delta) * 2) / 2)) }));
 
   return (
@@ -81,7 +84,15 @@ export function DepartureRow({ view, onChange }: { view: DepartureView; onChange
                 <div key={n} className={`dep-day${t ? " on" : ""}`}>
                   <button type="button" role="switch" aria-checked={!!t} aria-label={`${n}: förvärm`} className="dep-switch small" onClick={() => setDay(d, !t)}><span aria-hidden="true" /></button>
                   <span className="dep-dayname">{n}</span>
-                  <input type="time" value={t ?? DEFAULT_TIME} disabled={!t} aria-label={`Avresetid ${n.toLowerCase()}`} onChange={(e) => setTime(d, e.target.value)} />
+                  <div className="dep-times">
+                    {(t ?? [DEFAULT_TIME]).map((x, j) => (
+                      <div key={j} className="dep-time">
+                        <input type="time" value={x} disabled={!t} aria-label={`Avresetid ${n.toLowerCase()}${(t?.length ?? 1) > 1 ? ` ${j === 0 ? "första" : "andra"}` : ""}`} onChange={(e) => setTime(d, j, e.target.value)} />
+                        {t && t.length > 1 && <button type="button" className="dep-x" aria-label={`Ta bort ${j === 0 ? "första" : "andra"} tiden ${n.toLowerCase()}`} onClick={() => removeTime(d, j)}><X aria-hidden="true" /></button>}
+                      </div>
+                    ))}
+                    {t && t.length < MAX_TIMES_PER_DAY && <button type="button" className="dep-add" onClick={() => addTime(d)}><Plus aria-hidden="true" />Lägg till tid</button>}
+                  </div>
                 </div>
               );
             })}

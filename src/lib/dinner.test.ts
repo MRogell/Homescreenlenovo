@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, BUILTIN_RECIPES, dinnerTodayLine, dishNames, findRecipe, ingredientLines, nextDays, parseDinner, parseIngredientText, recipeKey, scaleQty, weekdayOf } from "./dinner";
+import { addDays, BUILTIN_RECIPES, dinnerTodayLine, dishNames, ingredientsForDays, isoWeek, peopleFor, findRecipe, ingredientLines, nextDays, parseDinner, parseIngredientText, recipeKey, scaleQty, weekdayOf } from "./dinner";
 
 const TODAY = "2026-11-09"; // måndag
 
@@ -100,5 +100,23 @@ describe("dinnerTodayLine", () => {
     expect(dinnerTodayLine({ "2026-11-09": { dish: "Tacos" } }, 4, "2026-11-09")).toBe("Middag idag: Tacos · 4 personer");
     expect(dinnerTodayLine({ "2026-11-09": { dish: "Soppa" } }, 1, "2026-11-09")).toBe("Middag idag: Soppa · 1 person");
     expect(dinnerTodayLine({}, 4, "2026-11-09")).toBeNull();
+  });
+});
+
+describe("personer per vecka (6 udda, 2 jämna)", () => {
+  it("ISO-veckor", () => {
+    expect(isoWeek("2026-11-09")).toBe(46);
+    expect(isoWeek("2026-11-16")).toBe(47);
+    expect(isoWeek("2026-01-01")).toBe(1);
+    expect(isoWeek("2025-12-29")).toBe(1);
+  });
+  it("udda vecka 6, jämn vecka 2", () => {
+    expect(peopleFor("2026-11-16", 6, 2)).toBe(6); // v47
+    expect(peopleFor("2026-11-12", 6, 2)).toBe(2); // v46
+  });
+  it("samma rätt över veckogränsen summeras till en rad", () => {
+    const l = ingredientsForDays([{ dish: "Tacos", date: "2026-11-15" }, { dish: "Tacos", date: "2026-11-16" }], {}, 6, 2);
+    const meat = findRecipe("Tacos", {}, 8)!.ingredients;
+    expect(l).toEqual(meat);
   });
 });

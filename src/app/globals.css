@@ -821,11 +821,19 @@ body:has(.wrap.shop) { padding-top: 0; }
 
 .dep-week { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .dep-week legend { color: var(--muted); font-weight: 500; padding: 0; margin-bottom: 4px; }
-.dep-day { display: flex; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); }
+.dep-day { display: flex; align-items: flex-start; gap: 12px; min-height: 52px; padding: 4px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); }
 .dep-day:last-of-type { border-bottom: 0; }
-.dep-dayname { flex: 1; font-weight: 500; }
+.dep-dayname { flex: 1; font-weight: 500; line-height: 44px; }
+.dep-day .dep-switch { margin-top: 8px; }
+.dep-times { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.dep-time { display: flex; align-items: center; gap: 6px; }
+.dep-x { width: 36px; height: 36px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.dep-x svg { width: 16px; height: 16px; }
+.dep-add { min-height: 32px; display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: var(--accent); font: 600 13px var(--body); cursor: pointer; padding: 0 4px; }
+.dep-add svg { width: 14px; height: 14px; }
+.dep-x:focus-visible, .dep-add:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 .dep-day:not(.on) .dep-dayname { color: var(--muted); }
-.dep-day input[type="time"] { min-height: 44px; width: 116px; border-radius: 12px; border: 1px solid var(--field-line); background: var(--surface-2); color: var(--fg); padding: 0 10px; font: 600 18px var(--display); }
+.dep-day input[type="time"] { min-height: 44px; width: 128px; border-radius: 12px; border: 1px solid var(--field-line); background: var(--surface-2); color: var(--fg); padding: 0 10px; font: 600 18px var(--display); }
 .dep-day input[type="time"]:disabled { opacity: .4; }
 .dep-switch.small { width: 46px; height: 28px; }
 .dep-switch.small span { width: 20px; height: 20px; }
@@ -850,6 +858,8 @@ body:has(.wrap.shop) { padding-top: 0; }
 .dn-tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); font-weight: 600; flex: none; }
 .dn-accept { min-height: 36px; margin-right: 6px; padding: 0 12px; font-size: 13px; }
 .dn-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dn-household { display: flex; flex-direction: column; gap: 8px; }
+.dn-wk { color: var(--muted); font-size: 13px; font-weight: 500; }
 .dn-people { display: inline-flex; align-items: center; gap: 4px; }
 .dn-people output { min-width: 84px; text-align: center; font: 600 14px var(--body); }
 .dn-people button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--field-line); background: transparent; color: var(--fg); display: grid; place-items: center; cursor: pointer; }

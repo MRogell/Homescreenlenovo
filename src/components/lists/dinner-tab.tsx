@@ -1,7 +1,7 @@
 "use client";
 import { BookOpen, Check, ChevronRight, Minus, Plus, Repeat, Trash2, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { BUILTIN_RECIPES, dishNames, findRecipe, ingredientLines, nextDays, parseDinner, parseIngredientText, weekdayOf, weekdayShort, WEEKDAY_NAMES } from "@/lib/dinner";
+import { BUILTIN_RECIPES, dishNames, findRecipe, ingredientLines, ingredientsForDays, isoWeek, nextDays, parseDinner, peopleFor, parseIngredientText, weekdayOf, weekdayShort, WEEKDAY_NAMES } from "@/lib/dinner";
 import { localClock } from "@/server/calendar/time";
 import type { ListsApi } from "./lists-panel";
 
@@ -24,7 +24,7 @@ function DayEditor({ api, date, today, onClose }: { api: ListsApi; date: string;
   const [saveOwn, setSaveOwn] = useState(true);
   const [msg, setMsg] = useState("");
   const id = useId();
-  const found = useMemo(() => findRecipe(dish, state.recipes, state.people), [dish, state.recipes, state.people]);
+  const found = useMemo(() => findRecipe(dish, state.recipes, peopleFor(date, state.people, state.peopleEven)), [dish, state.recipes, state.people, state.peopleEven, date]);
   const lines = found?.ingredients ?? [];
   const chosen = lines.filter((l) => !off.has(l));
   const onList = useMemo(() => new Set(state.items.filter((i) => !i.checked).map((i) => i.name.toLowerCase())), [state.items]);
@@ -67,7 +67,7 @@ function DayEditor({ api, date, today, onClose }: { api: ListsApi; date: string;
 
       {found ? (
         <>
-          <div className="dn-sub"><b>Ingredienser</b><span>{found.custom ? "Ditt recept" : "Inbyggt"} · {state.people} personer</span></div>
+          <div className="dn-sub"><b>Ingredienser</b><span>{found.custom ? "Ditt recept" : "Inbyggt"} · {peopleFor(date, state.people, state.peopleEven)} personer (vecka {isoWeek(date)})</span></div>
           <div className="li-chips" aria-label="Ingredienser att lägga på listan">
             {lines.map((l) => (
               <button key={l} type="button" aria-pressed={!off.has(l)} className={`dn-ing${off.has(l) ? "" : " on"}${have(l) ? " have" : ""}`} onClick={() => setOff((o) => { const n = new Set(o); if (n.has(l)) n.delete(l); else n.add(l); return n; })}>
@@ -97,14 +97,24 @@ function DayEditor({ api, date, today, onClose }: { api: ListsApi; date: string;
   );
 }
 
-function People({ api }: { api: ListsApi }) {
-  const { state } = api;
+function PeopleRow({ api, even }: { api: ListsApi; even: boolean }) {
+  const n = even ? api.state.peopleEven : api.state.people;
+  const label = even ? "jämna veckor" : "udda veckor";
   return (
-    <span className="dn-people" role="group" aria-label="Antal personer">
-      <button type="button" aria-label="Färre personer" disabled={state.people <= 1} onClick={() => api.setPeople(state.people - 1)}><Minus aria-hidden="true" /></button>
-      <output>{state.people} personer</output>
-      <button type="button" aria-label="Fler personer" disabled={state.people >= 12} onClick={() => api.setPeople(state.people + 1)}><Plus aria-hidden="true" /></button>
+    <span className="dn-people" role="group" aria-label={`Antal personer ${label}`}>
+      <button type="button" aria-label={`Färre personer ${label}`} disabled={n <= 1} onClick={() => api.setPeople(n - 1, even)}><Minus aria-hidden="true" /></button>
+      <output>{n} personer</output>
+      <button type="button" aria-label={`Fler personer ${label}`} disabled={n >= 12} onClick={() => api.setPeople(n + 1, even)}><Plus aria-hidden="true" /></button>
     </span>
+  );
+}
+
+function People({ api }: { api: ListsApi }) {
+  return (
+    <div className="dn-household">
+      <div className="dn-sub"><b>Udda veckor</b><PeopleRow api={api} even={false} /></div>
+      <div className="dn-sub"><b>Jämna veckor</b><PeopleRow api={api} even /></div>
+    </div>
   );
 }
 
@@ -131,7 +141,7 @@ function Recipes({ api, onClose }: { api: ListsApi; onClose: () => void }) {
         <h2>Recept</h2>
         <button type="button" className="icon-btn" aria-label="Stäng" onClick={onClose}><X aria-hidden="true" /></button>
       </header>
-      <div className="dn-sub"><b>Antal personer</b><People api={api} /></div>
+      <People api={api} />
       <p className="mid small">Egna recept går före de inbyggda när du skriver samma namn. Mängderna skrivs som du vill ha dem på listan.</p>
 
       <div className="dn-sub"><b>Mina recept</b><span>{mine.length}</span></div>
@@ -157,7 +167,7 @@ function Recipes({ api, onClose }: { api: ListsApi; onClose: () => void }) {
 
       <div className="dn-sub"><b>Inbyggda rätter</b><span>Tryck för att utgå från en</span></div>
       <div className="li-chips">
-        {BUILTIN_RECIPES.map((r) => <button key={r.name} type="button" className="li-chip" onClick={() => load(`Min ${r.name.toLowerCase()}`, ingredientLines(r, state.people))}>{r.name}</button>)}
+        {BUILTIN_RECIPES.map((r) => <button key={r.name} type="button" className="li-chip" onClick={() => load(`Min ${r.name.toLowerCase()}`, ingredientLines(r, peopleFor(todayKey(), state.people, state.peopleEven)))}>{r.name}</button>)}
       </div>
     </div>
   );
@@ -197,7 +207,7 @@ export function DinnerTab({ api, compactRows }: { api: ListsApi; compactRows?: n
     setText("");
   }
   function listAll() {
-    const lines = [...new Set(pending.flatMap((d) => findRecipe(state.dinners[d]!.dish, state.recipes, state.people)!.ingredients))];
+    const lines = ingredientsForDays(pending.map((d) => ({ dish: state.dinners[d]!.dish, date: d })), state.recipes, state.people, state.peopleEven);
     const r = api.addIngredients(lines, pending);
     setMsg(`${r.added.length} ${r.added.length === 1 ? "vara" : "varor"} lades på listan${r.existing.length ? `, ${r.existing.length} fanns redan` : ""}.`);
   }
@@ -246,7 +256,7 @@ export function DinnerTab({ api, compactRows }: { api: ListsApi; compactRows?: n
         <>
           <div className="dn-bar">
             <button type="button" className="li-clear" onClick={() => setRecipes(true)}><BookOpen aria-hidden="true" />Recept</button>
-            <People api={api} />
+            <span className="dn-wk">Vecka {isoWeek(today)} · {peopleFor(today, state.people, state.peopleEven)} personer</span>
           </div>
           <button type="button" className="dn-list" disabled={pending.length === 0} onClick={listAll}>
             Lägg ingredienser på listan{pending.length > 0 && <span className="dn-count">{pending.length} {pending.length === 1 ? "dag" : "dagar"}</span>}
