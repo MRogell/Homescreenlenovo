@@ -630,10 +630,10 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-climate { padding: 14px 12px 12px; }
   .skoda-dial { max-width: clamp(110px, calc((100cqh - 160px) / .86), 300px); }
   /* Mindre dial än på telefon: minus och plus ligger i halvcirkelns öppning, under värdet och centrerade, så att de inte hamnar på bågen. */
-  .skoda-dial-center { top: 55%; }
-  .skoda-dial-value { display: grid; grid-template-columns: auto auto; justify-content: center; gap: 4px 16px; }
+  .skoda-dial-center { top: 57%; gap: 6px; }
+  .skoda-dial-value { display: grid; grid-template-columns: auto auto; justify-content: center; gap: 10px 22px; }
   .skoda-dial-value output { grid-column: 1 / -1; grid-row: 1; }
-  .skoda-dial-value button { width: 40px; height: 40px; grid-row: 2; }
+  .skoda-dial-value button { width: 48px; height: 48px; font-size: 28px; grid-row: 2; }
   .skoda-dial-value .minus { grid-column: 1; } .skoda-dial-value .plus { grid-column: 2; }
   .skoda-info .dep-text { gap: 1px; }
   .skoda-info .dep + .skoda-place { margin-top: 0; }
@@ -664,8 +664,16 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .ti-dial > svg { max-width: 72px; }
 
   /* Lägre kort (skärmar runt 800 px höga): ännu tätare. */
-  @container card (max-height: 330px) {
+  @container card (max-height: 300px) {
     .skoda-dial-center .label { display: none; }
+    .skoda-dial-center { top: 54%; gap: 0; }
+    .skoda-dial { max-width: clamp(110px, calc((100cqh - 146px) / .86), 300px); }
+    .skoda-climate-btn { min-height: 44px; margin-top: 8px; }
+    .skoda-dial-value button { width: 40px; height: 40px; }
+    .skoda-dial-value { gap: 4px 8px; }
+    .skoda-dial-value { gap: 4px 12px; }
+    .skoda-dial-value output { font-size: 28px; }
+    .skoda-dial-value button { width: 44px; height: 44px; }
   }
   @container card (max-height: 245px) {
     .big { font-size: 34px; }
