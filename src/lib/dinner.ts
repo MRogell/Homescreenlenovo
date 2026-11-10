@@ -189,3 +189,18 @@ export function dinnerTodayLine(dinners: Record<string, { dish: string }>, peopl
   const x = dinners[today];
   return x ? `Middag idag: ${x.dish} · ${people} ${people === 1 ? "person" : "personer"}` : null;
 }
+
+/** Barnvecka = udda ISO-vecka (bonusbarnen hemma, 6 personer). Jämna veckor är 2 personer. */
+export const isChildWeek = (date: string): boolean => isoWeek(date) % 2 === 1;
+
+/** Text för kalendern: "Barnvecka · v47" eller "Vecka 46". På söndagar nämns att veckan byter imorgon. */
+export function weekChip(date: string): { text: string; child: boolean } {
+  const week = isoWeek(date);
+  const child = isChildWeek(date);
+  const base = child ? `Barnvecka · v${week}` : `Vecka ${week}`;
+  if (weekdayOf(date) === 7) {
+    const next = addDays(date, 1);
+    return { text: `${base} · ${isChildWeek(next) ? "barnvecka" : "barnfri vecka"} från imorgon`, child };
+  }
+  return { text: base, child };
+}

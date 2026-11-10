@@ -1,7 +1,7 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { addDays } from "@/lib/dinner";
-import { applyOps, CATEGORY_IDS, DEFAULT_PEOPLE, DEFAULT_PEOPLE_EVEN, EMPTY_LISTS, MAX_DINNERS, MAX_HISTORY, MAX_ITEMS, MAX_NOTES, MAX_PEOPLE, pruneHistory, type CategoryId, type Dinner, type HistoryEntry, type ListsState, type Op } from "@/lib/shopping";
+import { applyOps, CATEGORY_IDS, DEFAULT_PEOPLE, DEFAULT_PEOPLE_EVEN, EMPTY_LISTS, MAX_DINNERS, MAX_HISTORY, MAX_ITEMS, MAX_NOTES, MAX_PEOPLE, MAX_PICKUPS, pruneHistory, type CategoryId, type Dinner, type HistoryEntry, type ListsState, type Op } from "@/lib/shopping";
 import { localDate } from "../calendar/time";
 import { db as defaultDb } from "../db";
 
@@ -45,6 +45,14 @@ export function normalizeLists(raw: unknown): ListsState {
       if (dish) dinners[d] = { dish, at: num(v.at), ...(by ? { by } : {}), ...(v.listed === true ? { listed: true } : {}) };
     }
   }
+  const pickups: ListsState["pickups"] = {};
+  if (isRec(raw.pickups)) {
+    for (const [d, v] of Object.entries(raw.pickups).slice(0, MAX_PICKUPS)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !isRec(v)) continue;
+      const who = str(v.who, 30), by = str(v.by, 24);
+      if (who) pickups[d] = { who, at: num(v.at), ...(by ? { by } : {}) };
+    }
+  }
   const recipes: ListsState["recipes"] = {};
   if (isRec(raw.recipes)) {
     for (const [k, v] of Object.entries(raw.recipes).slice(0, 40)) {
@@ -60,7 +68,7 @@ export function normalizeLists(raw: unknown): ListsState {
   // Äldre data hade ett enda antal: då gäller familjens grundinställning (6 udda veckor, 2 jämna).
   const people = validPeople(raw.peopleEven) && validPeople(raw.people) ? raw.people : DEFAULT_PEOPLE;
   const peopleEven = validPeople(raw.peopleEven) ? raw.peopleEven : DEFAULT_PEOPLE_EVEN;
-  return { items, notes, history, dinners, recipes, habits, people, peopleEven };
+  return { items, notes, history, dinners, pickups, recipes, habits, people, peopleEven };
 }
 
 export async function loadLists(db: PrismaClient = defaultDb): Promise<ListsState> {
@@ -76,13 +84,14 @@ export async function mutateLists(ops: readonly Op[], db: PrismaClient = default
     // Vem som lade till något bestäms av servern (länken som användes), aldrig av det klienten skickar.
     const safe = ops.map((o) => {
       const t = "at" in o ? { ...o, at: Math.min(o.at, now) } : o;
-      return t.op === "add" || t.op === "noteAdd" || t.op === "dinner" ? { ...t, by } : t;
+      return t.op === "add" || t.op === "noteAdd" || t.op === "dinner" || t.op === "pickup" ? { ...t, by } : t;
     });
     const next = applyOps(current, safe);
     // Middagar äldre än två veckor behövs inte längre.
     const cutoff = addDays(localDate(new Date(now)), -14);
     const dinners = Object.fromEntries(Object.entries(next.dinners).filter(([d]) => d >= cutoff));
-    const value = { ...next, dinners, history: pruneHistory(next.history) };
+    const pickups = Object.fromEntries(Object.entries(next.pickups).filter(([d]) => d >= cutoff));
+    const value = { ...next, dinners, pickups, history: pruneHistory(next.history) };
     await tx.appSetting.upsert({ where: { key: KEY }, create: { key: KEY, value: value as never }, update: { value: value as never } });
     return value;
   });

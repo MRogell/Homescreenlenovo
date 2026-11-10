@@ -10,11 +10,17 @@ import { ListsCard } from "./lists-card";
 import { attentionLine, attentionTone } from "./attention";
 import type { SonosInfo } from "./spotify-view";
 import { Clock } from "./clock";
-import { dinnerTodayLine, peopleFor } from "@/lib/dinner";
+import { dinnerTodayLine, isChildWeek, peopleFor } from "@/lib/dinner";
+import { useLists } from "../lists/use-lists";
+import { PickupBar } from "../lists/pickup-bar";
 import { listsSchema } from "@/server/providers/schemas";
 import { localDate } from "@/server/calendar/time";
 import { RefreshContext, SpotifyRefreshContext } from "./refresh-context";
 import { AegCard, CalendarCard, SkodaCard, SonosCard, SpotifyCard, TadoCard, WeatherCard } from "./cards";
+
+function ChildWeekBadge({ date }: { date: string }) {
+  return isChildWeek(date) ? <span className="week-badge">Barnvecka</span> : null;
+}
 
 const POLL_MS = 30_000;
 /** Spotify uppdateras oftare (direkt från Spotify) så att kortet följer vad som spelas utan märkbar fördröjning. */
@@ -75,6 +81,8 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
   const sonosInfo = sonosState && (sonosState.status === "ok" || sonosState.status === "stale") ? (sonosState.data as SonosInfo) : null;
 
   const listsParsed = states.lists && (states.lists.status === "ok" || states.lists.status === "stale") ? listsSchema.safeParse(states.lists.data) : null;
+  // En enda uppsättning av listorna för hela skärmen: inköpskortet och "Vem hämtar?" delar den.
+  const listsApi = useLists(listsParsed?.success ? listsParsed.data : null);
   const dinnerLine = listsParsed?.success && visible.includes("lists") ? dinnerTodayLine(listsParsed.data.dinners, peopleFor(localDate(now), listsParsed.data.people, listsParsed.data.peopleEven), localDate(now)) : null;
 
   return (
@@ -83,7 +91,7 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
     <div className="wrap">
       <NightVeil night={settings.night} />
       <header className="top-bar">
-        <Clock note={attentionLine(states, now) ?? dinnerLine} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
+        <Clock extras={visible.includes("lists") ? <><ChildWeekBadge date={localDate(now)} /><PickupBar api={listsApi} /></> : <ChildWeekBadge date={localDate(now)} />} note={attentionLine(states, now) ?? dinnerLine} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
       </header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
       {visible.length === 0 && <p className="mid empty-note">Alla kort är dolda. Slå på något under Inställningar.</p>}
@@ -91,7 +99,7 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
         {visible.map((id) => {
           switch (id) {
             case "weather": return <WeatherCard key={id} state={states.weather} now={now} />;
-            case "lists": return <ListsCard key={id} state={states.lists} now={now} />;
+            case "lists": return <ListsCard key={id} state={states.lists} now={now} api={listsApi} />;
             case "calendar": return <CalendarCard key={id} state={states.calendar} now={now} />;
             case "spotify": return <SpotifyCard key={id} state={states.spotify} now={now} sonos={sonosInfo} />;
             case "aeg": return <AegCard key={id} state={states.aeg} now={now} />;

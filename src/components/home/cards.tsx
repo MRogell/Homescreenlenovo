@@ -7,6 +7,8 @@ import type { DepartureView } from "@/lib/departure";
 import { skodaView } from "./skoda-view";
 import { SkodaClimate } from "./skoda-climate";
 import { DepartureRow } from "./departure-row";
+import { localDate } from "@/server/calendar/time";
+import { weekChip } from "@/lib/dinner";
 import { weatherView, wxTint } from "./weather-view";
 import { WeatherIcon } from "./weather-icon";
 import { Droplets, Moon, Snowflake, Sun, Sunrise, Sunset, Wind } from "lucide-react";
@@ -205,6 +207,12 @@ const CalAllDay = ({ title, color }: { title: string; color: string }) => (
 );
 
 /** Kalender: nästa händelse stort, resten av dagen och imorgon under. */
+/** Vilken vecka det är och om det är barnvecka (udda veckor). */
+function WeekChip({ now }: { now: Date }) {
+  const w = weekChip(localDate(now));
+  return <div className={`cal-week${w.child ? " child" : ""}`}>{w.text}</div>;
+}
+
 export const CalendarCard = ({ state, now }: P) => (
   <CardShell<CalendarData> title="Kalender" off={{ big: "Dagen", text: "Se dagens händelser från iCloud eller Google.", cta: "Lägg till kalender" }} icon="cal" state={as(state)} now={now} className="calendar" render={(d) => {
     const v = calendarView(d, now);
@@ -212,6 +220,7 @@ export const CalendarCard = ({ state, now }: P) => (
       pill: { text: v.pill },
       body: (
         <div className="cal">
+          <WeekChip now={now} />
           {v.allDayToday.map((a, i) => <CalAllDay key={`t${i}`} {...a} />)}
           {v.allDayMore > 0 && <p className="cal-more">+{v.allDayMore} heldag</p>}
           {v.empty && <div className="cal-empty"><b>Inget i kalendern</b><span className="mid">Ingenting idag eller imorgon.</span></div>}

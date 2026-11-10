@@ -22,6 +22,7 @@ const op = z.discriminatedUnion("op", [
   z.object({ op: z.literal("noteAdd"), id, text: z.string().trim().min(1).max(400), at }).strict(),
   z.object({ op: z.literal("noteRemove"), id }).strict(),
   z.object({ op: z.literal("dinner"), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), dish: z.string().trim().max(120), at }).strict(),
+  z.object({ op: z.literal("pickup"), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), who: z.string().trim().max(60), at }).strict(),
   z.object({ op: z.literal("dinnerListed"), dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(14) }).strict(),
   z.object({ op: z.literal("habit"), weekday: z.number().int().min(1).max(7), dish: z.string().trim().max(120).nullable() }).strict(),
   z.object({ op: z.literal("people"), n: z.number().int().min(1).max(12), even: z.boolean().optional() }).strict(),

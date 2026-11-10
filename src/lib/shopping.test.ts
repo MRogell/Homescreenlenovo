@@ -222,3 +222,19 @@ describe("middagsplan i reducern", () => {
     expect(Object.keys(run(ops).recipes)).toHaveLength(40);
   });
 });
+
+describe("vem hämtar", () => {
+  const pick = (date: string, who: string, by?: string): Op => ({ op: "pickup", date, who, at: 5, ...(by ? { by } : {}) });
+  it("sätter, byter och tar bort", () => {
+    let s = run([pick("2026-11-11", "  Mamma ", "Anna")]);
+    expect(s.pickups["2026-11-11"]).toEqual({ who: "Mamma", at: 5, by: "Anna" });
+    s = run([pick("2026-11-11", "Pappa")], s);
+    expect(s.pickups["2026-11-11"]).toEqual({ who: "Pappa", at: 5 });
+    expect(run([pick("2026-11-11", "")], s).pickups).toEqual({});
+  });
+  it("ogiltigt datum hoppas över och taket gäller", () => {
+    expect(run([pick("imorgon", "Mamma")]).pickups).toEqual({});
+    const many = Array.from({ length: 45 }, (_, i) => pick(`2026-12-${String(i % 28 + 1).padStart(2, "0")}`, "A"));
+    expect(Object.keys(run(many).pickups).length).toBeLessThanOrEqual(28);
+  });
+});

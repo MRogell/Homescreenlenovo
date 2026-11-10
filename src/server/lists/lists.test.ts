@@ -43,6 +43,21 @@ describe("mutateLists: middagar", () => {
   });
 });
 
+describe("mutateLists: vem hämtar", () => {
+  it("sparas med namnet på den som satte det, och gamla dagar rensas", async () => {
+    const now = new Date("2026-11-12T10:00:00+01:00").getTime();
+    await mutateLists([{ op: "pickup", date: "2026-10-01", who: "Gammal", at: 1 }, { op: "pickup", date: "2026-11-12", who: "Mamma", at: 1 }], db, now, "Anna");
+    expect((await loadLists(db)).pickups).toEqual({ "2026-11-12": { who: "Mamma", at: 1, by: "Anna" } });
+  });
+  it("kommer med i strikt indata och avvisas om det är fel", async () => {
+    const ok = await handleListsPost({ userId: "u", origin: "http://x", host: "x", body: { ops: [{ op: "pickup", date: "2026-11-12", who: "Mamma", at: 1 }] } }, db);
+    expect(ok.status).toBe(200);
+    for (const bad of [{ op: "pickup", date: "i morgon", who: "A", at: 1 }, { op: "pickup", date: "2026-11-12", who: "A", at: 1, extra: 1 }]) {
+      expect((await handleListsPost({ userId: "u", origin: "http://x", host: "x", body: { ops: [bad] } }, db)).status).toBe(400);
+    }
+  });
+});
+
 describe("mutateLists", () => {
   it("sparar och läser tillbaka", async () => {
     await mutateLists([{ op: "add", id: "item-0001", name: "2 mjölk", at: 5 }], db, 100);

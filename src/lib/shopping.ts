@@ -113,10 +113,14 @@ export interface Note { id: string; text: string; at: number; by?: string }
 export interface HistoryEntry { name: string; category: CategoryId; count: number; lastAt: number }
 /** En planerad middag. `listed`: ingredienserna har lagts på inköpslistan. */
 export interface Dinner { dish: string; by?: string; at: number; listed?: boolean }
+/** Vem som hämtar (eller lämnar) ett visst datum. */
+export interface Pickup { who: string; by?: string; at: number }
 export interface ListsState {
   items: ShopItem[]; notes: Note[]; history: Record<string, HistoryEntry>;
   /** Middagar per datum ("YYYY-MM-DD", svensk tid). */
   dinners: Record<string, Dinner>;
+  /** Vem hämtar, per datum ("YYYY-MM-DD", svensk tid). */
+  pickups: Record<string, Pickup>;
   /** Egna recept (nyckel = namnet i gemener). */
   recipes: Record<string, CustomRecipe>;
   /** Återkommande middagar: veckodag (1–7) till rätt, som föreslås varje vecka. */
@@ -133,10 +137,11 @@ export const MAX_NOTES = 30;
 export const MAX_HISTORY = 400;
 export const MAX_DINNERS = 60;
 export const MAX_PEOPLE = 12;
+export const MAX_PICKUPS = 40;
 /** Udda veckor 6 personer (bonusbarnen hemma), jämna veckor 2. */
 export const DEFAULT_PEOPLE = 6;
 export const DEFAULT_PEOPLE_EVEN = 2;
-export const EMPTY_LISTS: ListsState = { items: [], notes: [], history: {}, dinners: {}, recipes: {}, habits: {}, people: DEFAULT_PEOPLE, peopleEven: DEFAULT_PEOPLE_EVEN };
+export const EMPTY_LISTS: ListsState = { items: [], notes: [], history: {}, dinners: {}, pickups: {}, recipes: {}, habits: {}, people: DEFAULT_PEOPLE, peopleEven: DEFAULT_PEOPLE_EVEN };
 
 export type Op =
   | { op: "add"; id: string; name: string; qty?: string | null; at: number; by?: string }
@@ -149,6 +154,7 @@ export type Op =
   | { op: "noteRemove"; id: string }
   | { op: "dinner"; date: string; dish: string; at: number; by?: string }
   | { op: "dinnerListed"; dates: string[] }
+  | { op: "pickup"; date: string; who: string; at: number; by?: string }
   | { op: "habit"; weekday: number; dish: string | null }
   | { op: "people"; n: number; even?: boolean }
   | { op: "recipe"; name: string; ingredients: string[] }
@@ -160,6 +166,7 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
   let notes = [...state.notes];
   const history = { ...state.history };
   let dinners = { ...state.dinners };
+  let pickups = { ...state.pickups };
   let recipes = { ...state.recipes };
   let habits = { ...state.habits };
   let people = state.people;
@@ -212,6 +219,14 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
         dinners = { ...dinners, [o.date]: { dish, at: o.at, ...(o.by ? { by: o.by.slice(0, 24) } : {}) } };
         break;
       }
+      case "pickup": {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(o.date)) break;
+        const who = tidy(o.who).slice(0, 30);
+        if (!who) { const { [o.date]: _gone, ...rest } = pickups; void _gone; pickups = rest; break; }
+        if (!pickups[o.date] && Object.keys(pickups).length >= MAX_PICKUPS) break;
+        pickups = { ...pickups, [o.date]: { who, at: o.at, ...(o.by ? { by: o.by.slice(0, 24) } : {}) } };
+        break;
+      }
       case "dinnerListed": {
         for (const d of o.dates) if (dinners[d]) dinners = { ...dinners, [d]: { ...dinners[d]!, listed: true } };
         break;
@@ -235,7 +250,7 @@ export function applyOps(state: ListsState, ops: readonly Op[]): ListsState {
       case "recipeRemove": { const { [recipeKey(o.name)]: _gone, ...rest } = recipes; void _gone; recipes = rest; break; }
     }
   }
-  return { items, notes, history, dinners, recipes, habits, people, peopleEven };
+  return { items, notes, history, dinners, pickups, recipes, habits, people, peopleEven };
 }
 
 /** Varor att visa: de som ska handlas grupperade i butikens ordning, och sist de avbockade. */

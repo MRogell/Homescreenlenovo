@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, BUILTIN_RECIPES, dinnerTodayLine, dishNames, ingredientsForDays, isoWeek, peopleFor, findRecipe, ingredientLines, nextDays, parseDinner, parseIngredientText, recipeKey, scaleQty, weekdayOf } from "./dinner";
+import { addDays, BUILTIN_RECIPES, dinnerTodayLine, isChildWeek, weekChip, dishNames, ingredientsForDays, isoWeek, peopleFor, findRecipe, ingredientLines, nextDays, parseDinner, parseIngredientText, recipeKey, scaleQty, weekdayOf } from "./dinner";
 
 const TODAY = "2026-11-09"; // måndag
 
@@ -118,5 +118,17 @@ describe("personer per vecka (6 udda, 2 jämna)", () => {
     const l = ingredientsForDays([{ dish: "Tacos", date: "2026-11-15" }, { dish: "Tacos", date: "2026-11-16" }], {}, 6, 2);
     const meat = findRecipe("Tacos", {}, 8)!.ingredients;
     expect(l).toEqual(meat);
+  });
+});
+
+describe("barnvecka", () => {
+  it("udda vecka är barnvecka", () => {
+    expect(isChildWeek("2026-11-16")).toBe(true); // v47
+    expect(isChildWeek("2026-11-10")).toBe(false); // v46
+  });
+  it("texten, och söndagen nämner bytet", () => {
+    expect(weekChip("2026-11-16")).toEqual({ text: "Barnvecka · v47", child: true });
+    expect(weekChip("2026-11-10")).toEqual({ text: "Vecka 46", child: false });
+    expect(weekChip("2026-11-15").text).toBe("Vecka 46 · barnvecka från imorgon"); // söndag v46
   });
 });

@@ -179,6 +179,7 @@ export function useLists(initial: ListsState | null, opts: ListsOptions = {}) {
   const noteAdd = useCallback((text: string) => { if (text.trim()) enqueue([{ op: "noteAdd", id: newId(), text, at: Date.now() }]); }, [enqueue]);
   const noteRemove = useCallback((id: string) => enqueue([{ op: "noteRemove", id }]), [enqueue]);
   const setDinner = useCallback((date: string, dish: string) => enqueue([{ op: "dinner", date, dish, at: Date.now() }]), [enqueue]);
+  const setPickup = useCallback((date: string, who: string) => enqueue([{ op: "pickup", date, who, at: Date.now() }]), [enqueue]);
   const setHabit = useCallback((weekday: number, dish: string | null) => enqueue([{ op: "habit", weekday, dish }]), [enqueue]);
   const setPeople = useCallback((n: number, even = false) => enqueue([{ op: "people", n, even }]), [enqueue]);
   const saveRecipe = useCallback((name: string, ingredients: string[]) => enqueue([{ op: "recipe", name, ingredients }]), [enqueue]);
@@ -192,7 +193,7 @@ export function useLists(initial: ListsState | null, opts: ListsOptions = {}) {
 
   return {
     state, loaded, online, error, pendingCount: pending.length,
-    add, toggle, remove, skip, clearChecked, noteAdd, noteRemove, setDinner, setHabit, setPeople, saveRecipe, removeRecipe, addIngredients,
+    add, toggle, remove, skip, clearChecked, noteAdd, noteRemove, setDinner, setPickup, setHabit, setPeople, saveRecipe, removeRecipe, addIngredients,
     suggest: useCallback((n = 8) => suggestions(state, n), [state]),
     complete: useCallback((typed: string) => autocomplete(state, typed), [state]),
   };

@@ -6,7 +6,7 @@ function greeting(h: number) {
 }
 
 /** `note`: raden under hälsningen. Bara det som kräver uppmärksamhet; tom när allt är som det ska. Platsen är reserverad så att inget hoppar. */
-export function Clock({ note = null, tone = null, trailing = null }: { note?: string | null; tone?: "yellow" | "orange" | "red" | null; trailing?: React.ReactNode }) {
+export function Clock({ note = null, tone = null, trailing = null, extras = null }: { note?: string | null; tone?: "yellow" | "orange" | "red" | null; trailing?: React.ReactNode; extras?: React.ReactNode }) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     // Sätts efter montering så att serverns och klientens första rendering är identiska.
@@ -18,7 +18,7 @@ export function Clock({ note = null, tone = null, trailing = null }: { note?: st
   return (
     <>
       <div>
-        <h1>{now ? greeting(now.getHours()) : "Hej"}</h1>
+        <div className="greet-row"><h1>{now ? greeting(now.getHours()) : "Hej"}</h1>{extras}</div>
         <div className="sub" role="status" data-tone={tone ?? undefined}>{note ?? "\u00a0"}</div>
       </div>
       <div className="top-right">

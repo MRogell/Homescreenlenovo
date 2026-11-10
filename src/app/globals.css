@@ -911,3 +911,31 @@ body:has(.wrap.shop) { padding-top: 0; }
 .dn-form { display: flex; flex-direction: column; gap: 8px; }
 .dn-link { border: 0; background: transparent; color: var(--accent); font: 600 14px var(--body); cursor: pointer; min-height: 32px; }
 .dn-row:focus-visible, .dn-ing:focus-visible, .dn-list:focus-visible, .dn-link:focus-visible, .dn-recipe:focus-visible, .dn-people button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+
+/* Barnvecka och "Vem hämtar?" bredvid hälsningen */
+.greet-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.week-badge { display: inline-flex; align-items: center; min-height: 30px; padding: 0 14px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); font: 700 14px var(--body); letter-spacing: .01em; }
+.pk { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+.pk-chip { min-height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 10px; border-radius: 99px; border: 1px solid var(--field-line); background: transparent; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
+.pk-chip svg { width: 16px; height: 16px; flex: none; }
+.pk-chip b { color: var(--fg); font-weight: 600; }
+.pk-chip.set { border-color: transparent; background: var(--surface-2); }
+.pk-chip:focus-visible, .pk-days button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.pk-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.pk-days button { min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 14px; border: 1px solid var(--field-line); background: transparent; color: var(--fg); cursor: pointer; font: inherit; }
+.pk-days button small { color: var(--muted); font-size: 12px; text-transform: capitalize; }
+.pk-days button b { font: 600 18px var(--display); }
+.pk-days button.has { background: var(--surface-2); }
+.pk-days button[aria-selected="true"] { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.pk-days button[aria-selected="true"] small { color: inherit; }
+.pk-cur { margin: 0; font-size: 16px; }
+.pk-cur small { color: var(--muted); }
+.pk-del { align-self: flex-start; }
+.pk-form { display: flex; gap: 8px; }
+.cal-week { align-self: flex-start; font-size: 12px; font-weight: 600; color: var(--muted); padding: 3px 10px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 7%, transparent); }
+.cal-week.child { color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) {
+  .greet-row { flex-wrap: nowrap; gap: 12px; }
+  .week-badge { min-height: 28px; }
+  .pk-chip { min-height: 34px; }
+}
