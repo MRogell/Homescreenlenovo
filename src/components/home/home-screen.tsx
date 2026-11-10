@@ -83,6 +83,13 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
   const listsParsed = states.lists && (states.lists.status === "ok" || states.lists.status === "stale") ? listsSchema.safeParse(states.lists.data) : null;
   // En enda uppsättning av listorna för hela skärmen: inköpskortet och "Vem hämtar?" delar den.
   const listsApi = useLists(listsParsed?.success ? listsParsed.data : null);
+  const hidePickup = useCallback(async () => {
+    try {
+      await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ show: { ...settings.show, pickup: false } }) });
+    } finally {
+      void refresh();
+    }
+  }, [settings.show, refresh]);
   const dinnerLine = listsParsed?.success && visible.includes("lists") ? dinnerTodayLine(listsParsed.data.dinners, peopleFor(localDate(now), listsParsed.data.people, listsParsed.data.peopleEven), localDate(now)) : null;
 
   return (
@@ -91,7 +98,7 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
     <div className="wrap">
       <NightVeil night={settings.night} />
       <header className="top-bar">
-        <Clock extras={visible.includes("lists") ? <><ChildWeekBadge date={localDate(now)} /><PickupBar api={listsApi} /></> : <ChildWeekBadge date={localDate(now)} />} note={attentionLine(states, now) ?? dinnerLine} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
+        <Clock extras={<>{settings.show.childWeek && <ChildWeekBadge date={localDate(now)} />}{settings.show.pickup && visible.includes("lists") && <PickupBar api={listsApi} onHide={hidePickup} />}</>} note={attentionLine(states, now) ?? dinnerLine} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
       </header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
       {visible.length === 0 && <p className="mid empty-note">Alla kort är dolda. Slå på något under Inställningar.</p>}

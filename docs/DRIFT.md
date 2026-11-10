@@ -125,3 +125,5 @@ Klimatrutan har samma design som på telefon: stor halvcirkel, minus och plus ce
 - **Barnvecka** = udda ISO-vecka (samma regel som 6/2 personer i middagsplanen). Märket "Barnvecka" visas bredvid hälsningen, och Kalender-kortet har en rad överst ("Barnvecka · v47" eller "Vecka 46"). På söndagar nämns att veckan byter imorgon.
 - **Vem hämtar?** Två knappar bredvid hälsningen (idag och imorgon). Tryck öppnar en panel med sju dagar, tidigare använda namn att välja bland och fritt namnfält. Datat ligger i inköpslistans data (`pickups`, per datum, högst 40, äldre än 14 dagar rensas), så det synkas och köas offline på samma sätt, och familjemedlemmar med länk ser och ändrar det överst på sin sida. Vem som satt det bestäms av servern.
 - Hemskärmen har en enda uppsättning av listorna (en `useLists`) som delas av Inköp-kortet och Vem hämtar.
+
+**Tänd och släck:** Vem hämtar? och märket Barnvecka kan stängas av var för sig under Inställningar → Familjen på hemskärmen (inställningen `show`). Vem hämtar? kan också döljas direkt från länken längst ned i panelen. Datat finns kvar när funktionen är släckt.

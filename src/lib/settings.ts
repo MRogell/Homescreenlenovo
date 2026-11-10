@@ -11,6 +11,8 @@ export interface AppSettings {
   night: { enabled: boolean; from: string; to: string };
   /** Vilka händelser som ger en notis på telefonen. */
   notify: NotifyPrefs;
+  /** Delar av hemskärmen som kan tändas och släckas. */
+  show: { pickup: boolean; childWeek: boolean };
 }
 
 export const NOTIFY_KINDS = ["aegDone", "carCharged", "carUnlockedNight", "preheat"] as const;
@@ -23,6 +25,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   place: null,
   night: { enabled: false, from: "22:00", to: "06:00" },
   notify: { ...DEFAULT_NOTIFY },
+  show: { pickup: true, childWeek: true },
 };
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -31,6 +34,8 @@ const cardId = z.enum(CARD_IDS);
 
 const placeSchema = z.object({ name: z.string().trim().min(1).max(80), lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180) }).strict();
 const nightSchema = z.object({ enabled: z.boolean(), from: z.string().regex(TIME), to: z.string().regex(TIME) }).strict();
+
+const showSchema = z.object({ pickup: z.boolean(), childWeek: z.boolean() }).strict();
 
 // preheat är valfri så att en flik med äldre kod (som skickar de tre första) fortfarande godtas.
 const notifySchema = z.object({ aegDone: z.boolean(), carCharged: z.boolean(), carUnlockedNight: z.boolean(), preheat: z.boolean().optional() }).strict();
@@ -42,6 +47,7 @@ export const settingsPatchSchema = z
     place: placeSchema.nullable().optional(),
     night: nightSchema.optional(),
     notify: notifySchema.optional(),
+    show: showSchema.optional(),
     reset: z.literal(true).optional(),
   })
   .strict()
@@ -61,11 +67,13 @@ export function normalizeSettings(raw: unknown): AppSettings {
   const time = (v: unknown, fallback: string) => (typeof v === "string" && TIME.test(v) ? v : fallback);
   const notify = isRecord(r.notify) ? r.notify : {};
   const flag = (k: NotifyKind) => (typeof notify[k] === "boolean" ? (notify[k] as boolean) : DEFAULT_NOTIFY[k]);
+  const show = isRecord(r.show) ? r.show : {};
   return {
     cards: { order: [...order, ...CARD_IDS.filter((id) => !order.includes(id))], hidden: known(cards.hidden) },
     place: place.success ? place.data : null,
     night: { enabled: night.enabled === true, from: time(night.from, DEFAULT_SETTINGS.night.from), to: time(night.to, DEFAULT_SETTINGS.night.to) },
     notify: { aegDone: flag("aegDone"), carCharged: flag("carCharged"), carUnlockedNight: flag("carUnlockedNight"), preheat: flag("preheat") },
+    show: { pickup: show.pickup !== false, childWeek: show.childWeek !== false },
   };
 }
 

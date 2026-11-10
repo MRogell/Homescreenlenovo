@@ -939,3 +939,5 @@ body:has(.wrap.shop) { padding-top: 0; }
   .week-badge { min-height: 28px; }
   .pk-chip { min-height: 34px; }
 }
+.pk-off { align-self: flex-start; border: 0; background: transparent; color: var(--muted); font: 500 14px var(--body); text-decoration: underline; min-height: 44px; cursor: pointer; padding: 0 4px; }
+.pk-off:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }

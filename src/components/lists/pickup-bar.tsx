@@ -16,7 +16,7 @@ function knownNames(api: ListsApi): string[] {
 }
 
 /** Redigerare för en dag: välj ett namn eller skriv ett nytt. */
-function Sheet({ api, today, start, onClose }: { api: ListsApi; today: string; start: string; onClose: () => void }) {
+function Sheet({ api, today, start, onClose, onHide }: { api: ListsApi; today: string; start: string; onClose: () => void; onHide?: () => void }) {
   const [date, setDate] = useState(start);
   const [text, setText] = useState("");
   const id = useId();
@@ -50,12 +50,13 @@ function Sheet({ api, today, start, onClose }: { api: ListsApi; today: string; s
         <button type="submit" className="sm-btn primary" disabled={!text.trim()}>Spara</button>
       </form>
       {cur && <button type="button" className="sm-btn danger-text pk-del" onClick={() => { api.setPickup(date, ""); onClose(); }}><Trash2 aria-hidden="true" />Ta bort för {dayName(date, today)}</button>}
+      {onHide && <button type="button" className="pk-off" onClick={() => { onClose(); onHide(); }}>Dölj Vem hämtar? på hemskärmen</button>}
     </div>
   );
 }
 
 /** "Vem hämtar?": idag och imorgon som två knappar, delas av alla i familjen via inköpslistans data. */
-export function PickupBar({ api }: { api: ListsApi }) {
+export function PickupBar({ api, onHide }: { api: ListsApi; onHide?: () => void }) {
   const [today, setToday] = useState(todayKey);
   const [open, setOpen] = useState<string | null>(null);
   const dlg = useRef<HTMLDialogElement>(null);
@@ -76,7 +77,7 @@ export function PickupBar({ api }: { api: ListsApi }) {
       {chip(today, "Hämtar idag")}
       {chip(tomorrow, "Hämtar imorgon")}
       <dialog ref={dlg} className="sheet" aria-label="Vem hämtar?" onClose={() => setOpen(null)} onClick={(e) => { if (e.target === dlg.current) close(); }}>
-        {open && <Sheet key={open} api={api} today={today} start={open} onClose={close} />}
+        {open && <Sheet key={open} api={api} today={today} start={open} onClose={close} onHide={onHide} />}
       </dialog>
     </div>
   );

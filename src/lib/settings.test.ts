@@ -5,7 +5,7 @@ const at = (h: number, m = 0) => new Date(2026, 10, 8, h, m); // lokal tid, så 
 
 describe("defaults", () => {
   it("keep today's order, hide nothing, no saved place, night mode off 22:00-06:00", () => {
-    expect(DEFAULT_SETTINGS).toEqual({ cards: { order: [...CARD_IDS], hidden: [] }, place: null, night: { enabled: false, from: "22:00", to: "06:00" }, notify: { aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true } });
+    expect(DEFAULT_SETTINGS).toEqual({ cards: { order: [...CARD_IDS], hidden: [] }, place: null, night: { enabled: false, from: "22:00", to: "06:00" }, notify: { aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true }, show: { pickup: true, childWeek: true } });
     expect(CARD_IDS).toEqual(["weather", "calendar", "lists", "skoda", "spotify", "sonos", "aeg", "tado"]);
   });
 });
@@ -125,5 +125,15 @@ describe("notify", () => {
     expect(settingsPatchSchema.safeParse({ notify: { aegDone: true, carCharged: true, carUnlockedNight: true } }).success).toBe(true);
     expect(settingsPatchSchema.safeParse({ notify: { aegDone: true } }).success).toBe(false);
     expect(settingsPatchSchema.safeParse({ notify: { aegDone: true, carCharged: true, carUnlockedNight: true, x: 1 } }).success).toBe(false);
+  });
+});
+
+describe("show (tänd och släck)", () => {
+  it("är på som grundvärde och kan släckas var för sig", () => {
+    expect(normalizeSettings({}).show).toEqual({ pickup: true, childWeek: true });
+    expect(normalizeSettings({ show: { pickup: false } }).show).toEqual({ pickup: false, childWeek: true });
+    expect(normalizeSettings({ show: "x" }).show).toEqual({ pickup: true, childWeek: true });
+    expect(settingsPatchSchema.safeParse({ show: { pickup: false, childWeek: true } }).success).toBe(true);
+    expect(settingsPatchSchema.safeParse({ show: { pickup: false } }).success).toBe(false);
   });
 });

@@ -100,6 +100,16 @@ export function AppearanceSettings({ initial, defaultPlace }: { initial: AppSett
       )}
       {s.place && <button type="button" className="btn secondary ap-inline" disabled={busy} onClick={() => void save({ place: null }, { ...s, place: null })}>Använd standardorten ({defaultPlace})</button>}
 
+      <h2 className="ap-h">Familjen på hemskärmen</h2>
+      <label className="ap-show">
+        <input type="checkbox" role="switch" checked={s.show.pickup} disabled={busy} onChange={(e) => { const show = { ...s.show, pickup: e.target.checked }; void save({ show }, { ...s, show }); }} />
+        <span>Vem hämtar? (idag och imorgon)</span>
+      </label>
+      <label className="ap-show">
+        <input type="checkbox" role="switch" checked={s.show.childWeek} disabled={busy} onChange={(e) => { const show = { ...s.show, childWeek: e.target.checked }; void save({ show }, { ...s, show }); }} />
+        <span>Märket Barnvecka (udda veckor)</span>
+      </label>
+
       <h2 className="ap-h">Nattläge</h2>
       <label className="ap-show">
         <input type="checkbox" role="switch" checked={s.night.enabled} disabled={busy} onChange={(e) => night({ enabled: e.target.checked })} />
