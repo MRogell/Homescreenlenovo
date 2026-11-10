@@ -106,7 +106,7 @@ Fliken "Middag" i inköpskortet (och på `/handla` i stor vy). Planen ligger i s
 
 ## Förvärm till avresa
 Avresetid per veckodag (olika tider möjliga), förvärmning startar `leadMin` minuter före om det är kallare än gränsen. Inställningarna ligger i `AppSetting` ("departure") och nås från raden under klimatrutan i Škoda-kortet.
-- **Hur:** Det finns ingen bakgrundsjobbare på Vercel Hobby (cron där går bara en gång per dygn). Därför startas klimatet av två saker: (1) en extern timer som ropar `/api/cron/preheat` varje minut (se Servertimer nedan), och (2) som reserv en öppen och uppkopplad skärm som vid sin hämtning var 30:e sekund får servern att kontrollera tiden (`after()` i `/api/home`). Utan timer startar inget när skärmarna är avstängda, och bbakgrundsflikar och sovande plattor hämtar inte alls.
+- **Hur:** Det finns ingen bakgrundsjobbare på Vercel Hobby (cron där går bara en gång per dygn). Därför startas klimatet av två saker: (1) en extern timer som ropar `/api/cron/preheat` varje minut (se Servertimer nedan), och (2) som reserv en öppen och uppkopplad skärm som vid sin hämtning var 30:e sekund får servern att kontrollera tiden (`after()` i `/api/home`). Utan timer startar inget när skärmarna är avstängda, och bakgrundsflikar och sovande plattor hämtar inte alls.
 - **Bara en gång:** Start görs under advisory lock (727003), så flera skärmar startar bilen en gång. Upp till tre försök.
 - **Alltid när på och kallt:** Škoda-datat har ingen laddkabelflagga, så det finns inget "bara när inkopplad".
 - **Notis:** Egen notistyp "Förvärm" (av/på under Notiser). "Hoppa över idag" nollställs nästa dygn.
