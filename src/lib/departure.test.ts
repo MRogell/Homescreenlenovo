@@ -122,7 +122,7 @@ describe("departureView", () => {
   });
 });
 
-describe("två avresor på samma dag", () => {
+describe("flera avresor på samma dag", () => {
   const two = only({ "1": ["07:30", "17:00"] });
   it("väntar på den första, sedan på den andra när den första är klar", () => {
     expect(decide(two, at("06:00"), cold)).toEqual({ kind: "wait", startsAt: "07:15" });
@@ -139,10 +139,20 @@ describe("två avresor på samma dag", () => {
     expect(decide(two, at("12:00"), cold)).toEqual({ kind: "wait", startsAt: "16:45" });
     expect(decide(two, at("18:00"), cold)).toEqual({ kind: "missed" });
   });
-  it("normaliseras: sorterade, unika, högst två", () => {
-    expect(normalizeDeparture({ times: { "1": ["17:00", "07:30", "07:30", "12:00"] } }).times).toEqual({ "1": ["07:30", "12:00"] });
+  it("normaliseras: sorterade, unika, högst tre", () => {
+    expect(normalizeDeparture({ times: { "1": ["17:00", "07:30", "07:30", "12:00", "20:00"] } }).times).toEqual({ "1": ["07:30", "12:00", "17:00"] });
   });
   it("raden visar båda tiderna", () => {
     expect(departureView(two, at("06:00"), cold).line).toBe("Avresa 07:30 och 17:00 · mån");
+  });
+});
+
+describe("tre avresor på samma dag", () => {
+  const three = only({ "1": ["07:30", "12:00", "17:00"] });
+  it("varje tid är en egen körning", () => {
+    const done = (slot: number) => ({ ...three, last: { date: "2026-11-09", slot, status: "started" as const, attempts: 1, at: 1, tempC: -4 } });
+    expect(currentSlot(done(0), at("11:50"), cold)).toEqual({ decision: { kind: "start" }, slot: 1 });
+    expect(currentSlot(done(1), at("16:50"), cold)).toEqual({ decision: { kind: "start" }, slot: 2 });
+    expect(decide(done(2), at("17:10"), cold).kind).toBe("done");
   });
 });

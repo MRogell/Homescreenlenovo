@@ -16,7 +16,7 @@ export interface LastRun { date: string; /** Vilken av dagens avresor (0 = förs
 
 export interface DepartureSettings {
   enabled: boolean;
-  /** Avresetid per veckodag ("HH:MM", svensk tid). 1 = måndag … 7 = söndag. Högst två per dag (till exempel morgon och kväll), sorterade. Saknas dagen sker ingen förvärmning den dagen. */
+  /** Avresetid per veckodag ("HH:MM", svensk tid). 1 = måndag … 7 = söndag. Högst tre per dag (till exempel morgon, lunch och kväll), sorterade. Saknas dagen sker ingen förvärmning den dagen. */
   times: Record<string, string[]>;
   leadMin: number;
   /** Startar bara när utetemperaturen är högst så här många grader. */
@@ -32,8 +32,8 @@ export const DEFAULT_DEPARTURE: DepartureSettings = { enabled: false, times: { "
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const isRec = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 const minutesOf = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
-export const MAX_TIMES_PER_DAY = 2;
-/** Giltiga tider, sorterade och utan dubbletter, högst två. */
+export const MAX_TIMES_PER_DAY = 3;
+/** Giltiga tider, sorterade och utan dubbletter, högst tre. */
 export const cleanTimes = (v: unknown): string[] => [...new Set((Array.isArray(v) ? v : [v]).filter((t): t is string => typeof t === "string" && TIME.test(t)))].sort().slice(0, MAX_TIMES_PER_DAY);
 const RUN: RunStatus[] = ["starting", "started", "failed", "skipped_warm", "skipped_on"];
 

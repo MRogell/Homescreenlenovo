@@ -7,6 +7,7 @@ type Settings = DepartureView["settings"];
 const DAY_NAMES = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag", "Söndag"];
 const DEFAULT_TIME = "07:30";
 const DEFAULT_SECOND = "17:00";
+const ORD = ["första", "andra", "tredje"];
 
 async function put(body: object): Promise<{ view?: DepartureView; error?: string }> {
   try {
@@ -50,7 +51,7 @@ export function DepartureRow({ view, onChange }: { view: DepartureView; onChange
     return { ...f, times };
   });
   const setTime = (d: number, i: number, t: string) => { if (/^\d{2}:\d{2}$/.test(t)) setForm((f) => ({ ...f, times: { ...f.times, [String(d)]: (f.times[String(d)] ?? []).map((x, j) => (j === i ? t : x)) } })); };
-  const addTime = (d: number) => setForm((f) => { const cur = f.times[String(d)] ?? []; return cur.length >= MAX_TIMES_PER_DAY ? f : { ...f, times: { ...f.times, [String(d)]: [...cur, cur[0] && cur[0] >= "12:00" ? DEFAULT_TIME : DEFAULT_SECOND] } }; });
+  const addTime = (d: number) => setForm((f) => { const cur = f.times[String(d)] ?? []; return cur.length >= MAX_TIMES_PER_DAY ? f : { ...f, times: { ...f.times, [String(d)]: [...cur, cur.length >= 2 ? "12:00" : cur[0] && cur[0] >= "12:00" ? DEFAULT_TIME : DEFAULT_SECOND] } }; });
   const removeTime = (d: number, i: number) => setForm((f) => { const cur = f.times[String(d)] ?? []; return cur.length <= 1 ? f : { ...f, times: { ...f.times, [String(d)]: cur.filter((_, j) => j !== i) } }; });
   const sameForAll = () => setForm((f) => { const first = Object.values(f.times)[0] ?? [DEFAULT_TIME]; return { ...f, times: Object.fromEntries(Object.keys(f.times).map((k) => [k, [...first]])) }; });
   const mixed = new Set(Object.values(form.times).map((v) => v.join())).size > 1;
@@ -87,8 +88,8 @@ export function DepartureRow({ view, onChange }: { view: DepartureView; onChange
                   <div className="dep-times">
                     {(t ?? [DEFAULT_TIME]).map((x, j) => (
                       <div key={j} className="dep-time">
-                        <input type="time" value={x} disabled={!t} aria-label={`Avresetid ${n.toLowerCase()}${(t?.length ?? 1) > 1 ? ` ${j === 0 ? "första" : "andra"}` : ""}`} onChange={(e) => setTime(d, j, e.target.value)} />
-                        {t && t.length > 1 && <button type="button" className="dep-x" aria-label={`Ta bort ${j === 0 ? "första" : "andra"} tiden ${n.toLowerCase()}`} onClick={() => removeTime(d, j)}><X aria-hidden="true" /></button>}
+                        <input type="time" value={x} disabled={!t} aria-label={`Avresetid ${n.toLowerCase()}${(t?.length ?? 1) > 1 ? ` ${ORD[j]}` : ""}`} onChange={(e) => setTime(d, j, e.target.value)} />
+                        {t && t.length > 1 && <button type="button" className="dep-x" aria-label={`Ta bort ${ORD[j]} tiden ${n.toLowerCase()}`} onClick={() => removeTime(d, j)}><X aria-hidden="true" /></button>}
                       </div>
                     ))}
                     {t && t.length < MAX_TIMES_PER_DAY && <button type="button" className="dep-add" onClick={() => addTime(d)}><Plus aria-hidden="true" />Lägg till tid</button>}
