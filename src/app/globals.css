@@ -206,19 +206,19 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
 /* Škoda-kortet är dubbelt så brett på surfplatta och dator: bilinfo till vänster, klimat till höger. Telefon: en kolumn. */
 .card.skoda { grid-column: span 2; }
-.skoda-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch;
+.skoda-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 1fr auto auto; gap: 0 16px; align-items: stretch;
   /* flex-basis auto, inte 0: Safari på iPhone räknar annars ut kortets höjd utan innehållet och lämnar 'Uppdaterad' utanför kortet. */
   flex: 1 1 auto; }
-.skoda-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.skoda-info .skoda-place { margin-top: auto; }
-.skoda-body .skoda-climate { justify-content: center; }
+.skoda-info { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.skoda-body .dep { grid-column: 1; margin-top: 10px; }
+.skoda-body .skoda-place { grid-column: 1; margin-top: 10px; }
+.skoda-body .skoda-climate { grid-column: 2; grid-row: 1 / span 3; justify-content: center; }
 @media (max-width: 560px) {
   .card.skoda { grid-column: auto; }
-  /* En kolumn: platsen hamnar efter klimatrutan, som tidigare. */
+  /* En kolumn i ordningen: info, klimat, förvärm, plats. Ingen display: contents (Safari räknade fel på kortets höjd). */
   .skoda-body { display: flex; flex-direction: column; gap: 8px; }
-  .skoda-info { display: contents; }
-  .skoda-info .skoda-place { order: 2; margin-top: 4px; }
-  .skoda-info .dep { order: 1; margin-top: 0; }
+  .skoda-body .dep { margin-top: 0; }
+  .skoda-body .skoda-place { margin-top: 4px; }
 }
 
 /* Spotify: omslag, förlopp, rund spela-knapp, volym med ikoner och enhetsknapp. Kortet tonas av omslagets färg (--sp-tint). */
@@ -617,15 +617,15 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .li-msg { font-size: 12px; }
 
   /* Škoda: info till vänster och klimat till höger. Fyra statusrutor på en rad och en liten halvcirkel bredvid knappen. */
-  .skoda-body { gap: 12px; }
+  .skoda-body { gap: 0 12px; }
   .skoda-info { gap: 6px; }
   .skoda-checks { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   .skoda-checks li { flex-direction: column; text-align: center; padding: 6px 4px; gap: 3px; }
   .skoda-checks li span { align-items: center; }
   .skoda-place small { display: none; }
-  .skoda-info .dep { margin-top: auto; }
+  .skoda-body .dep { margin-top: 10px; }
   .skoda-info .skoda-checks li { padding-top: 5px; padding-bottom: 5px; }
-  .skoda-info .skoda-place { margin-top: 0; }
+  .skoda-body .skoda-place { margin-top: 8px; }
   /* Klimatrutan som vanligt (stor halvcirkel, Starta under). Dialens storlek följer kortets höjd. */
   .skoda-climate { padding: 14px 12px 12px; }
   .skoda-dial { max-width: clamp(110px, calc((100cqh - 160px) / .86), 300px); }
@@ -635,8 +635,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-dial-value output { grid-column: 1 / -1; grid-row: 1; }
   .skoda-dial-value button { width: 48px; height: 48px; font-size: 28px; grid-row: 2; }
   .skoda-dial-value .minus { grid-column: 1; } .skoda-dial-value .plus { grid-column: 2; }
-  .skoda-info .dep + .skoda-place { margin-top: 0; }
-  /* Minus och plus ligger i halvcirkelns öppning under temperaturen, så att de inte krockar med bågen. */
+    /* Minus och plus ligger i halvcirkelns öppning under temperaturen, så att de inte krockar med bågen. */
 
   /* Spotify: omslag, titel, tid och uppspelningsknappar. Volym och val av enhet finns i vanliga vyn. */
   .sp-art { width: 64px; height: 64px; }
@@ -670,12 +669,12 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
     .skoda-dial-value { gap: 4px 10px; }
     .skoda-dial-value output { font-size: 28px; }
     .skoda-dial-value button { width: 42px; height: 42px; }
-    .skoda-info .dep { min-height: 48px; padding: 4px 10px 4px 12px; gap: 10px; }
+    .skoda-body .dep { min-height: 48px; padding: 4px 10px 4px 12px; gap: 10px; }
     .skoda-info .skoda-checks li small { display: none; }
-    .skoda-info .dep-text b { white-space: nowrap; text-overflow: ellipsis; display: block; }
-    .skoda-info .dep-main svg { width: 30px; height: 30px; padding: 6px; }
-    .skoda-info .dep-text b { font-size: 14px; }
-    .skoda-info .dep-text small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: 1; line-clamp: 1; }
+    .skoda-body .dep-text b { white-space: nowrap; text-overflow: ellipsis; display: block; }
+    .skoda-body .dep-main svg { width: 30px; height: 30px; padding: 6px; }
+    .skoda-body .dep-text b { font-size: 14px; }
+    .skoda-body .dep-text small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: 1; line-clamp: 1; }
     .skoda-info .skoda-checks li { padding-top: 3px; padding-bottom: 3px; }
   }
   @container card (max-height: 245px) {
@@ -684,7 +683,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
     .skoda-checks li { padding: 4px 4px; }
     .skoda-info { gap: 4px; }
     .skoda-checks li strong { font-size: 13px; }
-    .skoda-body { gap: 10px; }
+    .skoda-body { gap: 0 10px; }
     .sn-hero { grid-template-columns: 52px minmax(0, 1fr); }
     .sn-art { width: 52px; height: 52px; }
     .sn-chip { min-height: 38px; }
