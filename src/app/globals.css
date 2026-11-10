@@ -623,8 +623,8 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-checks li { flex-direction: column; text-align: center; padding: 6px 4px; gap: 3px; }
   .skoda-checks li span { align-items: center; }
   .skoda-place small { display: none; }
-  .skoda-info .dep { min-height: 42px; margin-top: auto; padding: 2px 6px 2px 12px; }
-  .skoda-info .skoda-checks li { padding-top: 3px; padding-bottom: 3px; }
+  .skoda-info .dep { margin-top: auto; }
+  .skoda-info .skoda-checks li { padding-top: 5px; padding-bottom: 5px; }
   .skoda-info .skoda-place { margin-top: 0; }
   /* Klimatrutan som vanligt (stor halvcirkel, Starta under). Dialens storlek följer kortets höjd. */
   .skoda-climate { padding: 14px 12px 12px; }
@@ -635,9 +635,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-dial-value output { grid-column: 1 / -1; grid-row: 1; }
   .skoda-dial-value button { width: 48px; height: 48px; font-size: 28px; grid-row: 2; }
   .skoda-dial-value .minus { grid-column: 1; } .skoda-dial-value .plus { grid-column: 2; }
-  .skoda-info .dep-text { gap: 1px; }
   .skoda-info .dep + .skoda-place { margin-top: 0; }
-  .skoda-info .dep-main { min-height: 36px; }
   /* Minus och plus ligger i halvcirkelns öppning under temperaturen, så att de inte krockar med bågen. */
 
   /* Spotify: omslag, titel, tid och uppspelningsknappar. Volym och val av enhet finns i vanliga vyn. */
@@ -669,21 +667,22 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
     .skoda-dial-center { top: 54%; gap: 0; }
     .skoda-dial { max-width: clamp(110px, calc((100cqh - 146px) / .86), 300px); }
     .skoda-climate-btn { min-height: 44px; margin-top: 8px; }
-    .skoda-dial-value button { width: 40px; height: 40px; }
-    .skoda-dial-value { gap: 4px 8px; }
-    .skoda-dial-value { gap: 4px 12px; }
+    .skoda-dial-value { gap: 4px 10px; }
     .skoda-dial-value output { font-size: 28px; }
-    .skoda-dial-value button { width: 44px; height: 44px; }
+    .skoda-dial-value button { width: 42px; height: 42px; }
+    .skoda-info .dep { min-height: 48px; padding: 4px 10px 4px 12px; gap: 10px; }
+    .skoda-info .skoda-checks li small { display: none; }
+    .skoda-info .dep-text b { white-space: nowrap; text-overflow: ellipsis; display: block; }
+    .skoda-info .dep-main svg { width: 30px; height: 30px; padding: 6px; }
+    .skoda-info .dep-text b { font-size: 14px; }
+    .skoda-info .dep-text small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: 1; line-clamp: 1; }
+    .skoda-info .skoda-checks li { padding-top: 3px; padding-bottom: 3px; }
   }
   @container card (max-height: 245px) {
     .big { font-size: 34px; }
     .skoda-main .big { font-size: 34px; }
     .skoda-checks li { padding: 4px 4px; }
     .skoda-info { gap: 4px; }
-    .skoda-info .dep { min-height: 36px; }
-    .skoda-info .dep-main { min-height: 34px; }
-    .skoda-info .dep-text b { font-size: 14px; }
-    .skoda-info .dep-text small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: 1; line-clamp: 1; }
     .skoda-checks li strong { font-size: 13px; }
     .skoda-body { gap: 10px; }
     .sn-hero { grid-template-columns: 52px minmax(0, 1fr); }
@@ -801,12 +800,12 @@ body:has(.wrap.shop) { padding-top: 0; }
 .sm-form .sm-btn { min-height: 48px; }
 
 /* Förvärm till avresa: raden under klimatrutan och dess inställningar */
-.dep { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 6px 0 10px; border-radius: 14px; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg) 4%, transparent); align-self: stretch; margin-top: 4px; }
-.dep-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 48px; border: 0; background: transparent; color: var(--fg); text-align: left; cursor: pointer; padding: 0; font: inherit; }
-.dep-main svg { width: 20px; height: 20px; flex: none; stroke: var(--accent); fill: none; stroke-width: 1.8; }
-.dep-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-.dep-text b { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dep-text small { color: var(--muted); font-size: 12px; font-weight: 500; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.dep { display: flex; align-items: center; gap: 14px; min-height: 68px; padding: 12px 14px 12px 14px; border-radius: 18px; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg) 4%, transparent); align-self: stretch; margin-top: 6px; }
+.dep-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; min-height: 44px; border: 0; background: transparent; color: var(--fg); text-align: left; cursor: pointer; padding: 0; font: inherit; }
+.dep-main svg { width: 38px; height: 38px; flex: none; padding: 9px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 16%, transparent); stroke: var(--accent); fill: none; stroke-width: 1.8; }
+.dep-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; line-height: 1.3; }
+.dep-text b { font-size: 16px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.dep-text small { color: var(--muted); font-size: 13px; font-weight: 500; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .dep-ok .dep-text small { color: var(--ok); } .dep-warn .dep-text small { color: var(--warn); } .dep-bad .dep-text small { color: var(--bad); } .dep-wait .dep-text small { color: var(--muted); }
 .dep-main:focus-visible, .dep-switch:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 .dep-switch { width: 52px; height: 32px; flex: none; border-radius: 99px; border: 1px solid var(--field-line); background: var(--surface-2); position: relative; cursor: pointer; padding: 0; }
