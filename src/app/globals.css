@@ -626,10 +626,12 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-climate { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); grid-template-rows: 1fr; gap: 0 10px; padding: 34px 10px 10px; align-items: center; }
   .skoda-climate-status { top: 8px; }
   .skoda-dial { max-width: 200px; justify-self: center; }
-  .skoda-info .dep { min-height: 40px; margin-top: auto; }
-  .skoda-info .dep + .skoda-place { margin-top: 4px; }
-  .skoda-info .dep-main { min-height: 38px; }
-  .skoda-info .dep-text small { display: none; }
+  .skoda-info .dep { min-height: 42px; margin-top: auto; padding: 2px 6px 2px 12px; }
+  .skoda-info .skoda-checks li { padding-top: 3px; padding-bottom: 3px; }
+  .skoda-info .skoda-place { margin-top: 0; }
+  .skoda-info .dep-text { gap: 1px; }
+  .skoda-info .dep + .skoda-place { margin-top: 0; }
+  .skoda-info .dep-main { min-height: 36px; }
   /* Minus och plus ligger i halvcirkelns öppning under temperaturen, så att de inte krockar med bågen. */
   .skoda-dial-center { inset: 0; left: 0; top: 0; width: auto; transform: none; display: grid; place-content: center; justify-items: center; padding-bottom: 20%; pointer-events: none; }
   .skoda-dial-value { display: block; width: auto; }
@@ -671,9 +673,10 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
     .skoda-checks li { padding: 4px 4px; }
     .skoda-dial { max-width: 160px; }
     .skoda-info { gap: 4px; }
-    .skoda-info .dep { min-height: 32px; }
-    .skoda-info .dep-main { min-height: 30px; }
+    .skoda-info .dep { min-height: 36px; }
+    .skoda-info .dep-main { min-height: 34px; }
     .skoda-info .dep-text b { font-size: 14px; }
+    .skoda-info .dep-text small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: 1; line-clamp: 1; }
     .skoda-checks li strong { font-size: 13px; }
     .skoda-body { gap: 10px; }
     .sn-hero { grid-template-columns: 52px minmax(0, 1fr); }
@@ -795,8 +798,8 @@ body:has(.wrap.shop) { padding-top: 0; }
 .dep-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 48px; border: 0; background: transparent; color: var(--fg); text-align: left; cursor: pointer; padding: 0; font: inherit; }
 .dep-main svg { width: 20px; height: 20px; flex: none; stroke: var(--accent); fill: none; stroke-width: 1.8; }
 .dep-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-.dep-text b { font-size: 15px; font-weight: 600; }
-.dep-text small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.dep-text b { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dep-text small { color: var(--muted); font-size: 12px; font-weight: 500; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .dep-ok .dep-text small { color: var(--ok); } .dep-warn .dep-text small { color: var(--warn); } .dep-bad .dep-text small { color: var(--bad); } .dep-wait .dep-text small { color: var(--muted); }
 .dep-main:focus-visible, .dep-switch:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 .dep-switch { width: 52px; height: 32px; flex: none; border-radius: 99px; border: 1px solid var(--field-line); background: var(--surface-2); position: relative; cursor: pointer; padding: 0; }

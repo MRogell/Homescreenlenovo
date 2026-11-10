@@ -143,7 +143,7 @@ describe("flera avresor på samma dag", () => {
     expect(normalizeDeparture({ times: { "1": ["17:00", "07:30", "07:30", "12:00", "20:00"] } }).times).toEqual({ "1": ["07:30", "12:00", "17:00"] });
   });
   it("raden visar båda tiderna", () => {
-    expect(departureView(two, at("06:00"), cold).line).toBe("Avresa 07:30 och 17:00 · mån");
+    expect(departureView(two, at("06:00"), cold).line).toBe("Avresa 07:30, 17:00 · mån");
   });
 });
 

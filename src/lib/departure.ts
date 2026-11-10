@@ -135,7 +135,7 @@ export function daysText(days: readonly number[]): string {
 /** Raden: en gemensam tid (eller två) skrivs med dagarna, annars visas dagens (eller nästa) avresa. */
 function lineOf(s: DepartureSettings, weekday: number): string {
   const days = Object.keys(s.times).map(Number).sort();
-  const text = (d: number) => (s.times[String(d)] ?? []).join(" och ");
+  const text = (d: number) => (s.times[String(d)] ?? []).join(", ");
   const set = new Set(days.map(text));
   if (days.length === 0) return "Inga dagar valda";
   if (set.size === 1) return `Avresa ${[...set][0]} · ${daysText(days)}`;
@@ -158,7 +158,7 @@ export function departureView(s: DepartureSettings, now: Date, ctx: { tempC: num
     case "start": return { ...base, line, sub: "Startar klimatet…", tone: "wait" };
     case "skip": return { ...base, line, sub: d.reason === "warm" ? `Hoppar över idag: ${fmtTemp(ctx.tempC)} är varmare än gränsen ${s.belowC}°` : "Klimatet går redan", tone: "warn" };
     case "skipped_user": return { ...base, line, sub: "Du hoppade över idag", tone: "warn" };
-    case "missed": return { ...base, line, sub: `Förvärmningen missades. Plattan var avstängd eller utan nät kring ${hhmm(Math.max(0, minutesOf(today) - s.leadMin))}.`, tone: "bad" };
+    case "missed": return { ...base, line, sub: `Missades kring ${hhmm(Math.max(0, minutesOf(today) - s.leadMin))}: ingen skärm var på eller uppkopplad`, tone: "bad" };
     case "done": {
       const r = d.run;
       if (r.status === "started") return { ...base, line, sub: `Klimatet startade · ${String(s.targetC).replace(".", ",")} °C klart ${today}`, tone: "ok" };
