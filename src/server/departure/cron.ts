@@ -6,6 +6,8 @@ import { db as defaultDb } from "../db";
 import { PROVIDERS } from "../providers";
 import { getHomeStates, type HomeStates } from "../snapshots";
 import { loadDeparture, TIMER_KEY } from "./store";
+import { chargeReminderDue, chargeReminderTick } from "../smart/charge";
+import { timersTick } from "../smart/timers";
 import { preheatTick, type TickDeps } from "./tick";
 
 export interface CronDeps extends TickDeps {
@@ -31,10 +33,14 @@ export async function handlePreheatCron(req: { authorization: string | null }, s
   const db = deps.db ?? defaultDb;
   const now = (deps.now ?? (() => new Date()))();
   await db.appSetting.upsert({ where: { key: TIMER_KEY }, create: { key: TIMER_KEY, value: { at: now.getTime() } as never }, update: { value: { at: now.getTime() } as never } });
-  const probe = currentSlot(await loadDeparture(db), now, { tempC: null, climateOn: null });
-  if (probe.decision.kind !== "start") return { status: 200, json: { ok: true, action: "none" } };
+  // Timers är billiga (en rad i databasen) och görs alltid.
+  await timersTick(now, { db, notify: deps.notify });
+  const departureDue = currentSlot(await loadDeparture(db), now, { tempC: null, climateOn: null }).decision.kind === "start";
+  const chargeDue = await chargeReminderDue(now, db);
+  if (!departureDue && !chargeDue) return { status: 200, json: { ok: true, action: "none" } };
   const ids = new Set(["weather", "skoda"]);
   const states = deps.states ? await deps.states(now) : await getHomeStates(now, PROVIDERS.filter((p) => ids.has(p.id)), db);
-  await preheatTick(states, now, { ...deps, db });
+  if (departureDue) await preheatTick(states, now, { ...deps, db });
+  if (chargeDue) await chargeReminderTick(states, now, { db, notify: deps.notify });
   return { status: 200, json: { ok: true, action: "checked" } };
 }

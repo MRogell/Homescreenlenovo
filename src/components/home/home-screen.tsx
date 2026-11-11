@@ -13,6 +13,8 @@ import { Clock } from "./clock";
 import { dinnerTodayLine, isChildWeek, peopleFor } from "@/lib/dinner";
 import { useLists } from "../lists/use-lists";
 import { PickupBar } from "../lists/pickup-bar";
+import { TimerChip } from "./timer-chip";
+import type { TimerItem } from "@/lib/smart";
 import { listsSchema } from "@/server/providers/schemas";
 import { localDate } from "@/server/calendar/time";
 import { RefreshContext, SpotifyRefreshContext } from "./refresh-context";
@@ -26,10 +28,11 @@ const POLL_MS = 30_000;
 /** Spotify uppdateras oftare (direkt från Spotify) så att kortet följer vad som spelas utan märkbar fördröjning. */
 const SPOTIFY_POLL_MS = 4_000;
 
-export function HomeScreen({ initial, initialNow, initialSettings, initialDeparture }: { initial: HomeStates; initialNow: string; initialSettings: AppSettings; initialDeparture: DepartureView }) {
+export function HomeScreen({ initial, initialNow, initialSettings, initialDeparture, initialTimers = [] }: { initial: HomeStates; initialNow: string; initialSettings: AppSettings; initialDeparture: DepartureView; initialTimers?: TimerItem[] }) {
   const [states, setStates] = useState(initial);
   const [settings, setSettings] = useState(initialSettings);
   const [departure, setDeparture] = useState(initialDeparture);
+  const [timers, setTimers] = useState(initialTimers);
   const [now, setNow] = useState(new Date(initialNow));
   const [offline, setOffline] = useState(false);
   const router = useRouter();
@@ -39,10 +42,11 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
       const res = await fetch("/api/home", { cache: "no-store" });
       if (res.status === 401) return router.replace("/logga-in");
       if (!res.ok) throw new Error(String(res.status));
-      const json = (await res.json()) as { states: HomeStates; now: string; settings?: AppSettings; departure?: DepartureView };
+      const json = (await res.json()) as { states: HomeStates; now: string; settings?: AppSettings; departure?: DepartureView; timers?: TimerItem[] };
       setStates(json.states);
       if (json.settings) setSettings(json.settings);
       if (json.departure) setDeparture(json.departure);
+      if (json.timers) setTimers(json.timers);
       setNow(new Date(json.now));
       setOffline(false);
     } catch {
@@ -98,7 +102,7 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
     <div className="wrap">
       <NightVeil night={settings.night} />
       <header className="top-bar">
-        <Clock extras={<>{settings.show.childWeek && <ChildWeekBadge date={localDate(now)} />}{settings.show.pickup && visible.includes("lists") && <PickupBar api={listsApi} onHide={hidePickup} />}</>} note={attentionLine(states, now) ?? dinnerLine} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
+        <Clock extras={<>{settings.smart.timer.enabled && <TimerChip timers={timers} onChange={setTimers} />}{settings.show.childWeek && <ChildWeekBadge date={localDate(now)} />}{settings.show.pickup && visible.includes("lists") && <PickupBar api={listsApi} onHide={hidePickup} />}</>} note={attentionLine(states, now) ?? dinnerLine} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
       </header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
       {visible.length === 0 && <p className="mid empty-note">Alla kort är dolda. Slå på något under Inställningar.</p>}

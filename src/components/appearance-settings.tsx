@@ -42,6 +42,7 @@ export function AppearanceSettings({ initial, defaultPlace }: { initial: AppSett
     const hidden = show ? s.cards.hidden.filter((h) => h !== id) : [...s.cards.hidden, id];
     void save({ cards: { order: s.cards.order, hidden } }, cards(s.cards.order, hidden));
   };
+  const smart = (n: Partial<AppSettings["smart"]>) => { const next = { ...s.smart, ...n }; void save({ smart: next }, { ...s, smart: next }); };
   const night = (n: Partial<AppSettings["night"]>) => { const next = { ...s.night, ...n }; void save({ night: next }, { ...s, night: next }); };
 
   async function search() {
@@ -99,6 +100,21 @@ export function AppearanceSettings({ initial, defaultPlace }: { initial: AppSett
         </ul>
       )}
       {s.place && <button type="button" className="btn secondary ap-inline" disabled={busy} onClick={() => void save({ place: null }, { ...s, place: null })}>Använd standardorten ({defaultPlace})</button>}
+
+      <h2 className="ap-h">Smarta funktioner</h2>
+      <label className="ap-show">
+        <input type="checkbox" role="switch" checked={s.smart.chargeReminder.enabled} disabled={busy} onChange={(e) => smart({ chargeReminder: { ...s.smart.chargeReminder, enabled: e.target.checked } })} />
+        <span>Laddpåminnelse: notis om bilen har lågt batteri och inte laddar</span>
+      </label>
+      <div className="ap-times">
+        <label>Batteri på eller under (%)<input type="number" min={10} max={80} step={5} value={s.smart.chargeReminder.belowPct} disabled={busy || !s.smart.chargeReminder.enabled} onChange={(e) => { const n = Math.round(Number(e.target.value)); if (n >= 10 && n <= 80) smart({ chargeReminder: { ...s.smart.chargeReminder, belowPct: n } }); }} /></label>
+        <label>Klockan<input type="time" value={s.smart.chargeReminder.at} disabled={busy || !s.smart.chargeReminder.enabled} onChange={(e) => /^\d{2}:\d{2}$/.test(e.target.value) && smart({ chargeReminder: { ...s.smart.chargeReminder, at: e.target.value } })} /></label>
+      </div>
+      <label className="ap-show">
+        <input type="checkbox" role="switch" checked={s.smart.timer.enabled} disabled={busy} onChange={(e) => smart({ timer: { enabled: e.target.checked } })} />
+        <span>Äggklocka och timer på hemskärmen</span>
+      </label>
+      <p className="mid small">Påminnelsen skickas en gång per kväll, och bara om bilen inte laddar. Notiserna slår du av och på under Notiser.</p>
 
       <h2 className="ap-h">Familjen på hemskärmen</h2>
       <label className="ap-show">

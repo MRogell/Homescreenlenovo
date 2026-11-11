@@ -1,6 +1,7 @@
 import { requireUser } from "@/server/authz";
 import { getDepartureView } from "@/server/departure/tick";
 import { getSettings } from "@/server/settings";
+import { loadTimers } from "@/server/smart/timers";
 import { getHomeStates } from "@/server/snapshots";
 import { HomeScreen } from "@/components/home/home-screen";
 
@@ -10,6 +11,6 @@ export default async function Page() {
   await requireUser();
   const now = new Date();
   const [initial, settings] = await Promise.all([getHomeStates(now), getSettings()]);
-  const departure = await getDepartureView(initial, now);
-  return <HomeScreen initial={initial} initialNow={now.toISOString()} initialSettings={settings} initialDeparture={departure} />;
+  const [departure, timers] = await Promise.all([getDepartureView(initial, now), loadTimers()]);
+  return <HomeScreen initial={initial} initialNow={now.toISOString()} initialSettings={settings} initialDeparture={departure} initialTimers={timers} />;
 }

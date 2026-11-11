@@ -2,6 +2,8 @@ import { NextResponse, after } from "next/server";
 import { getSessionUser } from "@/server/authz";
 import { getDepartureView, preheatTick } from "@/server/departure/tick";
 import { getSettings } from "@/server/settings";
+import { chargeReminderTick } from "@/server/smart/charge";
+import { loadTimers, timersTick } from "@/server/smart/timers";
 import { getHomeStates } from "@/server/snapshots";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +17,11 @@ export async function GET() {
   // Endast normaliserad tjänstedata. Anslutningstokens (Connection.tokenEnc) läses aldrig här.
   const [states, settings] = await Promise.all([getHomeStates(now), getSettings()]);
   // Förvärm till avresa: hemskärmen hämtar var 30:e sekund och är därför den som märker att det är dags. Körs efter svaret.
-  after(() => preheatTick(states, now));
-  const departure = await getDepartureView(states, now);
-  return NextResponse.json({ states, now: now.toISOString(), settings, departure }, { headers: NO_STORE });
+  after(async () => {
+    await preheatTick(states, now);
+    await chargeReminderTick(states, now);
+    await timersTick(now);
+  });
+  const [departure, timers] = await Promise.all([getDepartureView(states, now), loadTimers()]);
+  return NextResponse.json({ states, now: now.toISOString(), settings, departure, timers }, { headers: NO_STORE });
 }

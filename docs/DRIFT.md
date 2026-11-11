@@ -135,3 +135,9 @@ Utan den startar förvärm bara om en skärm är öppen i just starttidens föns
 3. Skapa ett gratiskonto på cron-job.org och ett jobb: adress `https://<hemskärmens adress>/api/cron/preheat`, varje minut, med rubriken `Authorization: Bearer <hemligheten>`.
 4. Öppna Förvärm-inställningarna i appen: där står "Servertimern är aktiv (senast HH:MM)" när det fungerar.
 Anropet gör inget dyrt utanför ett förvärmfönster (inga anrop till Škoda eller vädret). Fel hemlighet ger 401, saknad `CRON_SECRET` 503.
+
+## Smarta funktioner (tänd och släck)
+Inställningar → Smarta funktioner (`smart` i inställningarna). Notiserna slås av och på för sig under Notiser.
+- **Laddpåminnelse:** En gång per dygn efter ett klockslag (grund 19:00, inom tre timmar) om bilen är ett elbilsbatteri på eller under en gräns (grund 40 %) och inte laddar. Okänt värde ger ingen påminnelse och markerar inte dagen, så nästa hämtning försöker igen. Körs av servertimern (och av hemskärmens hämtning). Notisnyckel per dygn, så den skickas högst en gång.
+- **Timer:** Högst tre timers, delade mellan skärmarna (tabell `app_setting` "timers", lås 727004). Knappen sitter bredvid hälsningen. Servern skickar en notis när en timer gått av (via servertimern, högst en minut sen), och en öppen skärm pipar och visar "Klart!" tills den stängs av. Ljud kan blockeras av webbläsaren om sidan inte fått någon tryckning.
+- Timers och laddkontrollen läggs på servertimern (`/api/cron/preheat`) utan ny konfiguration. Utanför fönster görs inga anrop till bilen eller vädret.

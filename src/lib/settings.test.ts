@@ -5,7 +5,7 @@ const at = (h: number, m = 0) => new Date(2026, 10, 8, h, m); // lokal tid, så 
 
 describe("defaults", () => {
   it("keep today's order, hide nothing, no saved place, night mode off 22:00-06:00", () => {
-    expect(DEFAULT_SETTINGS).toEqual({ cards: { order: [...CARD_IDS], hidden: [] }, place: null, night: { enabled: false, from: "22:00", to: "06:00" }, notify: { aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true }, show: { pickup: true, childWeek: true } });
+    expect(DEFAULT_SETTINGS).toEqual({ cards: { order: [...CARD_IDS], hidden: [] }, place: null, night: { enabled: false, from: "22:00", to: "06:00" }, notify: { aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true, chargeReminder: true, timer: true }, show: { pickup: true, childWeek: true }, smart: { chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true } } });
     expect(CARD_IDS).toEqual(["weather", "calendar", "lists", "skoda", "spotify", "sonos", "aeg", "tado"]);
   });
 });
@@ -115,10 +115,10 @@ describe("moveCard", () => {
 
 describe("notify", () => {
   it("grundvärden: AEG och laddning på, olåst på natten av", () => {
-    expect(normalizeSettings({}).notify).toEqual({ aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true });
+    expect(normalizeSettings({}).notify).toEqual({ aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true, chargeReminder: true, timer: true });
   });
   it("sparade val behålls, trasiga värden blir grundvärdet", () => {
-    expect(normalizeSettings({ notify: { aegDone: false, carCharged: "ja", carUnlockedNight: true } }).notify).toEqual({ aegDone: false, carCharged: true, carUnlockedNight: true, preheat: true });
+    expect(normalizeSettings({ notify: { aegDone: false, carCharged: "ja", carUnlockedNight: true } }).notify).toEqual({ aegDone: false, carCharged: true, carUnlockedNight: true, preheat: true, chargeReminder: true, timer: true });
     expect(normalizeSettings({ notify: 5 }).notify.aegDone).toBe(true);
   });
   it("patchen kräver alla tre och godtar inget annat", () => {
@@ -135,5 +135,19 @@ describe("show (tänd och släck)", () => {
     expect(normalizeSettings({ show: "x" }).show).toEqual({ pickup: true, childWeek: true });
     expect(settingsPatchSchema.safeParse({ show: { pickup: false, childWeek: true } }).success).toBe(true);
     expect(settingsPatchSchema.safeParse({ show: { pickup: false } }).success).toBe(false);
+  });
+});
+
+describe("smart (tänd och släck)", () => {
+  it("grundvärden och tolerant läsning", () => {
+    expect(normalizeSettings({}).smart).toEqual({ chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true } });
+    expect(normalizeSettings({ smart: { chargeReminder: { enabled: false, belowPct: 5, at: "25:00" }, timer: { enabled: false } } }).smart).toEqual({ chargeReminder: { enabled: false, belowPct: 40, at: "19:00" }, timer: { enabled: false } });
+    expect(normalizeSettings({ smart: { chargeReminder: { belowPct: 55, at: "20:30" } } }).smart.chargeReminder).toEqual({ enabled: true, belowPct: 55, at: "20:30" });
+  });
+  it("patchen är strikt", () => {
+    const ok = { chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true } };
+    expect(settingsPatchSchema.safeParse({ smart: ok }).success).toBe(true);
+    expect(settingsPatchSchema.safeParse({ smart: { ...ok, chargeReminder: { ...ok.chargeReminder, belowPct: 95 } } }).success).toBe(false);
+    expect(settingsPatchSchema.safeParse({ smart: { ...ok, extra: 1 } }).success).toBe(false);
   });
 });

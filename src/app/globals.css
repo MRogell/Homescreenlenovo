@@ -943,3 +943,25 @@ body:has(.wrap.shop) { padding-top: 0; }
 .pk-off:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 .dep-timer.ok { color: var(--ok); }
 .dep-timer.warn { color: var(--warn); }
+
+/* Timer */
+.tm { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+.tm-chip { min-height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 10px; border-radius: 99px; border: 1px solid var(--field-line); background: transparent; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
+.tm-chip svg { width: 16px; height: 16px; flex: none; }
+.tm-chip b { color: var(--fg); font: 600 15px var(--body); font-variant-numeric: tabular-nums; }
+.tm-chip.done { border-color: transparent; background: var(--bad); color: var(--bg); animation: tm-pulse 1s ease-in-out infinite; }
+.tm-chip.done b { color: inherit; }
+@keyframes tm-pulse { 50% { opacity: .6; } }
+@media (prefers-reduced-motion: reduce) { .tm-chip.done { animation: none; } }
+.tm-chip:focus-visible, .tm-presets button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.tm-presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tm-presets button { min-height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; border: 1px solid var(--field-line); background: var(--surface-2); color: var(--fg); cursor: pointer; font: inherit; }
+.tm-presets button b { font: 600 24px var(--display); }
+.tm-presets button small { color: var(--muted); font-size: 12px; }
+.tm-presets button:disabled { opacity: .5; }
+.tm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.tm-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--surface-2); }
+.tm-list li span { display: flex; flex-direction: column; }
+.tm-list li b { font: 600 24px var(--display); font-variant-numeric: tabular-nums; }
+.tm-list li small { color: var(--muted); }
+@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) { .tm-chip { min-height: 34px; } }
