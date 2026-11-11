@@ -978,3 +978,8 @@ body:has(.wrap.shop) { padding-top: 0; }
 .ap-step input[type="time"] { min-height: 48px; border-radius: 12px; border: 1px solid var(--field-line); background: var(--surface-2); color: var(--fg); padding: 0 12px; font: 600 18px var(--display); }
 .ap-step input[type="time"]:disabled { opacity: .5; }
 @media (max-width: 560px) { .ap-smart-row { padding-left: 0; } }
+
+/* iPhone som hemskärmsapp: iOS lägger en mjuk suddighet under statusfältet. Utan extra luft hamnar rubriken i den och ser suddig ut. */
+@media (max-width: 560px) {
+  body { padding-top: calc(env(safe-area-inset-top, 0px) + 26px); }
+}
