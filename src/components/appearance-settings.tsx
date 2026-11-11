@@ -106,9 +106,20 @@ export function AppearanceSettings({ initial, defaultPlace }: { initial: AppSett
         <input type="checkbox" role="switch" checked={s.smart.chargeReminder.enabled} disabled={busy} onChange={(e) => smart({ chargeReminder: { ...s.smart.chargeReminder, enabled: e.target.checked } })} />
         <span>Laddpåminnelse: notis om bilen har lågt batteri och inte laddar</span>
       </label>
-      <div className="ap-times">
-        <label>Batteri på eller under (%)<input type="number" min={10} max={80} step={5} value={s.smart.chargeReminder.belowPct} disabled={busy || !s.smart.chargeReminder.enabled} onChange={(e) => { const n = Math.round(Number(e.target.value)); if (n >= 10 && n <= 80) smart({ chargeReminder: { ...s.smart.chargeReminder, belowPct: n } }); }} /></label>
-        <label>Klockan<input type="time" value={s.smart.chargeReminder.at} disabled={busy || !s.smart.chargeReminder.enabled} onChange={(e) => /^\d{2}:\d{2}$/.test(e.target.value) && smart({ chargeReminder: { ...s.smart.chargeReminder, at: e.target.value } })} /></label>
+      <div className="ap-smart-row" aria-disabled={!s.smart.chargeReminder.enabled}>
+        <div className="ap-step">
+          <span id="cr-pct">Batteri på eller under</span>
+          <span className="ap-stepper" role="group" aria-labelledby="cr-pct">
+            <button type="button" aria-label="Sänk gränsen" disabled={busy || !s.smart.chargeReminder.enabled || s.smart.chargeReminder.belowPct <= 10} onClick={() => smart({ chargeReminder: { ...s.smart.chargeReminder, belowPct: Math.max(10, s.smart.chargeReminder.belowPct - 5) } })}>−</button>
+            <output aria-live="polite">{s.smart.chargeReminder.belowPct} %</output>
+            <button type="button" aria-label="Höj gränsen" disabled={busy || !s.smart.chargeReminder.enabled || s.smart.chargeReminder.belowPct >= 80} onClick={() => smart({ chargeReminder: { ...s.smart.chargeReminder, belowPct: Math.min(80, s.smart.chargeReminder.belowPct + 5) } })}>+</button>
+          </span>
+        </div>
+        <label className="ap-step">
+          <span>Skicka efter klockan</span>
+          {/* Sparas när fältet lämnas, inte för varje tryck, så att man hinner skriva klart tiden. */}
+          <input type="time" key={s.smart.chargeReminder.at} defaultValue={s.smart.chargeReminder.at} disabled={!s.smart.chargeReminder.enabled} onBlur={(e) => { const v = e.target.value; if (/^\d{2}:\d{2}$/.test(v) && v !== s.smart.chargeReminder.at) smart({ chargeReminder: { ...s.smart.chargeReminder, at: v } }); }} />
+        </label>
       </div>
       <label className="ap-show">
         <input type="checkbox" role="switch" checked={s.smart.timer.enabled} disabled={busy} onChange={(e) => smart({ timer: { enabled: e.target.checked } })} />

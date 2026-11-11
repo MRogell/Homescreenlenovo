@@ -965,3 +965,16 @@ body:has(.wrap.shop) { padding-top: 0; }
 .tm-list li b { font: 600 24px var(--display); font-variant-numeric: tabular-nums; }
 .tm-list li small { color: var(--muted); }
 @media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) { .tm-chip { min-height: 34px; } }
+
+/* Smarta funktioner: stegare och klockslag */
+.ap-smart-row { display: flex; flex-direction: column; gap: 4px; padding: 4px 0 8px 62px; }
+.ap-smart-row[aria-disabled="true"] { opacity: .55; }
+.ap-step { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; font-weight: 500; }
+.ap-stepper { display: inline-flex; align-items: center; gap: 10px; }
+.ap-stepper output { min-width: 64px; text-align: center; font: 600 18px var(--display); }
+.ap-stepper button { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--field-line); background: transparent; color: var(--fg); font: 500 24px/1 var(--body); cursor: pointer; display: grid; place-items: center; padding: 0 0 2px; }
+.ap-stepper button:disabled { opacity: .35; cursor: default; }
+.ap-stepper button:focus-visible, .ap-step input:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.ap-step input[type="time"] { min-height: 48px; border-radius: 12px; border: 1px solid var(--field-line); background: var(--surface-2); color: var(--fg); padding: 0 12px; font: 600 18px var(--display); }
+.ap-step input[type="time"]:disabled { opacity: .5; }
+@media (max-width: 560px) { .ap-smart-row { padding-left: 0; } }
