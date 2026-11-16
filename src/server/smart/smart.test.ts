@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "../db";
 import { applySettingsPatch } from "../settings";
+import { saveDeparture } from "../departure/store";
+import { handlePreheatCron } from "../departure/cron";
 import { chargeReminderDue, chargeReminderTick } from "./charge";
 import { cancelTimer, handleTimers, loadTimers, startTimer, timersTick } from "./timers";
 
@@ -88,5 +90,30 @@ describe("timers", () => {
     expect(ok.json.timers).toMatchObject([{ label: "Ägg", endsAt: at("12:07:30".slice(0, 5)).getTime() + 30_000 }]);
     const id = ok.json.timers![0]!.id;
     expect((await handleTimers(req({ cancel: id }), { db, now })).json.timers).toEqual([]);
+  });
+});
+
+describe("förvärm längre när det är kallt: servertimern", () => {
+  const patch = { enabled: true, times: { "1": ["07:30"] }, leadMin: 15, belowC: 5, targetC: 21 };
+  const secret = "hemlig-nyckel-1234567890";
+  const at = (hm: string) => new Date(`2026-11-09T${hm}:00+01:00`);
+  const st = (tempC: number) => ({ weather: { status: "ok", data: { tempC, hourly: [] }, fetchedAt: "x" }, skoda: { status: "ok", data: { climateOn: false }, fetchedAt: "x" } }) as never;
+  it("en bitter morgon startas bilen tidigare än grundtiden", async () => {
+    await saveDeparture(patch, db);
+    const start = vi.fn(async () => null);
+    const notify = vi.fn(async () => {});
+    const states = vi.fn(async () => st(-25));
+    // Grundtid: start 07:15. Kallare än −20 ger +15: start 07:00.
+    await handlePreheatCron({ authorization: `Bearer ${secret}` }, secret, { db, now: () => at("07:02"), states, start, notify });
+    expect(start).toHaveBeenCalledOnce();
+  });
+  it("släckt: bilen startas inte före grundtiden", async () => {
+    await applySettingsPatch({ smart: { chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true }, coldLead: { enabled: false, mild: 5, cold: 10, extreme: 15 } } }, db);
+    await saveDeparture(patch, db);
+    const start = vi.fn(async () => null);
+    const states = vi.fn(async () => st(-25));
+    const r = await handlePreheatCron({ authorization: `Bearer ${secret}` }, secret, { db, now: () => at("07:02"), states, start, notify: vi.fn(async () => {}) });
+    expect(start).not.toHaveBeenCalled();
+    expect(r.json.action).toBe("none");
   });
 });

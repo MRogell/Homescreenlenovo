@@ -24,7 +24,7 @@ export async function applySettingsPatch(patch: SettingsPatch, db: PrismaClient 
   if (patch.night) ops.push(save("night", patch.night));
   if (patch.notify) ops.push(save("notify", { ...(await getSettings(db)).notify, ...patch.notify }));
   if (patch.show) ops.push(save("show", patch.show));
-  if (patch.smart) ops.push(save("smart", patch.smart));
+  if (patch.smart) ops.push(save("smart", { ...(await getSettings(db)).smart, ...patch.smart }));
   if (patch.place === null) ops.push(db.appSetting.deleteMany({ where: { key: "place" } }));
   else if (patch.place) ops.push(save("place", patch.place));
   await db.$transaction(ops);

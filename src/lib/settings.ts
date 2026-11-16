@@ -22,6 +22,8 @@ export interface SmartSettings {
   chargeReminder: { enabled: boolean; belowPct: number; at: string };
   /** Äggklocka och timer på hemskärmen. */
   timer: { enabled: boolean };
+  /** Förvärm startar tidigare när det är kallt (tillägg i minuter per band). */
+  coldLead: { enabled: boolean; mild: number; cold: number; extreme: number };
 }
 
 export const NOTIFY_KINDS = ["aegDone", "carCharged", "carUnlockedNight", "preheat", "chargeReminder", "timer"] as const;
@@ -35,7 +37,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   night: { enabled: false, from: "22:00", to: "06:00" },
   notify: { ...DEFAULT_NOTIFY },
   show: { pickup: true, childWeek: true },
-  smart: { chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true } },
+  smart: { chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true }, coldLead: { enabled: true, mild: 5, cold: 10, extreme: 15 } },
 };
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -45,7 +47,7 @@ const cardId = z.enum(CARD_IDS);
 const placeSchema = z.object({ name: z.string().trim().min(1).max(80), lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180) }).strict();
 const nightSchema = z.object({ enabled: z.boolean(), from: z.string().regex(TIME), to: z.string().regex(TIME) }).strict();
 
-const smartSchema = z.object({ chargeReminder: z.object({ enabled: z.boolean(), belowPct: z.number().int().min(10).max(80), at: z.string().regex(TIME) }).strict(), timer: z.object({ enabled: z.boolean() }).strict() }).strict();
+const smartSchema = z.object({ chargeReminder: z.object({ enabled: z.boolean(), belowPct: z.number().int().min(10).max(80), at: z.string().regex(TIME) }).strict(), timer: z.object({ enabled: z.boolean() }).strict(), coldLead: z.object({ enabled: z.boolean(), mild: z.number().int().min(0).max(30), cold: z.number().int().min(0).max(30), extreme: z.number().int().min(0).max(30) }).strict().optional() }).strict();
 const showSchema = z.object({ pickup: z.boolean(), childWeek: z.boolean() }).strict();
 
 // preheat är valfri så att en flik med äldre kod (som skickar de tre första) fortfarande godtas.
@@ -83,6 +85,9 @@ export function normalizeSettings(raw: unknown): AppSettings {
   const smart = isRecord(r.smart) ? r.smart : {};
   const cr = isRecord(smart.chargeReminder) ? smart.chargeReminder : {};
   const tm = isRecord(smart.timer) ? smart.timer : {};
+  const cl = isRecord(smart.coldLead) ? smart.coldLead : {};
+  const extra = (v: unknown, fb: number) => (typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 30 ? v : fb);
+  const DC = DEFAULT_SETTINGS.smart.coldLead;
   const D = DEFAULT_SETTINGS.smart.chargeReminder;
   return {
     cards: { order: [...order, ...CARD_IDS.filter((id) => !order.includes(id))], hidden: known(cards.hidden) },
@@ -93,6 +98,7 @@ export function normalizeSettings(raw: unknown): AppSettings {
     smart: {
       chargeReminder: { enabled: cr.enabled !== false, belowPct: typeof cr.belowPct === "number" && Number.isInteger(cr.belowPct) && cr.belowPct >= 10 && cr.belowPct <= 80 ? cr.belowPct : D.belowPct, at: time(cr.at, D.at) },
       timer: { enabled: tm.enabled !== false },
+      coldLead: { enabled: cl.enabled !== false, mild: extra(cl.mild, DC.mild), cold: extra(cl.cold, DC.cold), extreme: extra(cl.extreme, DC.extreme) },
     },
   };
 }

@@ -5,7 +5,7 @@ const at = (h: number, m = 0) => new Date(2026, 10, 8, h, m); // lokal tid, så 
 
 describe("defaults", () => {
   it("keep today's order, hide nothing, no saved place, night mode off 22:00-06:00", () => {
-    expect(DEFAULT_SETTINGS).toEqual({ cards: { order: [...CARD_IDS], hidden: [] }, place: null, night: { enabled: false, from: "22:00", to: "06:00" }, notify: { aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true, chargeReminder: true, timer: true }, show: { pickup: true, childWeek: true }, smart: { chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true } } });
+    expect(DEFAULT_SETTINGS).toEqual({ cards: { order: [...CARD_IDS], hidden: [] }, place: null, night: { enabled: false, from: "22:00", to: "06:00" }, notify: { aegDone: true, carCharged: true, carUnlockedNight: false, preheat: true, chargeReminder: true, timer: true }, show: { pickup: true, childWeek: true }, smart: { chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true }, coldLead: { enabled: true, mild: 5, cold: 10, extreme: 15 } } });
     expect(CARD_IDS).toEqual(["weather", "calendar", "lists", "skoda", "spotify", "sonos", "aeg", "tado"]);
   });
 });
@@ -140,8 +140,8 @@ describe("show (tänd och släck)", () => {
 
 describe("smart (tänd och släck)", () => {
   it("grundvärden och tolerant läsning", () => {
-    expect(normalizeSettings({}).smart).toEqual({ chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true } });
-    expect(normalizeSettings({ smart: { chargeReminder: { enabled: false, belowPct: 5, at: "25:00" }, timer: { enabled: false } } }).smart).toEqual({ chargeReminder: { enabled: false, belowPct: 40, at: "19:00" }, timer: { enabled: false } });
+    expect(normalizeSettings({}).smart).toEqual({ chargeReminder: { enabled: true, belowPct: 40, at: "19:00" }, timer: { enabled: true }, coldLead: { enabled: true, mild: 5, cold: 10, extreme: 15 } });
+    expect(normalizeSettings({ smart: { chargeReminder: { enabled: false, belowPct: 5, at: "25:00" }, timer: { enabled: false } } }).smart).toEqual({ chargeReminder: { enabled: false, belowPct: 40, at: "19:00" }, timer: { enabled: false }, coldLead: { enabled: true, mild: 5, cold: 10, extreme: 15 } });
     expect(normalizeSettings({ smart: { chargeReminder: { belowPct: 55, at: "20:30" } } }).smart.chargeReminder).toEqual({ enabled: true, belowPct: 55, at: "20:30" });
   });
   it("patchen är strikt", () => {

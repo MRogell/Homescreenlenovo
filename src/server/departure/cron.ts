@@ -1,7 +1,8 @@
 import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { currentSlot } from "@/lib/departure";
+import { currentSlot, MAX_LEAD_MIN } from "@/lib/departure";
+import { getSettings } from "../settings";
 import { db as defaultDb } from "../db";
 import { PROVIDERS } from "../providers";
 import { getHomeStates, type HomeStates } from "../snapshots";
@@ -35,7 +36,11 @@ export async function handlePreheatCron(req: { authorization: string | null }, s
   await db.appSetting.upsert({ where: { key: TIMER_KEY }, create: { key: TIMER_KEY, value: { at: now.getTime() } as never }, update: { value: { at: now.getTime() } as never } });
   // Timers är billiga (en rad i databasen) och görs alltid.
   await timersTick(now, { db, notify: deps.notify });
-  const departureDue = currentSlot(await loadDeparture(db), now, { tempC: null, climateOn: null }).decision.kind === "start";
+  // Förkollen utgår från den längsta förvärmtid kylan kan ge, så att en kall morgon inte missas. Den riktiga bedömningen görs sedan med verklig temperatur.
+  const dep = await loadDeparture(db);
+  const cold = (await getSettings(db)).smart.coldLead;
+  const maxExtra = cold.enabled ? Math.max(cold.mild, cold.cold, cold.extreme) : 0;
+  const departureDue = currentSlot({ ...dep, leadMin: Math.min(MAX_LEAD_MIN, dep.leadMin + maxExtra) }, now, { tempC: null, climateOn: null }).decision.kind === "start";
   const chargeDue = await chargeReminderDue(now, db);
   if (!departureDue && !chargeDue) return { status: 200, json: { ok: true, action: "none" } };
   const ids = new Set(["weather", "skoda"]);

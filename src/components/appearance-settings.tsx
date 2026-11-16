@@ -122,6 +122,22 @@ export function AppearanceSettings({ initial, defaultPlace }: { initial: AppSett
         </label>
       </div>
       <label className="ap-show">
+        <input type="checkbox" role="switch" checked={s.smart.coldLead.enabled} disabled={busy} onChange={(e) => smart({ coldLead: { ...s.smart.coldLead, enabled: e.target.checked } })} />
+        <span>Förvärm längre när det är kallt<small>Startar klimatet tidigare ju kallare det är ute (högst 45 minuter före).</small></span>
+      </label>
+      <div className="ap-smart-row" aria-disabled={!s.smart.coldLead.enabled}>
+        {([["mild", "−5° till −10°"], ["cold", "−10° till −20°"], ["extreme", "kallare än −20°"]] as const).map(([k, label]) => (
+          <div className="ap-step" key={k}>
+            <span id={`cl-${k}`}>{label}</span>
+            <span className="ap-stepper" role="group" aria-labelledby={`cl-${k}`}>
+              <button type="button" aria-label={`Minska tillägget ${label}`} disabled={busy || !s.smart.coldLead.enabled || s.smart.coldLead[k] <= 0} onClick={() => smart({ coldLead: { ...s.smart.coldLead, [k]: Math.max(0, s.smart.coldLead[k] - 5) } })}>−</button>
+              <output aria-live="polite">+{s.smart.coldLead[k]} min</output>
+              <button type="button" aria-label={`Öka tillägget ${label}`} disabled={busy || !s.smart.coldLead.enabled || s.smart.coldLead[k] >= 30} onClick={() => smart({ coldLead: { ...s.smart.coldLead, [k]: Math.min(30, s.smart.coldLead[k] + 5) } })}>+</button>
+            </span>
+          </div>
+        ))}
+      </div>
+      <label className="ap-show">
         <input type="checkbox" role="switch" checked={s.smart.timer.enabled} disabled={busy} onChange={(e) => smart({ timer: { enabled: e.target.checked } })} />
         <span>Äggklocka och timer på hemskärmen</span>
       </label>

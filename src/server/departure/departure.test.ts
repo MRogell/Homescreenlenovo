@@ -63,9 +63,9 @@ describe("store", () => {
 
 describe("contextOf", () => {
   it("läser temperatur och klimatläge, okänt blir null", () => {
-    expect(contextOf(states(-4, true))).toEqual({ tempC: -4, climateOn: true });
-    expect(contextOf(states(null, null))).toEqual({ tempC: null, climateOn: null });
-    expect(contextOf({} as never)).toEqual({ tempC: null, climateOn: null });
+    expect(contextOf(states(-4, true))).toMatchObject({ tempC: -4, climateOn: true });
+    expect(contextOf(states(null, null))).toMatchObject({ tempC: null, climateOn: null });
+    expect(contextOf({} as never)).toMatchObject({ tempC: null, climateOn: null });
   });
 });
 

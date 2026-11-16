@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { currentSlot, daysText, decide, DEFAULT_DEPARTURE, departureView, normalizeDeparture, type DepartureSettings } from "./departure";
+import { COLD_LIMITS, currentSlot, DEFAULT_COLD_LEAD, leadExtra, leadFor, MAX_LEAD_MIN, daysText, decide, DEFAULT_DEPARTURE, departureView, normalizeDeparture, type DepartureSettings } from "./departure";
 
 // Måndag 9 november 2026, svensk tid (UTC+1).
 const at = (hm: string, day = "2026-11-09") => new Date(`${day}T${hm}:00+01:00`);
@@ -133,7 +133,7 @@ describe("flera avresor på samma dag", () => {
   });
   it("kvällens start är en egen körning och spärras inte av morgonens", () => {
     const morningDone = { ...two, last: { date: "2026-11-09", slot: 0, status: "started" as const, attempts: 1, at: 1, tempC: -4 } };
-    expect(currentSlot(morningDone, at("16:50"), cold)).toEqual({ decision: { kind: "start" }, slot: 1 });
+    expect(currentSlot(morningDone, at("16:50"), cold)).toMatchObject({ decision: { kind: "start" }, slot: 1 });
   });
   it("missad morgon hindrar inte kvällen, och är klar när båda är över", () => {
     expect(decide(two, at("12:00"), cold)).toEqual({ kind: "wait", startsAt: "16:45" });
@@ -151,8 +151,38 @@ describe("tre avresor på samma dag", () => {
   const three = only({ "1": ["07:30", "12:00", "17:00"] });
   it("varje tid är en egen körning", () => {
     const done = (slot: number) => ({ ...three, last: { date: "2026-11-09", slot, status: "started" as const, attempts: 1, at: 1, tempC: -4 } });
-    expect(currentSlot(done(0), at("11:50"), cold)).toEqual({ decision: { kind: "start" }, slot: 1 });
-    expect(currentSlot(done(1), at("16:50"), cold)).toEqual({ decision: { kind: "start" }, slot: 2 });
+    expect(currentSlot(done(0), at("11:50"), cold)).toMatchObject({ decision: { kind: "start" }, slot: 1 });
+    expect(currentSlot(done(1), at("16:50"), cold)).toMatchObject({ decision: { kind: "start" }, slot: 2 });
     expect(decide(done(2), at("17:10"), cold).kind).toBe("done");
+  });
+});
+
+describe("förvärm längre när det är kallt", () => {
+  const cl = DEFAULT_COLD_LEAD; // +5, +10, +15
+  it("tillägg per band, gränserna ingår i det kallare bandet", () => {
+    expect([0, -4.9, -5, -9.9, -10, -19.9, -20, -30].map((t) => leadExtra(t, cl))).toEqual([0, 0, 5, 5, 10, 10, 15, 15]);
+    expect(leadExtra(null, cl)).toBe(0);
+    expect(leadExtra(-30, { ...cl, enabled: false })).toBe(0);
+    expect(leadExtra(-30, null)).toBe(0);
+    expect(COLD_LIMITS).toEqual({ mild: -5, cold: -10, extreme: -20 });
+  });
+  it("prognosen för avresetimmen går före nuvarande temperatur", () => {
+    const ctx = { tempC: -2, climateOn: false, coldLead: cl, hourly: [{ time: "2026-11-09T06:00", tempC: -8 }, { time: "2026-11-09T07:00", tempC: -14 }] };
+    expect(leadFor(15, ctx, "2026-11-09", 7 * 60 + 30)).toEqual({ minutes: 25, extra: 10, tempC: -14 });
+    expect(leadFor(15, ctx, "2026-11-09", 12 * 60)).toEqual({ minutes: 15, extra: 0, tempC: -2 }); // ingen prognos för 12: nuvarande
+  });
+  it("taket på 45 minuter", () => {
+    expect(leadFor(30, { tempC: -30, climateOn: false, coldLead: { ...cl, extreme: 30 } }, "2026-11-09", 480).minutes).toBe(MAX_LEAD_MIN);
+  });
+  it("startar tidigare när det är kallt, men inte när det är mildare", () => {
+    const warm = { tempC: -2, climateOn: false, coldLead: cl };
+    const bitter = { tempC: -22, climateOn: false, coldLead: cl }; // +15: start 07:00 för avresa 07:30 (15+15)
+    expect(decide(on, at("07:05"), warm)).toEqual({ kind: "wait", startsAt: "07:15" });
+    expect(decide(on, at("07:05"), bitter)).toEqual({ kind: "start" });
+    expect(decide(on, at("06:59"), bitter)).toEqual({ kind: "wait", startsAt: "07:00" });
+  });
+  it("kortet förklarar den längre förvärmen", () => {
+    const v = departureView(on, at("06:00"), { tempC: -12, climateOn: false, coldLead: cl });
+    expect(v.sub).toBe("Startar 07:05 (25 min före, −12° ute) om det är 5° eller kallare (nu −12°)");
   });
 });

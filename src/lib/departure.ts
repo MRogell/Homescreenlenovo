@@ -11,6 +11,44 @@ export const MAX_ATTEMPTS = 3;
 /** En start som påbörjats men aldrig avslutats räknas som misslyckad efter så här lång tid. */
 export const STARTING_STALE_MS = 2 * 60_000;
 
+/** Förvärmen blir längre när det är kallt: tillägg i minuter per temperaturband. */
+export interface ColdLead { enabled: boolean; mild: number; cold: number; extreme: number }
+export const DEFAULT_COLD_LEAD: ColdLead = { enabled: true, mild: 5, cold: 10, extreme: 15 };
+/** Förvärmen blir aldrig längre än så här, hur kallt det än är. */
+export const MAX_LEAD_MIN = 45;
+export const COLD_LIMITS = { mild: -5, cold: -10, extreme: -20 } as const;
+
+/** Tillägg i minuter för en temperatur: −5° till −10° mild, −10° till −20° kallt, under −20° extremt. Okänd temperatur ger 0. */
+export function leadExtra(tempC: number | null, cl: ColdLead | null | undefined): number {
+  if (!cl?.enabled || tempC === null) return 0;
+  if (tempC <= COLD_LIMITS.extreme) return cl.extreme;
+  if (tempC <= COLD_LIMITS.cold) return cl.cold;
+  if (tempC <= COLD_LIMITS.mild) return cl.mild;
+  return 0;
+}
+
+export interface DepartureCtx {
+  tempC: number | null;
+  climateOn: boolean | null;
+  /** Timprognos (lokal tid, "YYYY-MM-DDTHH:MM"): används för temperaturen vid avresetimmen när den finns. */
+  hourly?: { time: string; tempC: number }[];
+  coldLead?: ColdLead | null;
+}
+
+/** Temperaturen som avgör förvärmtiden för en avresa: prognosen för avresetimmen om den finns, annars nuvarande. */
+export function tempForDeparture(ctx: DepartureCtx, date: string, departMin: number): number | null {
+  const hh = String(Math.floor(departMin / 60)).padStart(2, "0");
+  const hit = ctx.hourly?.find((h) => h.time.startsWith(`${date}T${hh}`));
+  return hit ? hit.tempC : ctx.tempC;
+}
+
+export interface LeadInfo { minutes: number; extra: number; tempC: number | null }
+export function leadFor(baseMin: number, ctx: DepartureCtx, date: string, departMin: number): LeadInfo {
+  const tempC = tempForDeparture(ctx, date, departMin);
+  const extra = leadExtra(tempC, ctx.coldLead);
+  return { minutes: Math.min(MAX_LEAD_MIN, baseMin + extra), extra, tempC };
+}
+
 export type RunStatus = "starting" | "started" | "failed" | "skipped_warm" | "skipped_on";
 export interface LastRun { date: string; /** Vilken av dagens avresor (0 = första) körningen gäller. */ slot: number; status: RunStatus; attempts: number; at: number; tempC: number | null }
 
@@ -80,37 +118,38 @@ const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:
  * Vad som ska hända just nu. `tempC` är utetemperaturen (null om okänd, och då startar vi hellre än inte).
  * `climateOn` är bilens läge (true = klimatiseringen går redan).
  */
-export function decide(s: DepartureSettings, now: Date, ctx: { tempC: number | null; climateOn: boolean | null }): Decision {
-  const slot = currentSlot(s, now, ctx);
-  return slot.decision;
+export function decide(s: DepartureSettings, now: Date, ctx: DepartureCtx): Decision {
+  return currentSlot(s, now, ctx).decision;
 }
 
 /** Avgör vilken av dagens avresor det gäller just nu och vad som ska hända med den. */
-export function currentSlot(s: DepartureSettings, now: Date, ctx: { tempC: number | null; climateOn: boolean | null }): { decision: Decision; slot: number } {
-  if (!s.enabled) return { decision: { kind: "off" }, slot: 0 };
+export function currentSlot(s: DepartureSettings, now: Date, ctx: DepartureCtx): { decision: Decision; slot: number; lead: LeadInfo } {
+  const lead0: LeadInfo = { minutes: s.leadMin, extra: 0, tempC: ctx.tempC };
+  if (!s.enabled) return { decision: { kind: "off" }, slot: 0, lead: lead0 };
   const c = localClock(now);
   const times = s.times[String(c.weekday)] ?? [];
-  if (times.length === 0) return { decision: { kind: "idle" }, slot: 0 };
-  if (s.skipDate === c.date) return { decision: { kind: "skipped_user" }, slot: 0 };
-  let lastDone: { run: LastRun; slot: number } | null = null;
+  if (times.length === 0) return { decision: { kind: "idle" }, slot: 0, lead: lead0 };
+  if (s.skipDate === c.date) return { decision: { kind: "skipped_user" }, slot: 0, lead: lead0 };
+  let lastDone: { run: LastRun; slot: number; lead: LeadInfo } | null = null;
   let missed = false;
   for (let i = 0; i < times.length; i++) {
     const depart = minutesOf(times[i]!);
-    const start = Math.max(0, depart - s.leadMin);
+    const lead = leadFor(s.leadMin, ctx, c.date, depart);
+    const start = Math.max(0, depart - lead.minutes);
     const run = s.last && s.last.date === c.date && s.last.slot === i ? s.last : null;
     if (run) {
-      if (run.status === "started" || run.status === "skipped_warm" || run.status === "skipped_on") { lastDone = { run, slot: i }; continue; }
-      if (run.status === "starting" && now.getTime() - run.at < STARTING_STALE_MS) return { decision: { kind: "done", run }, slot: i };
-      if (run.attempts >= MAX_ATTEMPTS) { lastDone = { run: { ...run, status: "failed" }, slot: i }; continue; }
+      if (run.status === "started" || run.status === "skipped_warm" || run.status === "skipped_on") { lastDone = { run, slot: i, lead }; continue; }
+      if (run.status === "starting" && now.getTime() - run.at < STARTING_STALE_MS) return { decision: { kind: "done", run }, slot: i, lead };
+      if (run.attempts >= MAX_ATTEMPTS) { lastDone = { run: { ...run, status: "failed" }, slot: i, lead }; continue; }
     }
     if (c.minutes > depart + GRACE_MIN) { missed = true; continue; }
-    if (c.minutes < start) return { decision: { kind: "wait", startsAt: hhmm(start) }, slot: i };
-    if (ctx.tempC !== null && ctx.tempC > s.belowC) return { decision: { kind: "skip", reason: "warm" }, slot: i };
-    if (ctx.climateOn === true) return { decision: { kind: "skip", reason: "on" }, slot: i };
-    return { decision: { kind: "start" }, slot: i };
+    if (c.minutes < start) return { decision: { kind: "wait", startsAt: hhmm(start) }, slot: i, lead };
+    if (ctx.tempC !== null && ctx.tempC > s.belowC) return { decision: { kind: "skip", reason: "warm" }, slot: i, lead };
+    if (ctx.climateOn === true) return { decision: { kind: "skip", reason: "on" }, slot: i, lead };
+    return { decision: { kind: "start" }, slot: i, lead };
   }
-  if (lastDone) return { decision: { kind: "done", run: lastDone.run }, slot: lastDone.slot };
-  return { decision: missed ? { kind: "missed" } : { kind: "idle" }, slot: 0 };
+  if (lastDone) return { decision: { kind: "done", run: lastDone.run }, slot: lastDone.slot, lead: lastDone.lead };
+  return { decision: missed ? { kind: "missed" } : { kind: "idle" }, slot: 0, lead: lead0 };
 }
 
 export interface DepartureView {
@@ -147,20 +186,20 @@ function lineOf(s: DepartureSettings, weekday: number): string {
 }
 
 /** Texterna som visas på kortet. */
-export function departureView(s: DepartureSettings, now: Date, ctx: { tempC: number | null; climateOn: boolean | null }): DepartureView {
+export function departureView(s: DepartureSettings, now: Date, ctx: DepartureCtx): DepartureView {
   const c = localClock(now);
   const base = { settings: { enabled: s.enabled, times: s.times, leadMin: s.leadMin, belowC: s.belowC, targetC: s.targetC, skippedToday: s.skipDate === c.date } };
   if (!s.enabled) return { ...base, line: "Förvärm till avresa", sub: "Av", tone: "idle" };
   const line = lineOf(s, c.weekday);
-  const { decision: d, slot } = currentSlot(s, now, ctx);
+  const { decision: d, slot, lead } = currentSlot(s, now, ctx);
   const today = s.times[String(c.weekday)]?.[slot] ?? "";
   switch (d.kind) {
     case "idle": return { ...base, line, sub: "Ingen avresa idag", tone: "idle" };
-    case "wait": return { ...base, line, sub: `Startar ${d.startsAt} om det är ${s.belowC}° eller kallare (nu ${fmtTemp(ctx.tempC)})`, tone: "wait" };
+    case "wait": return { ...base, line, sub: `Startar ${d.startsAt}${lead.extra > 0 ? ` (${lead.minutes} min före, ${fmtTemp(lead.tempC)} ute)` : ""} om det är ${s.belowC}° eller kallare (nu ${fmtTemp(ctx.tempC)})`, tone: "wait" };
     case "start": return { ...base, line, sub: "Startar klimatet…", tone: "wait" };
     case "skip": return { ...base, line, sub: d.reason === "warm" ? `Hoppar över idag: ${fmtTemp(ctx.tempC)} är varmare än gränsen ${s.belowC}°` : "Klimatet går redan", tone: "warn" };
     case "skipped_user": return { ...base, line, sub: "Du hoppade över idag", tone: "warn" };
-    case "missed": return { ...base, line, sub: `Missades kring ${hhmm(Math.max(0, minutesOf(today) - s.leadMin))}: ingen skärm var på eller uppkopplad`, tone: "bad" };
+    case "missed": return { ...base, line, sub: `Missades kring ${hhmm(Math.max(0, minutesOf(today) - lead.minutes))}: ingen skärm var på eller uppkopplad`, tone: "bad" };
     case "done": {
       const r = d.run;
       if (r.status === "started") return { ...base, line, sub: `Klimatet startade · ${String(s.targetC).replace(".", ",")} °C klart ${today}`, tone: "ok" };

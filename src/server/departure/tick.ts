@@ -1,8 +1,9 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { departureView, type DepartureView } from "@/lib/departure";
+import { departureView, type ColdLead, type DepartureCtx, type DepartureView } from "@/lib/departure";
 import { startSkodaClimateNow, type ControlFlowDeps } from "../control-flow";
 import { db as defaultDb } from "../db";
+import { getSettings } from "../settings";
 import { dispatchEvents } from "../notify/push";
 import type { HomeStates } from "../snapshots";
 import { localClock } from "../calendar/time";
@@ -16,16 +17,19 @@ export interface TickDeps extends ControlFlowDeps {
 }
 
 /** Utetemperatur (från vädret) och bilens klimatläge ur hemskärmens data. Okänt blir null. */
-export function contextOf(states: HomeStates): { tempC: number | null; climateOn: boolean | null } {
+export function contextOf(states: HomeStates, coldLead?: ColdLead | null): DepartureCtx {
   const w = states.weather, c = states.skoda;
-  const tempC = w && (w.status === "ok" || w.status === "stale") && typeof (w.data as { tempC?: unknown }).tempC === "number" ? (w.data as { tempC: number }).tempC : null;
+  const wd = w && (w.status === "ok" || w.status === "stale") ? (w.data as { tempC?: unknown; hourly?: unknown }) : null;
+  const tempC = wd && typeof wd.tempC === "number" ? wd.tempC : null;
+  const hourly = Array.isArray(wd?.hourly) ? (wd!.hourly as { time?: unknown; tempC?: unknown }[]).flatMap((h) => (typeof h.time === "string" && typeof h.tempC === "number" ? [{ time: h.time, tempC: h.tempC }] : [])) : [];
   const climateOn = c && (c.status === "ok" || c.status === "stale") ? ((c.data as { climateOn?: boolean | null }).climateOn ?? null) : null;
-  return { tempC, climateOn };
+  return { tempC, climateOn, hourly, coldLead: coldLead ?? null };
 }
 
 /** Det som visas på kortet. */
 export async function getDepartureView(states: HomeStates, now: Date, db: PrismaClient = defaultDb): Promise<DepartureView> {
-  const view = departureView(await loadDeparture(db), now, contextOf(states));
+  const cold = (await getSettings(db)).smart.coldLead;
+  const view = departureView(await loadDeparture(db), now, contextOf(states, cold));
   const lastAt = await loadTimerAt(db);
   return { ...view, timer: { lastAt, active: lastAt !== null && now.getTime() - lastAt < TIMER_ACTIVE_MS } };
 }
@@ -37,7 +41,8 @@ export async function getDepartureView(states: HomeStates, now: Date, db: Prisma
 export async function preheatTick(states: HomeStates, now: Date, deps: TickDeps = {}): Promise<void> {
   const db = deps.db ?? defaultDb;
   try {
-    const claim = await claimDeparture(now, contextOf(states), db);
+    const cold = (await getSettings(db)).smart.coldLead;
+    const claim = await claimDeparture(now, contextOf(states, cold), db);
     if (claim.action !== "start") return;
     const s = claim.settings;
     const code = deps.start ? await deps.start(s.targetC) : await startSkodaClimateNow(s.targetC, { ...deps, db });

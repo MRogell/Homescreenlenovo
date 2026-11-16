@@ -1,6 +1,6 @@
 import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { currentSlot, normalizeDeparture, type Decision, type DeparturePatch, type DepartureSettings, type LastRun } from "@/lib/departure";
+import { currentSlot, type DepartureCtx, normalizeDeparture, type Decision, type DeparturePatch, type DepartureSettings, type LastRun } from "@/lib/departure";
 import { localClock } from "../calendar/time";
 import { db as defaultDb } from "../db";
 
@@ -46,7 +46,7 @@ export type Claim = { action: "start"; settings: DepartureSettings } | { action:
  * Avgör under lås vad som ska hända, och för en start eller ett överhopp skrivs det direkt, så att inte en andra skärm som hämtar
  * samtidigt också startar. Att starta markeras som "pågår" tills anroparen rapporterar resultatet med `finishRun`.
  */
-export async function claimDeparture(now: Date, ctx: { tempC: number | null; climateOn: boolean | null }, db: PrismaClient = defaultDb): Promise<Claim> {
+export async function claimDeparture(now: Date, ctx: DepartureCtx, db: PrismaClient = defaultDb): Promise<Claim> {
   return withLock(db, async (cur, save) => {
     const { decision: d, slot } = currentSlot(cur, now, ctx);
     const date = localClock(now).date;
