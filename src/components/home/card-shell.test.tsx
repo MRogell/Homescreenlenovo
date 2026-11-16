@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { CardShell } from "./card-shell";
+import { CardShell, friendlyReason } from "./card-shell";
 
 const NOW = new Date("2026-11-09T10:00:00Z");
 const render = (state: Parameters<typeof CardShell>[0]["state"], off?: { big: string; text: string; cta?: string }) =>
@@ -38,5 +38,17 @@ describe("CardShell lägen", () => {
     expect(dflt).toContain("Visa Sonos här.");
     expect(dflt).toContain("Anslut Sonos</a>");
     expect(dflt).toContain('href="/installningar"');
+  });
+});
+
+describe("friendlyReason", () => {
+  it("klartext på svenska, och Anslut igen när anslutningen måste göras om", () => {
+    expect(friendlyReason("Anslut igen")).toEqual({ text: "Anslutningen behöver göras om.", reconnect: true });
+    expect(friendlyReason("Spotify nekade åtkomst: anslut igen").reconnect).toBe(true);
+    expect(friendlyReason("Anslutningen har återkallats").reconnect).toBe(true);
+    expect(friendlyReason("Spotify begränsar anropen, försök igen om 30 s")).toEqual({ text: "Tjänsten begränsar anropen just nu. Försöker igen automatiskt.", reconnect: false });
+    expect(friendlyReason("Tjänsten svarade inte i tid").text).toBe("Tjänsten svarade inte i tid. Försöker igen.");
+    expect(friendlyReason("fetch failed")).toEqual({ text: "Tjänsten svarar inte just nu.", reconnect: false });
+    expect(friendlyReason(undefined).reconnect).toBe(false);
   });
 });

@@ -21,6 +21,15 @@ interface Props<T> {
   style?: (data: T) => React.CSSProperties | undefined;
 }
 
+/** Orsak i klartext på svenska. Okända (ofta engelska) fel visas inte, bara den vanliga texten. */
+export function friendlyReason(reason: string | undefined): { text: string; reconnect: boolean } {
+  const r = (reason ?? "").toLowerCase();
+  if (r.includes("anslut igen") || r.includes("återkallad") || r.includes("nekade åtkomst")) return { text: "Anslutningen behöver göras om.", reconnect: true };
+  if (r.includes("begränsar")) return { text: "Tjänsten begränsar anropen just nu. Försöker igen automatiskt.", reconnect: false };
+  if (r.includes("i tid")) return { text: "Tjänsten svarade inte i tid. Försöker igen.", reconnect: false };
+  return { text: "Tjänsten svarar inte just nu.", reconnect: false };
+}
+
 /** Gemensam ram som hanterar alla fyra lägen. Tjänsterna renderar bara sin egen data. */
 export function CardShell<T>({ title, icon, state, now, render, off, noFoot, className = "", style }: Props<T>) {
   if (!state || state.status === "not_connected") {
@@ -37,7 +46,8 @@ export function CardShell<T>({ title, icon, state, now, render, off, noFoot, cla
     return (
       <section className={`card off ${className}`} aria-label={title}>
         <div className="card-head"><Icon name={icon} /><span className="name">{title}</span><span className="pill bad">Ej tillgänglig</span></div>
-        <div className="mid">Tjänsten svarar inte just nu.</div>
+        <div className="mid">{friendlyReason(state.reason).text}</div>
+        {friendlyReason(state.reason).reconnect && <a className="btn" href="/installningar">Anslut igen</a>}
         {/* Den tekniska orsaken (ofta på engelska) visas inte; den finns kvar som tooltip och i diagnosen. */}
         <div className="foot" title={state.reason}>Försöker igen om en stund.</div>
       </section>
