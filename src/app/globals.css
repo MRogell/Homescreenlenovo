@@ -628,7 +628,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .skoda-body .skoda-place { margin-top: 8px; }
   /* Klimatrutan som vanligt (stor halvcirkel, Starta under). Dialens storlek följer kortets höjd. */
   .skoda-climate { padding: 14px 12px 12px; }
-  .skoda-dial { max-width: clamp(110px, calc((100cqh - 160px) / .86), 300px); }
+  .skoda-dial { max-width: clamp(110px, calc((100cqh - 130px) / .86), 300px); }
   /* Mindre dial än på telefon: minus och plus ligger i halvcirkelns öppning, under värdet och centrerade, så att de inte hamnar på bågen. */
   .skoda-dial-center { top: 57%; gap: 6px; }
   .skoda-dial-value { display: grid; grid-template-columns: auto auto; justify-content: center; gap: 10px 22px; }
@@ -669,8 +669,9 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   @container card (max-height: 300px) {
     .skoda-dial-center .label { display: none; }
     .skoda-dial-center { top: 49%; gap: 0; }
-    .skoda-dial { max-width: clamp(110px, calc((100cqh - 146px) / .86), 300px); }
-    .skoda-climate-btn { min-height: 44px; margin-top: 8px; }
+    .skoda-climate { padding: 8px 12px 10px; }
+    .skoda-dial { max-width: clamp(110px, calc((100cqh - 98px) / .86), 300px); }
+    .skoda-climate-btn { min-height: 40px; margin-top: 4px; }
     .skoda-dial-value { gap: 4px 10px; }
     .skoda-dial-value output { font-size: 28px; }
     .skoda-dial-value button { width: 40px; height: 40px; }
