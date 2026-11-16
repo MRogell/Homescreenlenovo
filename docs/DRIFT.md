@@ -187,3 +187,6 @@ Direkt koppling via CalDAV (`src/server/calendar/caldav.ts`, lagring i `icloud-s
 - Allt sparas i enheten (`localStorage`, nyckel `hs-layout-v1`, `src/lib/layout-store.ts`), så surfplatta och telefon kan se olika ut. Dolda kort och serverns ordning (Inställningar) är grunden; egen ordning ersätter bara ordningen.
 - "Allt på en skärm" på liggande surfplatta (≥900 px hög) är inställd för standardläget. Egen ordning, egen kortstorlek, luftig täthet eller annan textstorlek sätter `data-free` på `<html>`: då stängs den inpassningen av (alla fit-regler i `globals.css` är prefixade med `html:not([data-free])`) och sidan rullar. Tema och "tät" påverkar inte passformen.
 - Nya CSS-regler för fit-läget måste därför ligga i ett av de fem `@media (min-width: 1001px) and (min-height: 900px) …`-blocken med prefixet `html:not([data-free])`.
+
+## Första raden utan scroll
+På liggande surfplatta som är lägre än 900 px (P12) eller med egen layout rullar sidan, men korten i första raden krymps automatiskt (`src/components/home/first-row-fit.ts`, CSS `zoom`, lägst 0,7) tills de ryms på skärmen. Resten av korten ligger under och rullar. Standardläget på höga skärmar (≥900 px) använder fortfarande "allt på en skärm".

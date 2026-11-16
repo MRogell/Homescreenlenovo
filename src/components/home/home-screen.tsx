@@ -1,9 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { HomeStates } from "@/server/snapshots";
 import { type AppSettings, type CardId } from "@/lib/settings";
-import { moveTo, orderedCards, stepCard, type CardSize } from "@/lib/layout";
+import { isFree, moveTo, orderedCards, stepCard, type CardSize } from "@/lib/layout";
+import { useFirstRowFit } from "./first-row-fit";
 import { resetLayout, useLayout, writeLayout } from "@/lib/layout-store";
 import { EditBar } from "./edit-bar";
 import { EditContext } from "./edit-context";
@@ -88,7 +89,9 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
   // Sonos-rummen till Spotify-kortet: knappar och enhetsbyte går via Sonos när musiken spelar där.
   const layout = useLayout();
   const [editing, setEditing] = useState(false);
+  const gridRef = useRef<HTMLElement>(null);
   const visible = orderedCards(layout, settings.cards.order, settings.cards.hidden);
+  useFirstRowFit(gridRef, isFree(layout), [states, settings, layout, editing, timers, departure]);
   // Egen ordning sparas för hela listan (även dolda kort), så att ordningen består om ett dolt kort slås på igen.
   const fullOrder = (): CardId[] => layout.order ?? [...settings.cards.order];
   const editApi = {
@@ -125,7 +128,7 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
       </header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
       {visible.length === 0 && <p className="mid empty-note">Alla kort är dolda. Slå på något under Inställningar.</p>}
-      <main className="grid">
+      <main className="grid" ref={gridRef}>
         {visible.map((id) => {
           switch (id) {
             case "weather": return <WeatherCard key={id} state={states.weather} now={now} />;

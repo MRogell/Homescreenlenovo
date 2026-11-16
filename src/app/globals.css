@@ -1240,3 +1240,6 @@ html[data-text="l"] .wrap.home { zoom: 1.12; }
 
 /* Egen ordning gäller alla kort. Utan den här regeln ligger Škoda alltid först på låga liggande skärmar (order: -1). */
 html[data-order] .grid > .card { order: 0; }
+
+/* Mäter korten utan att de sträcks till radens höjd (first-row-fit.ts) */
+.grid.measuring > .card { align-self: start; }
