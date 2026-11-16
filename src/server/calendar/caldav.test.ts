@@ -25,7 +25,13 @@ function fake(status = 207) {
   return { fetchFn, calls };
 }
 
+const LIST2 = `<multistatus xmlns="DAV:"><response><href>/123/calendars/home/</href><propstat><prop><displayname>Hem</displayname><resourcetype><collection/><calendar xmlns="urn:ietf:params:xml:ns:caldav"/></resourcetype></prop></propstat></response><response><href>/123/calendars/work/</href><propstat><prop><displayname>Jobb</displayname><resourcetype><collection/><calendar xmlns="urn:ietf:params:xml:ns:caldav"/></resourcetype><supported-calendar-component-set xmlns="urn:ietf:params:xml:ns:caldav"><comp name="VEVENT"/><comp name="VTODO"/></supported-calendar-component-set></prop></propstat></response></multistatus>`;
+
 describe("iCloud CalDAV", () => {
+  it("tolererar iClouds standardnamnrymd och kalendrar utan komponentlista", async () => {
+    const fetchFn = (async (url: string) => new Response(String(url) === "https://caldav.icloud.com/" ? PRINCIPAL : String(url).endsWith("/principal/") ? HOME : LIST2, { status: 207 })) as unknown as typeof fetch;
+    expect((await discoverCalendars(C, fetchFn)).map((c) => c.name)).toEqual(["Hem", "Jobb"]);
+  });
   it("hittar bara kalendrar med händelser, med avkodat namn", async () => {
     const { fetchFn } = fake();
     expect(await discoverCalendars(C, fetchFn)).toEqual([{ href: "https://p12-caldav.icloud.com/123/calendars/home/", name: "Familj & vänner", writable: true }]);

@@ -51,8 +51,11 @@ export async function discoverCalendars(c: CaldavCredentials, fetchFn: typeof fe
   const out: CaldavCalendar[] = [];
   for (const r of responses(list.text)) {
     const href = first(r, "href");
-    if (!href || !/<(?:[\w-]+:)?calendar\s*\/?>/i.test(first(r, "resourcetype") ?? "")) continue;
-    if (!/name="VEVENT"/i.test(first(r, "supported-calendar-component-set") ?? "")) continue;
+    // iCloud skriver t.ex. <calendar xmlns="urn:ietf:params:xml:ns:caldav"/>, så attribut måste tillåtas.
+    if (!href || !/<(?:[\w-]+:)?calendar(?:\s[^>]*)?\/?>/i.test(first(r, "resourcetype") ?? "")) continue;
+    // Saknas komponentlistan antas händelser; bara kalendrar som uttryckligen saknar VEVENT (Påminnelser) hoppas över.
+    const comps = first(r, "supported-calendar-component-set");
+    if (comps !== null && !/name\s*=\s*["']VEVENT["']/i.test(comps)) continue;
     out.push({ href: abs(homeUrl, href), name: unxml(first(r, "displayname") ?? "Kalender").slice(0, 40), writable: true });
   }
   return out.slice(0, MAX_ICLOUD_CALENDARS);
