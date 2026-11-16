@@ -1079,3 +1079,8 @@ body:has(.wrap.shop) { padding-top: 0; }
   .skoda-dial-value button { width: 48px; height: 48px; font-size: 28px; grid-row: 2; }
   .skoda-dial-value .minus { grid-column: 1; } .skoda-dial-value .plus { grid-column: 2; }
 }
+
+/* Lägre surfplattor (till exempel P12) där sidan scrollar: Škoda först, så att bilen och klimatet syns utan att scrolla. */
+@media (min-width: 1001px) and (max-height: 899px) and (orientation: landscape) {
+  .grid > .card.skoda { order: -1; }
+}
