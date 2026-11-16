@@ -1243,3 +1243,9 @@ html[data-order] .grid > .card { order: 0; }
 
 /* Mäter korten utan att de sträcks till radens höjd (first-row-fit.ts) */
 .grid.measuring > .card { align-self: start; }
+
+/* Kalenderns märke och "Ny aktivitet" ligger bredvid varandra */
+.cal-top { flex-wrap: nowrap; gap: 8px; }
+.cal-top .cal-week { flex: 0 1 auto; min-width: 0; align-self: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-top .cal-add { flex: none; margin-left: auto; padding: 0 14px 0 10px; font-size: 13px; gap: 4px; white-space: nowrap; }
+.cal-top .cal-add svg { width: 16px; height: 16px; }
