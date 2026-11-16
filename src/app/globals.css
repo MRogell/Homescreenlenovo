@@ -569,7 +569,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
  * visas i den vanliga vyn (telefon, stående, skrivbord) men inte här. Villkoret finns också i components/lists/use-fit.ts.
  */
 @media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) {
-  .wrap { height: calc(100dvh - 40px); min-height: 0; gap: 8px; }
+  .wrap.home { height: calc(100dvh - 40px); min-height: 0; gap: 8px; }
   header.top-bar { align-items: center; gap: 4px 24px; }
   h1 { font-size: 30px; }
   .clock b { font-size: 44px; }
@@ -579,10 +579,10 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .settings-link { width: 44px; height: 44px; }
   /* Tre rader: de två översta lite högre än den nedre (AEG och Inomhus behöver minst). */
   .grid { gap: 12px; grid-auto-rows: minmax(224px, 1fr); grid-template-rows: minmax(176px, 1fr) minmax(250px, 1.4fr) minmax(164px, .66fr); min-height: 0; }
-  .card { container: card / size; overflow: hidden; padding: 12px 14px; gap: 6px; min-height: 0; border-radius: 18px; }
-  .card-head svg { width: 20px; height: 20px; }
-  .card .foot { display: none; }
-  .card[data-stale] .foot { display: block; }
+  .grid > .card { container: card / size; overflow: hidden; padding: 12px 14px; gap: 6px; min-height: 0; border-radius: 18px; }
+  .grid .card-head svg { width: 20px; height: 20px; }
+  .grid .card .foot { display: none; }
+  .grid .card[data-stale] .foot { display: block; }
   .big { font-size: 40px; }
   .big.text { font-size: 24px; }
 
@@ -728,7 +728,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   @container card (max-height: 232px) {
     .skoda-checks li small { display: none; }
     .skoda-checks li { padding: 3px 4px; }
-    .card { padding: 10px 12px; }
+    .grid > .card { padding: 10px 12px; }
   }
   @container card (max-height: 200px) {
     .big { font-size: 30px; }

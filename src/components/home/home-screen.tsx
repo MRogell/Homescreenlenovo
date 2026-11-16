@@ -99,7 +99,7 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
   return (
     <RefreshContext.Provider value={refresh}>
     <SpotifyRefreshContext.Provider value={refreshSpotify}>
-    <div className="wrap">
+    <div className="wrap home">
       <NightVeil night={settings.night} />
       <header className="top-bar">
         <Clock extras={<>{settings.smart.timer.enabled && <TimerChip timers={timers} onChange={setTimers} />}{settings.show.childWeek && <ChildWeekBadge date={localDate(now)} />}{settings.show.pickup && visible.includes("lists") && <PickupBar api={listsApi} onHide={hidePickup} />}</>} note={attentionLine(states, now)} dinner={dinner} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
