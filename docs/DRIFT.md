@@ -150,3 +150,5 @@ Inomhus lägger alla rum och snittrutan på en enda rad (`grid-auto-flow: column
 
 ## Luftig P12 (en skärm, utan scroll)
 På liggande surfplatta har alla kort mer luft (marginal 16×18 px, 14 px mellan korten) och allt som går att trycka på är minst 44 px högt (knappar, flikar, fält, chips, Starta, plus och minus, volymreglaget; reglaget för Förvärm har större träffyta än reglaget syns). I stället för att krympa knapparna försvinner sekundärt innehåll på låga kort: adressen i Škoda (under cirka 232 px), Sonos volym (under 240 px), Inköps varurader (under 190 px, antalet visas i rubriken) och AEG:s textrad.
+
+**Ändring (P12 och andra lägre surfplattor):** Läget "allt på en skärm" gäller nu bara när fönstret är minst 900 px högt (`FIT_QUERY` i `use-fit.ts` och motsvarande `@media` i `globals.css`). På lägre skärmar, till exempel P12 med cirka 760 px synlig höjd, har korten sin naturliga höjd med fullt innehåll och sidan scrollar nedåt, aldrig åt sidan (`overflow-x: hidden`). Alla tryckytor är minst 44 px.

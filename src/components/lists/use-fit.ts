@@ -2,7 +2,7 @@
 import { useEffect, useState, useSyncExternalStore, type RefObject } from "react";
 
 /** Samma villkor som i CSS (globals.css, "Allt på en skärm"): bred, liggande surfplatta eller dator. */
-export const FIT_QUERY = "(min-width: 1001px) and (min-height: 540px) and (orientation: landscape)";
+export const FIT_QUERY = "(min-width: 1001px) and (min-height: 900px) and (orientation: landscape)";
 
 const subscribe = (cb: () => void) => {
   const m = window.matchMedia(FIT_QUERY);

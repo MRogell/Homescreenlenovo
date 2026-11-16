@@ -246,7 +246,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .card.spotify .ctl.main svg { width: 28px; height: 28px; }
 .sp-volume { gap: 10px; min-height: 40px; }
 .sp-volume svg { width: 20px; height: 20px; flex: none; color: var(--muted); }
-.sp-volume input { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--fg) var(--vol, 50%), color-mix(in srgb, var(--fg) 18%, transparent) var(--vol, 50%)); }
+.sp-volume input { -webkit-appearance: none; appearance: none; height: 44px; background: linear-gradient(90deg, var(--fg) var(--vol, 50%), color-mix(in srgb, var(--fg) 18%, transparent) var(--vol, 50%)) center / 100% 4px no-repeat; }
 .sp-volume input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
 .sp-volume input::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
 .sp-volume input:focus-visible { outline: 3px solid var(--fg); outline-offset: 6px; }
@@ -381,7 +381,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .sn-ctl .ctl.sn-play { background: var(--fg); color: var(--bg); min-width: 60px; min-height: 60px; }
 .sn-vol { flex: 1 1 140px; display: flex; align-items: center; gap: 10px; color: var(--muted); min-width: 0; }
 .sn-vol svg { width: 20px; height: 20px; flex: none; }
-.sn-vol input { flex: 1; min-width: 0; height: 36px; -webkit-appearance: none; appearance: none; background: linear-gradient(90deg, var(--fg) var(--v, 30%), color-mix(in srgb, var(--fg) 18%, transparent) var(--v, 30%)) center / 100% 4px no-repeat; }
+.sn-vol input { flex: 1; min-width: 0; height: 44px; -webkit-appearance: none; appearance: none; background: linear-gradient(90deg, var(--fg) var(--v, 30%), color-mix(in srgb, var(--fg) 18%, transparent) var(--v, 30%)) center / 100% 4px no-repeat; }
 .sn-vol input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
 .sn-vol input::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
 .sn-vol input:focus-visible { outline: 3px solid var(--fg); outline-offset: 6px; }
@@ -483,8 +483,8 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 @media (min-width: 1001px) {
   .card.tado { grid-column: span 3; }
   .card.tado .ti-dials { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
-  .card.tado .ti-sum, .card.tado .ti-sum.span-2, .card.tado .ti-sum.span-3 { grid-column: auto; flex-direction: column; padding: 8px 4px; gap: 2px; }
-  .card.tado .ti-sum .ti-cap { text-align: center; font-size: 12px; }
+  .card.tado .ti-sum, .card.tado .ti-sum.span-2, .card.tado .ti-sum.span-3 { grid-column: 1 / -1; flex-direction: row; justify-content: center; gap: 14px; padding: 10px 14px; }
+  .card.tado .ti-sum .ti-cap { text-align: left; font-size: 13px; }
 }
 /* Mycket smal bredd (t.ex. iPhone med sidzoom 150 % i Safari): veckoprognosen tappar kolumner i stället för att skjuta ut sidan. */
 @media (max-width: 300px) { .wx-days li { grid-template-columns: 2.6em 20px 2.2em minmax(24px, 1fr) 2.2em; } .wx-days li > :nth-child(6) { display: none; } }
@@ -498,7 +498,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .li-expand svg { width: 20px; height: 20px; }
 .li-expand:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 .li-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
-.li-tabs button { min-height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: 600 14px var(--body); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.li-tabs button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: 600 14px var(--body); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .li-tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 0 0 1px var(--line); }
 .li-tabs b, .li-toggle b { font-size: 12px; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 12%, transparent); font-weight: 600; }
 .li-tabs button:focus-visible, .li-toggle:focus-visible, .li-clear:focus-visible, .li-chip:focus-visible, .li-x:focus-visible, .li-plus:focus-visible, .li-copy:focus-visible, .li-open:focus-visible, .li-more:focus-visible, .li-row:has(input:focus-visible) { outline: 3px solid var(--fg); outline-offset: 2px; }
@@ -568,7 +568,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
  * Kortens innehåll kortas ned efter höjden i stället för att skrolla: de sekundära delarna (femdagarsprognos, volym, imorgon …)
  * visas i den vanliga vyn (telefon, stående, skrivbord) men inte här. Villkoret finns också i components/lists/use-fit.ts.
  */
-@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) {
+@media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) {
   .wrap.home { height: calc(100dvh - 40px); min-height: 0; gap: 8px; }
   header.top-bar { align-items: center; gap: 4px 24px; }
   h1 { font-size: 30px; }
@@ -671,6 +671,8 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .card.aeg .mid { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* Alla rum och snittrutan på en enda rad, hur många rum det än är. */
   .card.tado .ti-dials { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px 8px; }
+  .grid .card.tado .ti-sum { grid-column: auto; flex-direction: column; padding: 8px 4px; gap: 2px; }
+  .grid .card.tado .ti-sum .ti-cap { text-align: center; font-size: 12px; }
   .ti-dial > svg { max-width: 72px; }
   .ti-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -962,7 +964,7 @@ body:has(.wrap.shop) { padding-top: 0; }
 .greet-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .week-badge { display: inline-flex; align-items: center; min-height: 30px; padding: 0 14px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); font: 700 14px var(--body); letter-spacing: .01em; }
 .pk { display: inline-flex; flex-wrap: wrap; gap: 8px; }
-.pk-chip { min-height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 10px; border-radius: 99px; border: 1px solid var(--field-line); background: transparent; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
+.pk-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 10px; border-radius: 99px; border: 1px solid var(--field-line); background: transparent; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
 .pk-chip svg { width: 16px; height: 16px; flex: none; }
 .pk-chip b { color: var(--fg); font-weight: 600; }
 .pk-chip.set { border-color: transparent; background: var(--surface-2); }
@@ -980,7 +982,7 @@ body:has(.wrap.shop) { padding-top: 0; }
 .pk-form { display: flex; gap: 8px; }
 .cal-week { align-self: flex-start; font-size: 12px; font-weight: 600; color: var(--muted); padding: 3px 10px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 7%, transparent); }
 .cal-week.child { color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
-@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) {
+@media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) {
   .greet-row { flex-wrap: nowrap; gap: 12px; white-space: nowrap; }
   .pk { flex-wrap: nowrap; }
   .week-badge { min-height: 36px; }
@@ -993,7 +995,7 @@ body:has(.wrap.shop) { padding-top: 0; }
 
 /* Timer */
 .tm { display: inline-flex; flex-wrap: wrap; gap: 8px; }
-.tm-chip { min-height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 10px; border-radius: 99px; border: 1px solid var(--field-line); background: transparent; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
+.tm-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 10px; border-radius: 99px; border: 1px solid var(--field-line); background: transparent; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
 .tm-chip svg { width: 16px; height: 16px; flex: none; }
 .tm-chip b { color: var(--fg); font: 600 15px var(--body); font-variant-numeric: tabular-nums; }
 .tm-chip.done { border-color: transparent; background: var(--bad); color: var(--bg); animation: tm-pulse 1s ease-in-out infinite; }
@@ -1011,7 +1013,7 @@ body:has(.wrap.shop) { padding-top: 0; }
 .tm-list li span { display: flex; flex-direction: column; }
 .tm-list li b { font: 600 24px var(--display); font-variant-numeric: tabular-nums; }
 .tm-list li small { color: var(--muted); }
-@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) { .tm-chip { min-height: 44px; } }
+@media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) { .tm-chip { min-height: 44px; } }
 
 /* Smarta funktioner: stegare och klockslag */
 .ap-smart-row { display: flex; flex-direction: column; gap: 4px; padding: 4px 0 8px 62px; }
@@ -1044,7 +1046,7 @@ body:has(.wrap.shop) { padding-top: 0; }
   header.top-bar:has(.dn-hero) > .dn-hero { max-width: min(46vw, 560px); }
 }
 @media (max-width: 699px) { .dn-hero { order: 3; width: 100%; } }
-@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) {
+@media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) {
   .dn-hero { padding: 5px 24px 6px; gap: 0; }
   .dn-hero-dish { font-size: 21px; }
   .dn-hero-people { font-size: 12px; }
@@ -1058,28 +1060,19 @@ body:has(.wrap.shop) { padding-top: 0; }
 .prose li { margin-bottom: 6px; }
 
 /* Låga skärmar: Middag idag på en rad så att översta raden blir lägre. */
-@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) and (max-height: 820px) {
-  .dn-hero { flex-direction: row; align-items: baseline; gap: 10px; padding: 7px 20px; }
-  .dn-hero-dish { font-size: 19px; }
-  .dn-hero-people { font-size: 12px; }
-  .dn-hero-label { letter-spacing: .08em; }
-}
+
 
 /*
  * Lägre surfplatteskärmar: Škoda-kortets rubrik flyttas upp i vänstra kolumnen och klimatrutan får hela kortets höjd,
  * så att halvcirkeln och knapparna blir större och mer luftiga.
  */
-@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) and (max-height: 840px) {
-  .grid > .card.skoda { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto; column-gap: 12px; row-gap: 0; }
-  .card.skoda > .card-head { grid-column: 1; grid-row: 1; margin-bottom: 6px; }
-  .card.skoda > .skoda-body { display: contents; }
-  .card.skoda .skoda-info { grid-column: 1; grid-row: 2; min-height: 0; }
-  .card.skoda .skoda-body .dep, .card.skoda > .dep { grid-column: 1; grid-row: 3; }
-  .card.skoda .skoda-place { grid-column: 1; grid-row: 4; }
-  .card.skoda .skoda-climate { grid-column: 2; grid-row: 1 / span 4; padding: 26px 14px 14px; }
-  .card.skoda .skoda-dial { max-width: clamp(110px, calc((100cqh - 88px) / .86), 300px); }
-  .card.skoda .skoda-dial-value { gap: 6px 14px; }
-  .card.skoda .skoda-dial-value output { font-size: 30px; }
-  .card.skoda .skoda-dial-value button { width: 46px; height: 46px; font-size: 26px; }
-  .card.skoda .skoda-climate-btn { min-height: 46px; margin-top: 8px; }
+
+
+/* Plus och minus under temperaturen, i halvcirkelns öppning (inte bredvid värdet, där de krockar med bågen). */
+@media (min-width: 561px) {
+  .skoda-dial-center { top: 55%; gap: 6px; }
+  .skoda-dial-value { display: grid; grid-template-columns: auto auto; justify-content: center; gap: 10px 22px; }
+  .skoda-dial-value output { grid-column: 1 / -1; grid-row: 1; }
+  .skoda-dial-value button { width: 48px; height: 48px; font-size: 28px; grid-row: 2; }
+  .skoda-dial-value .minus { grid-column: 1; } .skoda-dial-value .plus { grid-column: 2; }
 }
