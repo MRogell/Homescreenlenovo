@@ -16,7 +16,14 @@ function fake(routes: Record<string, unknown>) {
   return { fetchFn, calls };
 }
 const CALS = { items: [{ id: "a@x.se", summary: "Micke", primary: true, accessRole: "owner", selected: true }, { id: "fam", summary: "Familj", accessRole: "reader", selected: true }, { id: "dold", summary: "Dold", accessRole: "owner", selected: false }] };
-const db = { snapshot: { deleteMany: async () => ({}) }, providerBackoff: { deleteMany: async () => ({}) } } as never;
+const saved: Record<string, unknown> = {};
+const db = {
+  snapshot: { deleteMany: async () => ({}) }, providerBackoff: { deleteMany: async () => ({}) },
+  appSetting: {
+    findUnique: async ({ where }: { where: { key: string } }) => (saved[where.key] === undefined ? null : { value: saved[where.key] }),
+    upsert: async ({ where, create }: { where: { key: string }; create: { value: unknown } }) => { saved[where.key] = create.value; return {}; },
+  },
+} as never;
 const base = { origin: "https://h.se", host: "h.se", userId: "u1" };
 
 describe("google kalender", () => {
@@ -64,6 +71,24 @@ describe("skapa och ta bort händelse", () => {
     const post = calls.find((c) => c.method === "POST")!;
     expect(post.url).toContain("/calendars/a%40x.se/events");
     expect(post.body).toMatchObject({ summary: "Tandläkare", start: { dateTime: "2026-11-17T13:30:00.000Z" }, end: { dateTime: "2026-11-17T14:00:00.000Z" } });
+  });
+
+  it("skickar plats, beskrivning, upprepning och sparar deltagare och packlista", async () => {
+    saved.family = [{ id: "n1", name: "Noah", kind: "child" }, { id: "m1", name: "Marie", kind: "adult" }];
+    const { fetchFn, calls } = fake({ calendarList: CALS, "/events": { id: "ev123" } });
+    const r = await handleCreateEvent({ ...base, body: { title: "Simskola", date: "2026-11-17", allDay: false, start: "16:00", end: "17:00", location: "Simhallen", notes: "Ta bussen", bring: "Badkläder\nHandduk", recurrence: "WEEKLY", until: "2026-12-15", participants: ["n1", "m1"], responsible: "m1", away: false, visibility: "PARTICIPANTS", shareLevel: "VIEW" } }, { ...ok, fetchFn });
+    expect(r.status).toBe(200);
+    const post = calls.find((c) => c.method === "POST")!.body as Record<string, unknown>;
+    expect(post).toMatchObject({ location: "Simhallen", recurrence: ["RRULE:FREQ=WEEKLY;UNTIL=20261215T235959Z"] });
+    expect(String(post.description)).toContain("Deltagare: Noah, Marie (ansvarig: Marie)");
+    expect(String(post.description)).toContain("- Badkläder");
+    expect((saved.activityMeta as Record<string, unknown>)["g:a@x.se|ev123"]).toMatchObject({ participants: ["n1", "m1"], responsible: "m1", bring: ["Badkläder", "Handduk"], visibility: "PARTICIPANTS", shareLevel: "VIEW" });
+  });
+
+  it("kräver att ansvarig är deltagare", async () => {
+    const { fetchFn } = fake({ calendarList: CALS, "/events": { id: "n" } });
+    const r = await handleCreateEvent({ ...base, body: { title: "X", date: "2026-11-17", allDay: false, start: "10:00", participants: ["a"], responsible: "b" } }, { ...ok, fetchFn });
+    expect(r.status).toBe(400);
   });
 
   it("nekar kalender utan skrivrätt, ogiltig tid och slut före start", async () => {

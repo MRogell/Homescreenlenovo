@@ -32,7 +32,7 @@ export async function listGoogleCalendars(token: string, fetchFn?: typeof fetch)
   return items.slice(0, MAX_GOOGLE_CALENDARS).map((c) => ({ id: c.id!, name: (c.summaryOverride ?? c.summary ?? "Kalender").slice(0, 40), writable: c.accessRole === "owner" || c.accessRole === "writer" }));
 }
 
-interface RawEvent { id?: string; status?: string; summary?: string; start?: { date?: string; dateTime?: string }; end?: { date?: string; dateTime?: string } }
+interface RawEvent { id?: string; location?: string; status?: string; summary?: string; start?: { date?: string; dateTime?: string }; end?: { date?: string; dateTime?: string } }
 
 /** Händelser i ett tidsfönster. singleEvents=true gör att återkommande händelser kommer som egna förekomster. */
 export async function listGoogleEvents(token: string, calendarId: string, from: Date, to: Date, fetchFn?: typeof fetch): Promise<GoogleEvent[]> {
@@ -42,13 +42,13 @@ export async function listGoogleEvents(token: string, calendarId: string, from: 
   for (const e of j.items ?? []) {
     if (!e.id || e.status === "cancelled" || !e.start || !e.end) continue;
     const title = (e.summary ?? "(utan titel)").slice(0, 120);
-    if (e.start.date && e.end.date) out.push({ eventId: e.id, title, allDay: true, start: e.start.date, end: e.end.date });
-    else if (e.start.dateTime && e.end.dateTime) out.push({ eventId: e.id, title, allDay: false, start: new Date(e.start.dateTime).toISOString(), end: new Date(e.end.dateTime).toISOString() });
+    if (e.start.date && e.end.date) out.push({ eventId: e.id, title, allDay: true, start: e.start.date, end: e.end.date, ...(e.location ? { location: e.location.slice(0, 120) } : {}) });
+    else if (e.start.dateTime && e.end.dateTime) out.push({ eventId: e.id, title, allDay: false, start: new Date(e.start.dateTime).toISOString(), end: new Date(e.end.dateTime).toISOString(), ...(e.location ? { location: e.location.slice(0, 120) } : {}) });
   }
   return out;
 }
 
-export interface NewEvent { title: string; allDay: boolean; /** Heldag: datum. Annars UTC-tid (ISO). */ start: string; /** Heldag: sista dagen (inklusive). Annars UTC-tid (ISO). */ end: string }
+export interface NewEvent { location?: string; description?: string; /** iCal-regel utan "RRULE:". */ rrule?: string | null; title: string; allDay: boolean; /** Heldag: datum. Annars UTC-tid (ISO). */ start: string; /** Heldag: sista dagen (inklusive). Annars UTC-tid (ISO). */ end: string }
 
 export async function createGoogleEvent(token: string, calendarId: string, ev: NewEvent, fetchFn?: typeof fetch): Promise<string> {
   let body: object;
@@ -56,9 +56,13 @@ export async function createGoogleEvent(token: string, calendarId: string, ev: N
     const last = new Date(`${ev.end}T00:00:00Z`);
     last.setUTCDate(last.getUTCDate() + 1); // Googles slutdatum är exklusivt.
     body = { summary: ev.title, start: { date: ev.start }, end: { date: last.toISOString().slice(0, 10) } };
+    if (ev.rrule) (body as Record<string, unknown>).recurrence = [`RRULE:${ev.rrule}`];
   } else {
     body = { summary: ev.title, start: { dateTime: ev.start, timeZone: DEFAULT_TZ }, end: { dateTime: ev.end, timeZone: DEFAULT_TZ } };
+    if (ev.rrule) (body as Record<string, unknown>).recurrence = [`RRULE:${ev.rrule}`];
   }
+  if (ev.location) (body as Record<string, unknown>).location = ev.location;
+  if (ev.description) (body as Record<string, unknown>).description = ev.description;
   const j = (await call(token, `/calendars/${encodeURIComponent(calendarId)}/events`, { method: "POST", body: JSON.stringify(body), fetchFn })) as { id?: string };
   return j.id ?? "";
 }

@@ -13,6 +13,8 @@ import { Clock } from "./clock";
 import { dinnerToday, isChildWeek, peopleFor } from "@/lib/dinner";
 import { useLists } from "../lists/use-lists";
 import { PickupBar } from "../lists/pickup-bar";
+import { WeekChipButton } from "./home-this-week";
+import { awayToday } from "./calendar-view";
 import { TimerChip } from "./timer-chip";
 import type { TimerItem } from "@/lib/smart";
 import { listsSchema } from "@/server/providers/schemas";
@@ -20,8 +22,8 @@ import { localDate } from "@/server/calendar/time";
 import { RefreshContext, SpotifyRefreshContext } from "./refresh-context";
 import { AegCard, CalendarCard, SkodaCard, SonosCard, SpotifyCard, TadoCard, WeatherCard } from "./cards";
 
-function ChildWeekBadge({ date }: { date: string }) {
-  return isChildWeek(date) ? <span className="week-badge">Barnvecka</span> : null;
+function ChildWeekBadge({ now, awayIds }: { now: Date; awayIds: string[] }) {
+  return isChildWeek(localDate(now)) ? <WeekChipButton now={now} awayIds={awayIds} className="week-badge">Barnvecka</WeekChipButton> : null;
 }
 
 const POLL_MS = 30_000;
@@ -102,7 +104,7 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
     <div className="wrap home">
       <NightVeil night={settings.night} />
       <header className="top-bar">
-        <Clock extras={<>{settings.smart.timer.enabled && <TimerChip timers={timers} onChange={setTimers} />}{settings.show.childWeek && <ChildWeekBadge date={localDate(now)} />}{settings.show.pickup && visible.includes("lists") && <PickupBar api={listsApi} onHide={hidePickup} />}</>} note={attentionLine(states, now)} dinner={dinner} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
+        <Clock extras={<>{settings.smart.timer.enabled && <TimerChip timers={timers} onChange={setTimers} />}{settings.show.childWeek && <ChildWeekBadge now={now} awayIds={awayToday(states.calendar)} />}{settings.show.pickup && visible.includes("lists") && <PickupBar api={listsApi} onHide={hidePickup} />}</>} note={attentionLine(states, now)} dinner={dinner} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
       </header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
       {visible.length === 0 && <p className="mid empty-note">Alla kort är dolda. Slå på något under Inställningar.</p>}

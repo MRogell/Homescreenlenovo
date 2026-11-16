@@ -607,6 +607,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .cal-ttl { font-size: 20px; -webkit-line-clamp: 1; line-clamp: 1; }
   .cal-when { font-size: 14px; }
   .cal-meta { font-size: 13px; }
+  .cal-extra { display: none; }
   .cal-grp { margin-top: 0; font-size: 12px; }
   .cal-ev { min-height: 34px; }
   .cal-rows .cal-ev:nth-child(n+3), .cal-more, .cal-allday:nth-of-type(n+2) { display: none; }
@@ -1145,3 +1146,26 @@ h1 { letter-spacing: -.5px; }
 .ca-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .ca-row > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .dn-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.cal-extra { font-size: 13px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sheet.sheet-wide { width: min(640px, 100%); }
+.ca-box { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 20px; border: 1px solid var(--card-line); background: var(--tile); }
+.ca-opt { font-weight: 400; color: var(--muted); }
+.ca-hint { display: block; color: var(--muted); font-size: 13px; font-weight: 400; }
+.ca-area { min-height: 84px; padding: 12px 14px; resize: vertical; font-family: var(--body); }
+.ca-people { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+.ca-person { align-items: center; }
+.ca-avatar { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: #fff; font: 700 14px var(--body); flex: none; }
+.ca-actions { justify-content: flex-end; }
+@media (max-width: 480px) { .ca-people { grid-template-columns: 1fr; } }
+
+/* Hemma den här veckan (rutan bakom Barnvecka-märket) */
+.hw-trigger { border: 0; font: inherit; cursor: pointer; }
+.hw-trigger.week-badge { font: 700 14px var(--body); }
+.hw-trigger.cal-week { font: 600 12px var(--body); min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; }
+.hw-trigger:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.hw-ico { width: 22px; height: 22px; vertical-align: -3px; }
+.hw-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.hw-pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px 5px 5px; border-radius: 99px; font: 600 15px var(--body); background: color-mix(in srgb, var(--p) 20%, transparent); color: var(--fg); }
+.hw-av { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--p); color: #fff; font: 700 13px var(--body); }
+.hw-next { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.hw-next svg { width: 16px; height: 16px; }

@@ -8,6 +8,9 @@ export interface CalEvent {
   start: string;
   /** Som `start`. För heldagar är slutdatumet exklusivt (dagen efter sista dagen). */
   end: string;
+  /** Händelsens id i kalendern (iCal UID), för att koppla den till sparade extrauppgifter. */
+  uid?: string;
+  location?: string;
 }
 
 export class IcsError extends Error {
@@ -18,6 +21,10 @@ export class IcsError extends Error {
 }
 
 const MAX_TITLE = 120;
+function extra(item: ICAL.Event): { uid?: string; location?: string } {
+  const loc = String(item.location ?? "").trim().slice(0, 120);
+  return { ...(item.uid ? { uid: String(item.uid).slice(0, 200) } : {}), ...(loc ? { location: loc } : {}) };
+}
 const MAX_OCCURRENCES = 20_000;
 
 function validZone(name: string | null | undefined): string | null {
@@ -51,7 +58,8 @@ function titleOf(item: ICAL.Event): string {
  * Händelserna som överlappar fönstret, med återkommande händelser, undantag och flyttade tillfällen uträknade.
  * En trasig händelse hoppas över. Text som inte är en iCal-kalender ger IcsError.
  */
-export function parseEvents(text: string, window: { from: Date; to: Date }, tz: string = DEFAULT_TZ): CalEvent[] {
+/** `withIds`: ta med händelsens id och plats (för CalDAV-kalendrar där aktiviteter skapas härifrån). */
+export function parseEvents(text: string, window: { from: Date; to: Date }, tz: string = DEFAULT_TZ, withIds = false): CalEvent[] {
   let comp: ICAL.Component;
   try {
     if (!/BEGIN:VCALENDAR/i.test(text)) throw new Error("ingen kalender");
@@ -87,13 +95,13 @@ export function parseEvents(text: string, window: { from: Date; to: Date }, tz: 
       const s = dateString(start);
       let e = dateString(end);
       if (e <= s) { const n = start.clone(); n.day += 1; e = dateString(n); }
-      if (s <= lastDate && e > fromDate) out.push({ title: titleOf(item), allDay: true, start: s, end: e });
+      if (s <= lastDate && e > fromDate) out.push({ title: titleOf(item), allDay: true, start: s, end: e, ...(withIds ? extra(item) : {}) });
       return;
     }
     const s = instant(start, hint), e0 = instant(end, hint);
     const e = e0.getTime() < s.getTime() ? s : e0;
     if (s.getTime() < window.to.getTime() && (e.getTime() > window.from.getTime() || (e.getTime() === s.getTime() && s.getTime() >= window.from.getTime()))) {
-      out.push({ title: titleOf(item), allDay: false, start: s.toISOString(), end: e.toISOString() });
+      out.push({ title: titleOf(item), allDay: false, start: s.toISOString(), end: e.toISOString(), ...(withIds ? extra(item) : {}) });
     }
   };
 

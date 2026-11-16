@@ -5,7 +5,7 @@ type Ev = CalendarData["today"]["events"][number];
 export type CalColor = CalendarData["calendars"][number]["color"];
 
 export interface CalEventRow { key: string; time: string; title: string; meta: string; color: CalColor }
-export interface CalHero { when: string; title: string; meta: string; color: CalColor }
+export interface CalHero { when: string; title: string; meta: string; color: CalColor; /** Plats, deltagare och packlista (rad under tiden). */ extra?: string }
 export interface CalAllDay { title: string; color: CalColor }
 export interface CalendarView {
   pill: string;
@@ -39,8 +39,12 @@ export function calendarView(d: CalendarData, now: Date): CalendarView {
   const calName = (e: Ev) => cal.get(e.calendarId)?.name ?? "Kalender";
   const t = now.getTime();
   const dur = (e: Ev) => formatMinutes((new Date(e.end).getTime() - new Date(e.start).getTime()) / 60_000);
-  const row = (e: Ev, i: number): CalEventRow => ({ key: `${e.start}|${e.calendarId}|${i}`, time: clock(e.start), title: e.title, meta: `${calName(e)} · ${dur(e)}`, color: color(e) });
-  const heroOf = (e: Ev, when: string): CalHero => ({ when, title: e.title, meta: `${clock(e.start)}–${clock(e.end)} · ${calName(e)}`, color: color(e) });
+  const extraOf = (e: Ev): string | null => {
+    const parts = [e.location, e.who?.length ? e.who.join(", ") : null, e.bring?.length ? `Ta med: ${e.bring.join(", ")}` : null].filter(Boolean);
+    return parts.length ? parts.join(" · ") : null;
+  };
+  const row = (e: Ev, i: number): CalEventRow => ({ key: `${e.start}|${e.calendarId}|${i}`, time: clock(e.start), title: e.title, meta: `${calName(e)} · ${dur(e)}${e.location ? ` · ${e.location}` : ""}`, color: color(e) });
+  const heroOf = (e: Ev, when: string): CalHero => ({ when, title: e.title, meta: `${clock(e.start)}–${clock(e.end)} · ${calName(e)}`, color: color(e), ...(extraOf(e) ? { extra: extraOf(e) ?? undefined } : {}) });
 
   const todayTimed = d.today.events.filter((e) => !e.allDay);
   const remaining = todayTimed.filter((e) => new Date(e.end).getTime() > t || (e.start === e.end && new Date(e.start).getTime() >= t));
@@ -83,4 +87,10 @@ export function calendarView(d: CalendarData, now: Date): CalendarView {
     },
     note: d.failed > 0 ? `${d.failed} ${d.failed === 1 ? "kalender svarade" : "kalendrar svarade"} inte` : null,
   };
+}
+
+/** Personer (id) som har en bortrest idag, för rutan "Hemma den här veckan". */
+export function awayToday(state: { status: string; data?: unknown } | undefined): string[] {
+  const d = (state?.status === "ok" || state?.status === "stale" ? state.data : undefined) as CalendarData | undefined;
+  return d ? [...new Set(d.today.events.flatMap((e) => e.awayIds ?? []))] : [];
 }

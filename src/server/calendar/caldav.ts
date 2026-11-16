@@ -73,7 +73,7 @@ export async function listCaldavEvents(c: CaldavCredentials, calendarHref: strin
     if (!data) continue;
     const ics = unxml(data.replace(/^<!\[CDATA\[|\]\]>$/g, ""));
     try {
-      out.push(...parseEvents(ics, { from, to }));
+      out.push(...parseEvents(ics, { from, to }, undefined, true));
     } catch {
       // En trasig händelse får inte stoppa resten.
     }
@@ -85,7 +85,7 @@ const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(
 const fold = (line: string) => (line.length <= 73 ? line : line.match(/.{1,73}/g)!.join("\r\n "));
 const ymd = (d: string) => d.replace(/-/g, "");
 
-export interface NewCaldavEvent { title: string; allDay: boolean; /** Heldag: datum. Annars UTC-tid (ISO). */ start: string; /** Heldag: sista dagen (inklusive). Annars UTC-tid (ISO). */ end: string }
+export interface NewCaldavEvent { location?: string; description?: string; rrule?: string | null; title: string; allDay: boolean; /** Heldag: datum. Annars UTC-tid (ISO). */ start: string; /** Heldag: sista dagen (inklusive). Annars UTC-tid (ISO). */ end: string }
 
 export function buildIcs(ev: NewCaldavEvent, uid: string, now: Date): string {
   let when: string[];
@@ -96,12 +96,13 @@ export function buildIcs(ev: NewCaldavEvent, uid: string, now: Date): string {
   } else {
     when = [`DTSTART:${stamp(new Date(ev.start))}`, `DTEND:${stamp(new Date(ev.end))}`];
   }
-  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Hemskarm//SV", "BEGIN:VEVENT", `UID:${uid}`, `DTSTAMP:${stamp(now)}`, ...when, fold(`SUMMARY:${esc(ev.title)}`), "END:VEVENT", "END:VCALENDAR", ""].join("\r\n");
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Hemskarm//SV", "BEGIN:VEVENT", `UID:${uid}`, `DTSTAMP:${stamp(now)}`, ...when, fold(`SUMMARY:${esc(ev.title)}`), ...(ev.location ? [fold(`LOCATION:${esc(ev.location)}`)] : []), ...(ev.description ? [fold(`DESCRIPTION:${esc(ev.description)}`)] : []), ...(ev.rrule ? [`RRULE:${ev.rrule}`] : []), "END:VEVENT", "END:VCALENDAR", ""].join("\r\n");
 }
 
-export async function createCaldavEvent(c: CaldavCredentials, calendarHref: string, ev: NewCaldavEvent, fetchFn: typeof fetch = fetch, now: Date = new Date()): Promise<void> {
+export async function createCaldavEvent(c: CaldavCredentials, calendarHref: string, ev: NewCaldavEvent, fetchFn: typeof fetch = fetch, now: Date = new Date()): Promise<string> {
   const uid = randomUUID();
   const base = calendarHref.endsWith("/") ? calendarHref : `${calendarHref}/`;
   await dav(c, `${base}${uid}.ics`, "PUT", buildIcs(ev, uid, now), { "Content-Type": "text/calendar; charset=utf-8", "If-None-Match": "*" }, fetchFn);
+  return uid;
 }
 

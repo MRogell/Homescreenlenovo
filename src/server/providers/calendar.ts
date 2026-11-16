@@ -1,5 +1,6 @@
 import { fetchIcs, type Lookup } from "../calendar/fetch";
 import { parseEvents, type CalEvent } from "../calendar/ics";
+import { metaKey, type ActivityMeta, type FamilyMember } from "@/lib/activity";
 import { discoverCalendars, listCaldavEvents, type CaldavCredentials } from "../calendar/caldav";
 import { listGoogleCalendars, listGoogleEvents } from "../calendar/google";
 import { dayWindow } from "../calendar/time";
@@ -19,10 +20,12 @@ export interface CalendarDeps {
   /** Google Kalender: null när kontot inte är anslutet. Kastar om token inte går att få. */
   /** iCloud (CalDAV): null när ingen är kopplad. */
   icloud?: { load: () => Promise<CaldavCredentials | null>; fetchFn?: typeof fetch };
+  /** Sparade extrauppgifter (deltagare, packlista) och familjemedlemmarna. */
+  loadExtras?: () => Promise<{ meta: Record<string, ActivityMeta>; family: FamilyMember[] }>;
   google?: { getToken: () => Promise<string | null>; fetchFn?: typeof fetch };
 }
 
-type Tagged = CalEvent & { calendarId: string; eventId?: string };
+type Tagged = CalEvent & { calendarId: string; eventId?: string; who?: string[]; bring?: string[]; awayIds?: string[] };
 const GOOGLE_COLORS = ["blue", "green", "purple", "red", "yellow"] as const;
 
 /** Händelserna som ligger (helt eller delvis) på ett dygn. Heldagar jämförs som datum, vanliga som tidpunkter. */
@@ -83,7 +86,7 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
             ical.map(async (c, i) => {
               const id = `i:${c.href}`;
               meta.push({ id, name: c.name, color: GOOGLE_COLORS[(i + 2) % GOOGLE_COLORS.length]!, writable: c.writable });
-              return (await listCaldavEvents(icloud, c.href, w.todayStart, w.end, deps.icloud?.fetchFn)).map((e): Tagged => ({ ...e, calendarId: id }));
+              return (await listCaldavEvents(icloud, c.href, w.todayStart, w.end, deps.icloud?.fetchFn)).map((e): Tagged => ({ ...e, calendarId: id, ...(e.uid ? { eventId: e.uid } : {}) }));
             }),
           );
           failed += ires.filter((r) => r.status === "rejected").length;
@@ -91,6 +94,18 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
         } catch {
           failed += 1;
           total += 1;
+        }
+      }
+      // Deltagare och packlista som sparats när aktiviteten lades in här.
+      const extras = deps.loadExtras ? await deps.loadExtras().catch(() => null) : null;
+      if (extras) {
+        for (const e of all) {
+          const m = e.eventId ? extras.meta[metaKey(e.calendarId, e.eventId)] : undefined;
+          if (!m) continue;
+          const who = m.participants.map((id) => extras.family.find((f) => f.id === id)?.name).filter((n): n is string => !!n);
+          if (who.length) e.who = who;
+          if (m.bring.length) e.bring = m.bring;
+          if (m.away && m.participants.length) e.awayIds = m.participants;
         }
       }
       // Felen innehåller aldrig adressen. Svarar ingen kalender räknas kortet som ej tillgängligt (eller gammalt).

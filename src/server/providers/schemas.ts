@@ -110,7 +110,7 @@ export const tadoSchema = z.object({
 });
 export type TadoData = z.infer<typeof tadoSchema>;
 
-const calendarEvent = z.object({ title: z.string(), allDay: z.boolean(), start: z.string(), end: z.string(), calendarId: z.string(), /** Google-händelser: id för att kunna ta bort dem härifrån. */ eventId: z.string().optional() });
+const calendarEvent = z.object({ title: z.string(), allDay: z.boolean(), start: z.string(), end: z.string(), calendarId: z.string(), /** Google-händelser: id för att kunna ta bort dem härifrån. */ eventId: z.string().optional(), location: z.string().optional(), /** Deltagarnas namn och packlistan (från "Ny aktivitet"). */ who: z.array(z.string()).optional(), bring: z.array(z.string()).optional(), /** Bortrest: deltagarna (id) är inte hemma. */ awayIds: z.array(z.string()).optional() });
 const calendarDay = z.object({ date: z.string(), events: z.array(calendarEvent) });
 export const calendarSchema = z.object({
   today: calendarDay,

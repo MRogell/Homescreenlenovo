@@ -4,6 +4,8 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { sameOrigin } from "../connect-flow";
 import { getAccessToken, getConnectionStatus } from "../connections";
 import { db as defaultDb } from "../db";
+import { describe, FREQUENCIES, metaKey, parseBring, rruleFor, SHARE_LEVELS, VISIBILITIES, type ActivityMeta } from "@/lib/activity";
+import { loadFamily, saveMeta } from "./family-store";
 import { createCaldavEvent, discoverCalendars } from "./caldav";
 import { loadIcloud } from "./icloud-store";
 import { getEnv } from "@/lib/env";
@@ -26,6 +28,17 @@ const createBody = z.object({
   allDay: z.boolean().default(false),
   start: time.optional(),
   end: time.optional(),
+  location: z.string().trim().max(120).default(""),
+  notes: z.string().trim().max(1000).default(""),
+  /** "Att ta med": en punkt per rad. */
+  bring: z.string().max(1500).default(""),
+  recurrence: z.enum(FREQUENCIES).default("NONE"),
+  until: date.optional(),
+  away: z.boolean().default(false),
+  participants: z.array(z.string().min(1).max(40)).max(30).default([]),
+  responsible: z.string().min(1).max(40).optional(),
+  visibility: z.enum(VISIBILITIES).default("HOUSEHOLD"),
+  shareLevel: z.enum(SHARE_LEVELS).default("EDIT"),
 }).strict();
 const deleteBody = z.object({ calendarId: z.string().min(3).max(200), eventId: z.string().min(1).max(200) }).strict();
 
@@ -89,13 +102,22 @@ export async function handleCreateEvent(req: EventsRequest, deps: EventsDeps = {
     start = s.toISOString();
     end = e.toISOString();
   }
+  if (b.responsible && !b.participants.includes(b.responsible)) return { status: 400, json: { error: "Den ansvarige måste vara deltagare." } };
+  if (b.recurrence !== "NONE" && b.until && b.until < b.date) return { status: 400, json: { error: "Slutdatumet kan inte vara före startdatumet." } };
+  const family = b.participants.length ? await loadFamily(deps.db) : [];
+  const names = b.participants.map((id) => family.find((m) => m.id === id)?.name).filter((n): n is string => !!n);
+  const responsibleName = family.find((m) => m.id === b.responsible)?.name;
+  const bring = parseBring(b.bring);
+  const extra = { location: b.location || undefined, description: describe(b.notes, bring, names, responsibleName) || undefined, rrule: rruleFor(b.recurrence, b.until, b.allDay) };
+  const meta: ActivityMeta = { participants: b.participants, ...(b.responsible ? { responsible: b.responsible } : {}), bring, away: b.away, visibility: b.visibility, shareLevel: b.shareLevel };
+  const keep = async (calendarId: string, id: string) => { if (id && (b.participants.length || bring.length || b.away || b.visibility !== "HOUSEHOLD" || b.shareLevel !== "EDIT")) await saveMeta(metaKey(calendarId, id), meta, deps.db); };
   if (toIcloud) {
     const creds = await (deps.icloud ?? (() => loadIcloud(getEnv().BETTER_AUTH_SECRET, deps.db)))();
     if (!creds) return { status: 409, json: { error: "Anslut iCloud i Inställningar först." } };
     try {
       const href = b.calendarId!.slice(2);
       if (!(await discoverCalendars(creds, deps.fetchFn)).some((c) => c.href === href && c.writable)) return { status: 400, json: { error: "Du kan inte lägga till i den kalendern." } };
-      await createCaldavEvent(creds, href, { title: b.title, allDay: b.allDay, start, end }, deps.fetchFn);
+      await keep(b.calendarId!, await createCaldavEvent(creds, href, { title: b.title, allDay: b.allDay, start, end, ...extra }, deps.fetchFn));
     } catch (e) {
       return e instanceof Error && e.name === "CaldavError" && (e as { kind?: string }).kind === "auth"
         ? { status: 409, json: { error: "iCloud nekade inloggningen. Anslut iCloud igen med ett nytt appspecifikt lösenord." } }
@@ -114,7 +136,7 @@ export async function handleCreateEvent(req: EventsRequest, deps: EventsDeps = {
       calId = (cals.find((c) => c.writable) ?? cals[0])?.id;
       if (!calId) return { status: 409, json: { error: "Hittade ingen kalender att lägga till i." } };
     }
-    await createGoogleEvent(token, calId, { title: b.title, allDay: b.allDay, start, end }, deps.fetchFn);
+    await keep(`g:${calId}`, await createGoogleEvent(token, calId, { title: b.title, allDay: b.allDay, start, end, ...extra }, deps.fetchFn));
   } catch (e) {
     return failed(e);
   }

@@ -42,7 +42,7 @@ describe("iCloud CalDAV", () => {
   });
   it("läser händelser", async () => {
     const ev = await listCaldavEvents(C, "https://p12-caldav.icloud.com/123/calendars/home/", new Date("2026-11-17T00:00:00Z"), new Date("2026-11-19T00:00:00Z"), fake().fetchFn);
-    expect(ev).toEqual([{ title: "Handboll", allDay: false, start: "2026-11-17T15:00:00.000Z", end: "2026-11-17T16:00:00.000Z" }]);
+    expect(ev).toEqual([{ uid: "1", title: "Handboll", allDay: false, start: "2026-11-17T15:00:00.000Z", end: "2026-11-17T16:00:00.000Z" }]);
   });
   it("bygger giltig iCal för vanlig och heldag", () => {
     const now = new Date("2026-11-16T12:00:00Z");
@@ -51,6 +51,12 @@ describe("iCloud CalDAV", () => {
     expect(d).toContain("DTSTART;VALUE=DATE:20261120");
     expect(d).toContain("DTEND;VALUE=DATE:20261123");
     expect(buildIcs({ title: "Hej, du; där", allDay: false, start: "2026-11-17T13:30:00.000Z", end: "2026-11-17T14:00:00.000Z" }, "u1", now)).toContain("SUMMARY:Hej\\, du\; där");
+  });
+  it("iCal får plats, beskrivning och upprepning", () => {
+    const ics = buildIcs({ title: "Simskola", allDay: false, start: "2026-11-17T15:00:00.000Z", end: "2026-11-17T16:00:00.000Z", location: "Simhallen, Luleå", description: "Rad ett\nRad två", rrule: "FREQ=WEEKLY" }, "u", new Date("2026-11-16T12:00:00Z"));
+    expect(ics).toContain("LOCATION:Simhallen\\, Luleå");
+    expect(ics).toContain("DESCRIPTION:Rad ett\\nRad två");
+    expect(ics).toContain("RRULE:FREQ=WEEKLY");
   });
   it("skapar via PUT och vägrar andra värdar än iCloud", async () => {
     const { fetchFn, calls } = fake();
@@ -61,7 +67,7 @@ describe("iCloud CalDAV", () => {
   });
   it("flödet skapar i iCloud-kalender", async () => {
     const { fetchFn, calls } = fake();
-    const db = { snapshot: { deleteMany: async () => ({}) }, providerBackoff: { deleteMany: async () => ({}) } } as never;
+    const db = { snapshot: { deleteMany: async () => ({}) }, providerBackoff: { deleteMany: async () => ({}) }, appSetting: { findUnique: async () => null, upsert: async () => ({}) } } as never;
     const r = await handleCreateEvent({ origin: "https://h.se", host: "h.se", userId: "u", body: { title: "Handboll", date: "2026-11-17", allDay: false, start: "16:00", end: "17:00", calendarId: "i:https://p12-caldav.icloud.com/123/calendars/home/" } }, { db, icloud: async () => C, fetchFn });
     expect(r.status).toBe(200);
     expect(calls.some((c) => c.method === "PUT")).toBe(true);

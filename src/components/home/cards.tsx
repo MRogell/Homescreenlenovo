@@ -9,6 +9,7 @@ import { SkodaClimate } from "./skoda-climate";
 import { DepartureRow } from "./departure-row";
 import { localDate } from "@/server/calendar/time";
 import { weekChip } from "@/lib/dinner";
+import { WeekChipButton } from "./home-this-week";
 import { CalendarAdd } from "./calendar-add";
 import { weatherView, wxTint } from "./weather-view";
 import { WeatherIcon } from "./weather-icon";
@@ -209,9 +210,9 @@ const CalAllDay = ({ title, color }: { title: string; color: string }) => (
 
 /** Kalender: nästa händelse stort, resten av dagen och imorgon under. */
 /** Vilken vecka det är och om det är barnvecka (udda veckor). */
-function WeekChip({ now }: { now: Date }) {
+function WeekChip({ now, awayIds }: { now: Date; awayIds: string[] }) {
   const w = weekChip(localDate(now));
-  return <div className={`cal-week${w.child ? " child" : ""}`}>{w.text}</div>;
+  return <WeekChipButton now={now} awayIds={awayIds} className={`cal-week${w.child ? " child" : ""}`}>{w.text}</WeekChipButton>;
 }
 
 export const CalendarCard = ({ state, now }: P) => (
@@ -222,7 +223,7 @@ export const CalendarCard = ({ state, now }: P) => (
       pill: { text: v.pill },
       body: (
         <div className="cal">
-          <div className="cal-top"><WeekChip now={now} />{writable.length > 0 && <CalendarAdd calendars={writable} now={now} />}</div>
+          <div className="cal-top"><WeekChip now={now} awayIds={[...new Set(d.today.events.flatMap((e) => e.awayIds ?? []))]} />{writable.length > 0 && <CalendarAdd calendars={writable} now={now} />}</div>
           {v.allDayToday.map((a, i) => <CalAllDay key={`t${i}`} {...a} />)}
           {v.allDayMore > 0 && <p className="cal-more">+{v.allDayMore} heldag</p>}
           {v.empty && <div className="cal-empty"><b>Inget i kalendern</b><span className="mid">Ingenting idag eller imorgon.</span></div>}
@@ -231,6 +232,7 @@ export const CalendarCard = ({ state, now }: P) => (
               <div className="cal-when"><i className="cal-dot" />{v.hero.when}</div>
               <div className="cal-ttl">{v.hero.title}</div>
               <div className="cal-meta">{v.hero.meta}</div>
+              {v.hero.extra && <div className="cal-extra">{v.hero.extra}</div>}
             </div>
           )}
           {v.later.length > 0 && <><div className="cal-grp">Senare idag</div><div className="cal-rows">{v.later.map((e) => <CalRow key={e.key} e={e} />)}</div>{v.laterMore > 0 && <p className="cal-more">+{v.laterMore} till idag</p>}</>}

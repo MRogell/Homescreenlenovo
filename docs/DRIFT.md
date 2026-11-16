@@ -175,3 +175,9 @@ Skapa händelse: `POST /api/calendar/events` (`src/server/calendar/events-flow.t
 
 ## iCloud-kalender (iPhone)
 Direkt koppling via CalDAV (`src/server/calendar/caldav.ts`, lagring i `icloud-store.ts`, anslutning i Inställningar → iCloud-kalender). Kräver Apple-ID och ett **appspecifikt lösenord** (appleid.apple.com → Logga in och säkerhet → Applösenord; kräver tvåfaktorsinloggning). Uppgifterna sparas krypterade. Kalenderkortet visar iCloud-kalendrarna och "Ny aktivitet" kan skriva till dem. Skrivet efter CalDAV-standarden men bara testat mot falska svar, inte mot ett riktigt iCloud-konto.
+
+## Ny aktivitet som i Veckiva + Hemma den här veckan
+- Formuläret "Ny aktivitet" (kalenderkortet) har samma fält som Veckiva: namn, datum, heldag, bortrest, tider, upprepning (varje dag/vecka, varannan vecka, månad, till och med), deltagare, ansvarig, plats, beskrivning, att ta med, vem ser den och delningsnivå (`src/components/home/calendar-add.tsx`, `src/lib/activity.ts`).
+- Familjemedlemmar (vuxen/barn) läggs in under Inställningar → Familjen; där ställs också dag och tid för barnens växling (`/api/family`).
+- Till Google/iCloud skickas titel, tid, plats, upprepning (RRULE) och en beskrivning med deltagare och packlista. Deltagare, ansvarig, packlista, bortrest, synlighet och delningsnivå sparas hos oss (`activityMeta`) och visas på hemskärmen; synlighet och delningsnivå sparas men styr inget än (ett gemensamt konto).
+- Trycker man på Barnvecka-märket (eller veckomärket i kalendern) öppnas "Hemma den här veckan": udda veckor alla, jämna bara de vuxna, bortrest idag undantagen, plus nästa växling.

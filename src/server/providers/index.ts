@@ -14,6 +14,7 @@ import { createCalendarProvider } from "./calendar";
 import { createListsProvider } from "./lists";
 import { loadLists } from "../lists/store";
 import { listCalendars } from "../calendar/store";
+import { loadFamily, loadMeta } from "../calendar/family-store";
 import { loadIcloud } from "../calendar/icloud-store";
 import type { Provider, ProviderId } from "./types";
 
@@ -73,6 +74,7 @@ const aeg = createAegProvider({
 // Kalendrarnas hemliga adresser ligger krypterade i databasen och dekrypteras här, bara på servern.
 const calendar = createCalendarProvider({
   loadCalendars: async () => (await listCalendars(db, getEnv().BETTER_AUTH_SECRET)).map(({ id, name, color, url }) => ({ id, name, color, url })),
+  loadExtras: async () => ({ meta: await loadMeta(db), family: await loadFamily(db) }),
   icloud: { load: () => loadIcloud(getEnv().BETTER_AUTH_SECRET, db) },
   google: { getToken: async () => ((await getConnectionStatus("google")) === "ok" ? getAccessToken("google") : null) },
 });
