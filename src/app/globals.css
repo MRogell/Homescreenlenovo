@@ -1047,3 +1047,22 @@ body:has(.wrap.shop) { padding-top: 0; }
   .dn-hero-people { font-size: 12px; }
   .dn-hero-label { letter-spacing: .08em; }
 }
+
+/*
+ * Lägre surfplatteskärmar: Škoda-kortets rubrik flyttas upp i vänstra kolumnen och klimatrutan får hela kortets höjd,
+ * så att halvcirkeln och knapparna blir större och mer luftiga.
+ */
+@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) and (max-height: 840px) {
+  .grid > .card.skoda { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto; column-gap: 12px; row-gap: 0; }
+  .card.skoda > .card-head { grid-column: 1; grid-row: 1; margin-bottom: 6px; }
+  .card.skoda > .skoda-body { display: contents; }
+  .card.skoda .skoda-info { grid-column: 1; grid-row: 2; min-height: 0; }
+  .card.skoda .skoda-body .dep, .card.skoda > .dep { grid-column: 1; grid-row: 3; }
+  .card.skoda .skoda-place { grid-column: 1; grid-row: 4; }
+  .card.skoda .skoda-climate { grid-column: 2; grid-row: 1 / span 4; padding: 26px 14px 14px; }
+  .card.skoda .skoda-dial { max-width: clamp(110px, calc((100cqh - 88px) / .86), 300px); }
+  .card.skoda .skoda-dial-value { gap: 6px 14px; }
+  .card.skoda .skoda-dial-value output { font-size: 30px; }
+  .card.skoda .skoda-dial-value button { width: 46px; height: 46px; font-size: 26px; }
+  .card.skoda .skoda-climate-btn { min-height: 46px; margin-top: 8px; }
+}
