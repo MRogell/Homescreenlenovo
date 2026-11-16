@@ -39,6 +39,8 @@ export async function saveTokens(userId: string, provider: TokenProviderId, toke
     create: { userId, provider, tokenEnc, status: "ok", lastSyncAt: new Date() },
     update: { tokenEnc, status: "ok", lastError: null, lastSyncAt: new Date() },
   });
+  // Google Kalender ingår i kalenderkortet: dess cache ska inte visa gamla läget efter ny anslutning.
+  if (provider === "google" && "snapshot" in db) await (db as PrismaClient).snapshot.deleteMany({ where: { provider: "calendar" } });
 }
 
 export async function getConnectionStatus(provider: TokenProviderId, db: PrismaClient = defaultDb): Promise<"ok" | "reauth" | "none" | "pending"> {
@@ -116,4 +118,5 @@ async function refreshLocked(db: PrismaClient, provider: TokenProviderId, refres
 export async function deleteConnection(provider: TokenProviderId, db: PrismaClient = defaultDb): Promise<void> {
   await db.connection.deleteMany({ where: { provider } });
   await db.snapshot.deleteMany({ where: { provider } });
+  if (provider === "google") await db.snapshot.deleteMany({ where: { provider: "calendar" } });
 }

@@ -13,6 +13,9 @@ const schema = z.object({
   SONOS_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   SPOTIFY_CLIENT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   SPOTIFY_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  // Google Kalender (läsa och skriva händelser). Se docs/DRIFT.md.
+  GOOGLE_CLIENT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  GOOGLE_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
   // Tado (enhetskodsflöde, publik klient). Behöver normalt inte sättas.
   TADO_CLIENT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(8).optional()),
   // Hemlighet för servertimern som startar förvärm när ingen skärm är öppen (minst 16 tecken). Se docs/DRIFT.md.

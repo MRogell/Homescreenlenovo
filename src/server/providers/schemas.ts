@@ -110,13 +110,13 @@ export const tadoSchema = z.object({
 });
 export type TadoData = z.infer<typeof tadoSchema>;
 
-const calendarEvent = z.object({ title: z.string(), allDay: z.boolean(), start: z.string(), end: z.string(), calendarId: z.string() });
+const calendarEvent = z.object({ title: z.string(), allDay: z.boolean(), start: z.string(), end: z.string(), calendarId: z.string(), /** Google-händelser: id för att kunna ta bort dem härifrån. */ eventId: z.string().optional() });
 const calendarDay = z.object({ date: z.string(), events: z.array(calendarEvent) });
 export const calendarSchema = z.object({
   today: calendarDay,
   tomorrow: calendarDay,
   /** De kopplade kalendrarna (namn och färg, aldrig adressen). */
-  calendars: z.array(z.object({ id: z.string(), name: z.string(), color: z.enum(["blue", "green", "yellow", "red", "purple"]) })),
+  calendars: z.array(z.object({ id: z.string(), name: z.string(), color: z.enum(["blue", "green", "yellow", "red", "purple"]), /** Google-kalender där man kan lägga till händelser härifrån. */ writable: z.boolean().optional() })),
   /** Hur många kalendrar som inte svarade den här gången. */
   failed: z.number(),
 });

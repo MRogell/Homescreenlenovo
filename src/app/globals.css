@@ -1133,3 +1133,15 @@ h1 { letter-spacing: -.5px; }
   .grid .card-head { gap: 10px; }
   .grid .pill { padding: 3px 10px; }
 }
+
+/* Ny aktivitet i kalenderkortet */
+.cal-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.cal-top:empty { display: none; }
+.cal-add { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px 0 12px; border-radius: 99px; border: 1px solid var(--card-line); background: var(--tile); color: var(--fg); font: 600 14px var(--body); cursor: pointer; margin-left: auto; }
+.cal-add svg { width: 18px; height: 18px; }
+.cal-add:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.ca-field { width: 100%; min-height: 48px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--field-line); background: var(--surface-2); color: var(--fg); font: 500 16px var(--body); }
+.ca-field:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.ca-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ca-row > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dn-actions { display: flex; gap: 10px; flex-wrap: wrap; }

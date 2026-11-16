@@ -25,7 +25,7 @@ import { listCalendars, publicCalendars } from "@/server/calendar/store";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Inställningar" };
 
-const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", weather: "Väder", tado: "Tado (inomhus)", calendar: "Kalender", lists: "Inköp" };
+const NAMES: Record<string, string> = { skoda: "Škoda", sonos: "Sonos", spotify: "Spotify", aeg: "AEG", weather: "Väder", tado: "Tado (inomhus)", calendar: "Kalender", google: "Google Kalender", lists: "Inköp" };
 const ERRORS: Record<string, string> = {
   "ogiltig-state": "Anslutningen avbröts av säkerhetsskäl. Försök igen från början.",
   avbrutet: "Du avbröt anslutningen.",
@@ -43,7 +43,7 @@ async function oauthRow(id: OAuthProviderId) {
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await requireUser();
   const sp = await searchParams;
-  const oauth = new Map((await Promise.all((["sonos", "spotify"] as const).map(oauthRow))).map((r) => [r.id, r]));
+  const oauth = new Map((await Promise.all((["sonos", "spotify", "google"] as const).map(oauthRow))).map((r) => [r.id, r]));
   const settings = await getSettings();
   const env = getEnv();
   const shares = (await listShares(undefined, env.BETTER_AUTH_SECRET)).map((x) => ({ id: x.id, name: x.name, url: `${env.BETTER_AUTH_URL.replace(/\/$/, "")}/familj/${x.token}`, createdAt: x.createdAt, lastUsedAt: x.lastUsedAt }));
@@ -112,6 +112,22 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
             );
           }))}
         </div>
+      </section>
+      <section className="card" aria-label="Google Kalender">
+        <div className="card-head"><span className="name">Google Kalender</span></div>
+        {(() => {
+          const g = oauth.get("google");
+          const status = g?.status ?? "none";
+          return (
+            <>
+              <p className="mid">Visar familjens Google-kalendrar på hemskärmen och låter dig lägga till aktiviteter härifrån. Det du lägger till syns direkt i Google Kalender och i iPhone-kalendern (när Google-kontot finns under Kalender → Konton på telefonen).</p>
+              <div className="row" style={{ alignItems: "center", flexWrap: "wrap" }}>
+                <span>{!g?.configured && status !== "ok" ? "Saknar konfiguration" : status === "ok" ? "Ansluten" : status === "reauth" ? "Anslut igen" : "Ej ansluten"}</span>
+                {status === "ok" ? <DisconnectButton provider="google" label="Google Kalender" /> : g?.configured ? <a className="btn" href={`/api/connect/${"google"}`}>{status === "reauth" ? "Anslut igen" : "Anslut Google"}</a> : null}
+              </div>
+            </>
+          );
+        })()}
       </section>
       <CalendarSettings initial={calendars} />
       <ShareSettings initial={shares} origin={env.BETTER_AUTH_URL.replace(/\/$/, "")} />

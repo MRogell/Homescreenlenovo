@@ -9,6 +9,7 @@ import { SkodaClimate } from "./skoda-climate";
 import { DepartureRow } from "./departure-row";
 import { localDate } from "@/server/calendar/time";
 import { weekChip } from "@/lib/dinner";
+import { CalendarAdd } from "./calendar-add";
 import { weatherView, wxTint } from "./weather-view";
 import { WeatherIcon } from "./weather-icon";
 import { Droplets, Moon, Snowflake, Sun, Sunrise, Sunset, Wind } from "lucide-react";
@@ -216,11 +217,12 @@ function WeekChip({ now }: { now: Date }) {
 export const CalendarCard = ({ state, now }: P) => (
   <CardShell<CalendarData> title="Kalender" off={{ big: "Dagen", text: "Se dagens händelser från iCloud eller Google.", cta: "Lägg till kalender" }} icon="cal" state={as(state)} now={now} className="calendar" render={(d) => {
     const v = calendarView(d, now);
+    const writable = d.calendars.filter((c) => c.writable).map(({ id, name }) => ({ id, name }));
     return {
       pill: { text: v.pill },
       body: (
         <div className="cal">
-          <WeekChip now={now} />
+          <div className="cal-top"><WeekChip now={now} />{writable.length > 0 && <CalendarAdd calendars={writable} now={now} />}</div>
           {v.allDayToday.map((a, i) => <CalAllDay key={`t${i}`} {...a} />)}
           {v.allDayMore > 0 && <p className="cal-more">+{v.allDayMore} heldag</p>}
           {v.empty && <div className="cal-empty"><b>Inget i kalendern</b><span className="mid">Ingenting idag eller imorgon.</span></div>}

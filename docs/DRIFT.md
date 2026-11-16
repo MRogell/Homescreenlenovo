@@ -162,3 +162,13 @@ Inställningar → Smarta funktioner → "Förvärm längre när det är kallt" 
 - Ny visuell stil (kort med toning, runda färgade ikonchips, piller) i `globals.css`; Škoda-kortet trimmat så inget klipps i fit-läge.
 - Inköp-kortet (liggande surfplatta ≥900px högt) visar alla varor och rullar inuti kortet (`.li-scroll`).
 - "Spara och lägg på listan" lägger rättens namn på listan om inga ingredienser finns.
+
+## Google Kalender (läsa och lägga till aktiviteter)
+Kalenderkortet läser Google-kalendrarna direkt via Googles API och har knappen "Ny aktivitet" som skapar händelser i Google. Eftersom Google Kalender synkar med telefonen syns allt i iPhone-kalendern också (Inställningar → Kalender → Konton → lägg till Google-kontot). ICS-kalendrar fungerar som förut (bara läsning).
+Engångsinställning:
+1. console.cloud.google.com: skapa ett projekt, aktivera **Google Calendar API**.
+2. OAuth-samtyckesskärm: typ **Extern**, lägg till familjens Google-adresser som testanvändare. **Publicera appen till "I produktion"** (annars slutar anslutningen gälla efter 7 dagar). Google visar en varning om ej verifierad app; välj "Avancerat → Fortsätt".
+3. Autentiseringsuppgifter → skapa **OAuth-klient-id, typ Webbapplikation**. Auktoriserad omdirigerings-URI: `<BETTER_AUTH_URL>/api/connect/google/callback`.
+4. Lägg `GOOGLE_CLIENT_ID` och `GOOGLE_CLIENT_SECRET` i Vercel (Production) och gör en ny deploy.
+5. Inställningar → Google Kalender → Anslut Google (godkänn att se och ändra kalendrar).
+Skapa händelse: `POST /api/calendar/events` (`src/server/calendar/events-flow.ts`), läsning i `src/server/providers/calendar.ts` och `src/server/calendar/google.ts`. Återkallar Google åtkomsten visas "Anslut igen".

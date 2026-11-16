@@ -72,6 +72,7 @@ const aeg = createAegProvider({
 // Kalendrarnas hemliga adresser ligger krypterade i databasen och dekrypteras här, bara på servern.
 const calendar = createCalendarProvider({
   loadCalendars: async () => (await listCalendars(db, getEnv().BETTER_AUTH_SECRET)).map(({ id, name, color, url }) => ({ id, name, color, url })),
+  google: { getToken: async () => ((await getConnectionStatus("google")) === "ok" ? getAccessToken("google") : null) },
 });
 
 const lists = createListsProvider({ load: () => loadLists(db) });

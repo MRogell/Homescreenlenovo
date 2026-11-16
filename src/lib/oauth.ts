@@ -7,6 +7,8 @@ export interface OAuthConfig {
   clientSecret: string;
   scope: string;
   redirectUri: string;
+  /** Extra parametrar i inloggningsadressen (Google: access_type=offline för att få refresh-token). */
+  extraParams?: Record<string, string>;
 }
 
 export interface TokenSet {
@@ -35,6 +37,7 @@ export function buildAuthorizeUrl(cfg: OAuthConfig, state: string): string {
   u.searchParams.set("scope", cfg.scope);
   u.searchParams.set("redirect_uri", cfg.redirectUri);
   u.searchParams.set("state", state);
+  for (const [k, v] of Object.entries(cfg.extraParams ?? {})) u.searchParams.set(k, v);
   return u.toString();
 }
 
