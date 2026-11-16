@@ -32,7 +32,7 @@ export async function saveFamily(list: { id?: string; name: string; kind: Family
     const key = m.name.trim().toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    members.push({ id: m.id ?? randomUUID().slice(0, 8), name: m.name.trim(), kind: m.kind });
+    members.push({ id: m.id || randomUUID().slice(0, 8), name: m.name.trim(), kind: m.kind });
   }
   const handoverValue = h ?? (await loadRaw(db)).handover;
   const value = { members, handover: handoverValue };

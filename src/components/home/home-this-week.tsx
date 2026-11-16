@@ -40,7 +40,7 @@ export function WeekChipButton({ now, awayIds = [], className, children }: { now
               <button type="button" className="icon-btn" aria-label="Stäng" onClick={close}><X aria-hidden="true" /></button>
             </header>
             {members === null ? <p className="mid">Hämtar…</p> : members.length === 0 ? (
-              <p className="mid">Lägg till familjemedlemmar under Inställningar → Familjen, så visas de här.</p>
+              <p className="mid">Lägg till familjemedlemmar under Inställningar → Familjemedlemmar, så visas de här.</p>
             ) : (
               <>
                 {!child && <p className="mid">Barnen är hos andra hushållet hela veckan.</p>}

@@ -1169,3 +1169,11 @@ h1 { letter-spacing: -.5px; }
 .hw-av { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--p); color: #fff; font: 700 13px var(--body); }
 .hw-next { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .hw-next svg { width: 16px; height: 16px; }
+
+/* Familjen (Inställningar) */
+.fam-add { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; margin-top: 6px; }
+.fam-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.fam-btn { min-height: 48px; padding: 0 22px; }
+.fam-handover { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; padding-top: 18px; border-top: 1px solid var(--card-line); }
+.fam-handover p { margin: 0; }
+@media (max-width: 560px) { .fam-add { grid-template-columns: 1fr; } .fam-btn { width: 100%; } }

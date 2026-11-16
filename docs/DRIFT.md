@@ -126,7 +126,7 @@ Klimatrutan har samma design som på telefon: stor halvcirkel, minus och plus ce
 - **Vem hämtar?** Två knappar bredvid hälsningen (idag och imorgon). Tryck öppnar en panel med sju dagar, tidigare använda namn att välja bland och fritt namnfält. Datat ligger i inköpslistans data (`pickups`, per datum, högst 40, äldre än 14 dagar rensas), så det synkas och köas offline på samma sätt, och familjemedlemmar med länk ser och ändrar det överst på sin sida. Vem som satt det bestäms av servern.
 - Hemskärmen har en enda uppsättning av listorna (en `useLists`) som delas av Inköp-kortet och Vem hämtar.
 
-**Tänd och släck:** Vem hämtar? och märket Barnvecka kan stängas av var för sig under Inställningar → Familjen på hemskärmen (inställningen `show`). Vem hämtar? kan också döljas direkt från länken längst ned i panelen. Datat finns kvar när funktionen är släckt.
+**Tänd och släck:** Vem hämtar? och märket Barnvecka kan stängas av var för sig under Inställningar → Familjemedlemmar på hemskärmen (inställningen `show`). Vem hämtar? kan också döljas direkt från länken längst ned i panelen. Datat finns kvar när funktionen är släckt.
 
 ## Servertimer för Förvärm (gratis)
 Utan den startar förvärm bara om en skärm är öppen i just starttidens fönster. Så här sätter du upp den, helt utan betalplan:
@@ -178,6 +178,6 @@ Direkt koppling via CalDAV (`src/server/calendar/caldav.ts`, lagring i `icloud-s
 
 ## Ny aktivitet som i Veckiva + Hemma den här veckan
 - Formuläret "Ny aktivitet" (kalenderkortet) har samma fält som Veckiva: namn, datum, heldag, bortrest, tider, upprepning (varje dag/vecka, varannan vecka, månad, till och med), deltagare, ansvarig, plats, beskrivning, att ta med, vem ser den och delningsnivå (`src/components/home/calendar-add.tsx`, `src/lib/activity.ts`).
-- Familjemedlemmar (vuxen/barn) läggs in under Inställningar → Familjen; där ställs också dag och tid för barnens växling (`/api/family`).
+- Familjemedlemmar (vuxen/barn) läggs in under Inställningar → Familjemedlemmar; där ställs också dag och tid för barnens växling (`/api/family`).
 - Till Google/iCloud skickas titel, tid, plats, upprepning (RRULE) och en beskrivning med deltagare och packlista. Deltagare, ansvarig, packlista, bortrest, synlighet och delningsnivå sparas hos oss (`activityMeta`) och visas på hemskärmen; synlighet och delningsnivå sparas men styr inget än (ett gemensamt konto).
 - Trycker man på Barnvecka-märket (eller veckomärket i kalendern) öppnas "Hemma den här veckan": udda veckor alla, jämna bara de vuxna, bortrest idag undantagen, plus nästa växling.

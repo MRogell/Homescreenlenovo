@@ -116,7 +116,7 @@ export function CalendarAdd({ calendars, now }: { calendars: WritableCalendar[];
             <div className="ca-box">
               <b className="dn-label">Vem deltar?</b>
               {members.length === 0 ? (
-                <p className="mid small">Lägg till familjemedlemmar under Inställningar → Familjen, så kan du välja vilka som deltar.</p>
+                <p className="mid small">Lägg till familjemedlemmar under Inställningar → Familjemedlemmar, så kan du välja vilka som deltar.</p>
               ) : (
                 <div className="ca-people">
                   {members.map((m, i) => (
