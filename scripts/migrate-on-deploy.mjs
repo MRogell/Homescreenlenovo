@@ -23,4 +23,20 @@ if (onVercel && /-pooler\./.test(url)) {
   process.exit(1);
 }
 console.log(`[migrate] Kör prisma migrate deploy (${process.env.MIGRATE_DATABASE_URL ? "MIGRATE_DATABASE_URL" : "DATABASE_URL"})…`);
-execSync("npx prisma migrate deploy", { stdio: "inherit", env: { ...process.env, DATABASE_URL: url } });
+// Databasen (Render) kan svara långsamt eller tappa anslutningen en kort stund. Tre försök med paus innan bygget ges upp.
+const WAITS_MS = [0, 8_000, 20_000];
+for (let i = 0; i < WAITS_MS.length; i++) {
+  if (WAITS_MS[i]) {
+    console.log(`[migrate] Försöker igen om ${WAITS_MS[i] / 1000} s (försök ${i + 1} av ${WAITS_MS.length})…`);
+    await new Promise((r) => setTimeout(r, WAITS_MS[i]));
+  }
+  try {
+    execSync("npx prisma migrate deploy", { stdio: "inherit", env: { ...process.env, DATABASE_URL: url } });
+    break;
+  } catch (e) {
+    if (i === WAITS_MS.length - 1) {
+      console.error("[migrate] Migreringen misslyckades efter flera försök. Kontrollera att databasen svarar (Render → databasen → Available) och att den inte har gått ut.");
+      throw e;
+    }
+  }
+}
