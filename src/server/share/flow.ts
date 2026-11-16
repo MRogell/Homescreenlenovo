@@ -1,4 +1,5 @@
 import "server-only";
+import { forgetSnapshot } from "../snapshot-memory";
 import { z } from "zod";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getEnv } from "@/lib/env";
@@ -74,6 +75,7 @@ export async function handleGuestPost(req: GuestRequest, deps: ShareDeps = {}): 
   const p = opsBody.safeParse(req.body);
   if (!p.success) return { status: 400, json: { error: "Ogiltig begäran" } };
   const lists = await mutateLists(p.data.ops as Op[], db, Date.now(), who.name);
+  forgetSnapshot("lists");
   await db.snapshot.deleteMany({ where: { provider: "lists" } });
   await db.providerBackoff.deleteMany({ where: { provider: "lists" } });
   return { status: 200, json: { lists, name: who.name } };

@@ -2,7 +2,7 @@
 // Hoppar över: Preview-bygge (får aldrig röra produktionsdatabasen) och bygge utan databasadress (t.ex. lokalt utan databas).
 // MIGRATE_DATABASE_URL (direkt adress, utan pooler) har företräde framför DATABASE_URL: Prismas migreringar använder
 // lås som inte fungerar via en pooler (Neon: adressen utan "-pooler", Vercels variabel DATABASE_URL_UNPOOLED).
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 
 const onVercel = Boolean(process.env.VERCEL);
 if (onVercel && process.env.VERCEL_ENV !== "production") {
@@ -23,20 +23,26 @@ if (onVercel && /-pooler\./.test(url)) {
   process.exit(1);
 }
 console.log(`[migrate] Kör prisma migrate deploy (${process.env.MIGRATE_DATABASE_URL ? "MIGRATE_DATABASE_URL" : "DATABASE_URL"})…`);
-// Databasen (Render) kan svara långsamt eller tappa anslutningen en kort stund. Tre försök med paus innan bygget ges upp.
+// Databasen kan svara långsamt eller tillfälligt vara spärrad (t.ex. gratisgränsen nådd). Tre försök med paus innan bygget går vidare eller ger upp.
+// Går databasen inte att nå alls hoppas migreringen över med en tydlig varning: koden ska ändå kunna läggas ut, och migreringen körs vid nästa bygge
+// när databasen svarar. Alla andra fel (en riktig migrering som kraschar) stoppar bygget som förut.
 const WAITS_MS = [0, 8_000, 20_000];
+const UNREACHABLE = /P1001|P1002|P1017|Can't reach database server|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|timed out|Server has closed the connection/i;
+let lastOutput = "";
 for (let i = 0; i < WAITS_MS.length; i++) {
   if (WAITS_MS[i]) {
     console.log(`[migrate] Försöker igen om ${WAITS_MS[i] / 1000} s (försök ${i + 1} av ${WAITS_MS.length})…`);
     await new Promise((r) => setTimeout(r, WAITS_MS[i]));
   }
-  try {
-    execSync("npx prisma migrate deploy", { stdio: "inherit", env: { ...process.env, DATABASE_URL: url } });
-    break;
-  } catch (e) {
-    if (i === WAITS_MS.length - 1) {
-      console.error("[migrate] Migreringen misslyckades efter flera försök. Kontrollera att databasen svarar (Render → databasen → Available) och att den inte har gått ut.");
-      throw e;
-    }
+  const r = spawnSync("npx", ["prisma", "migrate", "deploy"], { encoding: "utf8", env: { ...process.env, DATABASE_URL: url } });
+  lastOutput = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+  process.stdout.write(r.stdout ?? "");
+  process.stderr.write(r.stderr ?? "");
+  if (r.status === 0) process.exit(0);
+  if (!UNREACHABLE.test(lastOutput)) {
+    console.error("[migrate] Migreringen misslyckades (inte ett anslutningsfel). Bygget stoppas.");
+    process.exit(1);
   }
 }
+console.warn("[migrate] VARNING: databasen går inte att nå (spärrad, pausad eller nere). Migreringen hoppas över; bygget fortsätter. Kontrollera databasen och bygg om när den svarar.");
+process.exit(0);

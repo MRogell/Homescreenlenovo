@@ -4,6 +4,7 @@ import { db as defaultDb } from "./db";
 import { detectEvents } from "./notify/events";
 import { dispatchEvents } from "./notify/push";
 import { PROVIDERS } from "./providers";
+import { forgetSnapshot, getMemorySnapshot, putMemorySnapshot } from "./snapshot-memory";
 import { providerConnected, safeSummary } from "./providers/safe";
 import type { CardState, Provider, ProviderId } from "./providers/types";
 
@@ -33,13 +34,21 @@ async function notifyChanges(providerId: string, prev: { data: unknown; fetchedA
 
 async function resolveOne(p: Provider<unknown>, now: Date, db: PrismaClient): Promise<CardState<unknown>> {
   if (!(await providerConnected(p))) return { status: "not_connected" };
+  const inMemory = getMemorySnapshot(p.id);
+  if (inMemory) {
+    const age = now.getTime() - inMemory.fetchedAt.getTime();
+    const ttl = p.ttlFor ? p.ttlFor(inMemory.data) : p.ttlSeconds;
+    if (age >= 0 && age < ttl * 1000) return { status: "ok", data: inMemory.data, fetchedAt: inMemory.fetchedAt.toISOString() };
+  }
   const last = await loadLast(db, p);
+  if (last) putMemorySnapshot(p.id, last);
   if (last) {
     const ageMs = now.getTime() - last.fetchedAt.getTime();
     // Färsk endast om 0 <= ålder < ttl. Framtida tidsstämpel (klockskev) och exakt ttl hämtas om.
     const ttlSeconds = p.ttlFor ? p.ttlFor(last.data) : p.ttlSeconds;
     if (ageMs >= 0 && ageMs < ttlSeconds * 1000) return { status: "ok", data: last.data, fetchedAt: last.fetchedAt.toISOString() };
   }
+  forgetSnapshot(p.id); // utgången: hämtas om nedan
   const lastIso = last ? { data: last.data, fetchedAt: last.fetchedAt.toISOString() } : undefined;
 
   // Nyss misslyckad: fråga inte igen förrän väntetiden är slut (en trasig tjänst ska inte bromsa varje uppdatering).
@@ -52,6 +61,7 @@ async function resolveOne(p: Provider<unknown>, now: Date, db: PrismaClient): Pr
   if (state.status === "ok") {
     const created = await db.snapshot.create({ data: { provider: p.id, payload: state.data as never, fetchedAt: now } });
     await db.snapshot.deleteMany({ where: { provider: p.id, id: { not: created.id } } });
+    putMemorySnapshot(p.id, { data: state.data, fetchedAt: now });
     if (backoff) await db.providerBackoff.deleteMany({ where: { provider: p.id } });
     await notifyChanges(p.id, last, state.data, now, db);
     return { ...state, fetchedAt: now.toISOString() };

@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getEnv } from "@/lib/env";
 import { sameOrigin } from "../connect-flow";
+import { forgetSnapshot } from "../snapshot-memory";
 import { db as defaultDb } from "../db";
 import { CalendarFetchError, fetchIcs, type Lookup } from "./fetch";
 import { IcsError, parseEvents } from "./ics";
@@ -18,6 +19,7 @@ const removeBody = z.object({ id: z.string().min(1).max(40) }).strict();
 
 /** Rensar kalenderns cache så att nästa uppdatering hämtar om direkt. */
 async function clearCache(db: PrismaClient) {
+  forgetSnapshot("calendar");
   await db.snapshot.deleteMany({ where: { provider: "calendar" } });
   await db.providerBackoff.deleteMany({ where: { provider: "calendar" } });
 }

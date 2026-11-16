@@ -51,7 +51,7 @@ export interface ListsOptions {
 }
 
 export function useLists(initial: ListsState | null, opts: ListsOptions = {}) {
-  const { pollMs = 20_000, endpoint = "/api/lists", storeKey = DEFAULT_STORE_KEY } = opts;
+  const { pollMs = 60_000, endpoint = "/api/lists", storeKey = DEFAULT_STORE_KEY } = opts;
   const quietRef = useRef(opts.quiet);
   useEffect(() => { quietRef.current = opts.quiet; });
   const [server, setServer] = useState<ListsState>(initial ?? EMPTY_LISTS);

@@ -32,7 +32,8 @@ function ChildWeekBadge({ now, awayIds }: { now: Date; awayIds: string[] }) {
   return isChildWeek(localDate(now)) ? <WeekChipButton now={now} awayIds={awayIds} className="week-badge">Barnvecka</WeekChipButton> : null;
 }
 
-const POLL_MS = 30_000;
+// Gratisdatabasen räknar anrop: hemskärmen hämtas var 2:a minut (egna ändringar och tryck uppdaterar direkt).
+const POLL_MS = 120_000;
 /** Spotify uppdateras oftare (direkt från Spotify) så att kortet följer vad som spelas utan märkbar fördröjning. */
 const SPOTIFY_POLL_MS = 4_000;
 /** När inget spelas räcker det att fråga Spotify var 15:e sekund. */

@@ -5,6 +5,7 @@ import { sameOrigin } from "../connect-flow";
 import { getAccessToken, getConnectionStatus } from "../connections";
 import { db as defaultDb } from "../db";
 import { describe, FREQUENCIES, metaKey, parseBring, rruleFor, SHARE_LEVELS, VISIBILITIES, type ActivityMeta } from "@/lib/activity";
+import { forgetSnapshot } from "../snapshot-memory";
 import { loadFamily, saveMeta } from "./family-store";
 import { createCaldavEvent, discoverCalendars } from "./caldav";
 import { loadIcloud } from "./icloud-store";
@@ -45,6 +46,7 @@ const deleteBody = z.object({ calendarId: z.string().min(3).max(200), eventId: z
 const at = (d: string, h: number, mi: number) => zonedToUtc({ y: Number(d.slice(0, 4)), m: Number(d.slice(5, 7)), d: Number(d.slice(8, 10)), h, mi, s: 0 });
 
 async function clearCache(db: PrismaClient) {
+  forgetSnapshot("calendar");
   await db.snapshot.deleteMany({ where: { provider: "calendar" } });
   await db.providerBackoff.deleteMany({ where: { provider: "calendar" } });
 }

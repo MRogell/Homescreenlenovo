@@ -1,4 +1,5 @@
 import "server-only";
+import { forgetSnapshot } from "./snapshot-memory";
 import { z } from "zod";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { sameOrigin } from "./connect-flow";
@@ -80,6 +81,7 @@ async function handleSonos(body: unknown, deps: ControlFlowDeps): Promise<Contro
     return { status: SONOS_STATUS[err.code], json: { error: err.message, code: err.code } };
   }
   const db = deps.db ?? defaultDb;
+  forgetSnapshot("sonos");
   await db.snapshot.deleteMany({ where: { provider: "sonos" } });
   await db.providerBackoff.deleteMany({ where: { provider: "sonos" } });
   return { status: 204 };
@@ -124,6 +126,7 @@ async function handleAeg(body: unknown, deps: ControlFlowDeps): Promise<ControlR
     const err = e instanceof ReauthRequired ? new AegControlError("reauth") : e instanceof AegControlError ? e : new AegControlError("failed");
     return { status: AEG_STATUS[err.code], json: { error: err.message, code: err.code } };
   }
+  forgetSnapshot("aeg");
   await db.snapshot.deleteMany({ where: { provider: "aeg" } });
   await db.providerBackoff.deleteMany({ where: { provider: "aeg" } });
   return { status: 204 };
@@ -146,6 +149,7 @@ async function runSkodaCommand(command: { action: "climate_start"; temperatureC:
   if (data.climateOn !== wanted) data = { ...data, climateRequested: { action: wanted ? "start" : "stop", at: fetchedAt.toISOString() } };
   else data = { ...data, climateRequested: null };
   const db = deps.db ?? defaultDb;
+  forgetSnapshot("skoda");
   await db.$transaction([
     db.snapshot.deleteMany({ where: { provider: "skoda" } }),
     db.snapshot.create({ data: { provider: "skoda", payload: data as never, fetchedAt } }),
@@ -209,6 +213,7 @@ export async function handleControl(req: ControlRequest, deps: ControlFlowDeps =
     return { status: STATUS[err.code], json: { error: err.message, code: err.code, ...(err.devices ? { devices: err.devices } : {}) } };
   }
   const db = deps.db ?? defaultDb;
+  forgetSnapshot("spotify");
   await db.snapshot.deleteMany({ where: { provider: "spotify" } });
   await db.providerBackoff.deleteMany({ where: { provider: "spotify" } });
   return { status: 204 };

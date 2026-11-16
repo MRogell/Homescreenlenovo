@@ -4,6 +4,7 @@ import { decryptToken, encryptToken } from "@/lib/crypto";
 import { getEnv } from "@/lib/env";
 import { OAuthError, refreshTokens, type OAuthConfig, type TokenSet } from "@/lib/oauth";
 import { db as defaultDb } from "./db";
+import { forgetSnapshot } from "./snapshot-memory";
 import { refreshTadoTokens, TADO_DEFAULT_CLIENT_ID } from "@/lib/tado-auth";
 import { refreshAegTokens } from "@/lib/aeg-auth";
 import { getOAuthConfig, type OAuthProviderId } from "./oauth-providers";
@@ -39,7 +40,9 @@ export const setConnectionCache = (on: boolean) => { cacheOn = on; };
 const tokenCache = new WeakMap<object, Map<string, { token: string; expiresAt: number }>>();
 const statusCache = new WeakMap<object, Map<string, { v: "ok" | "reauth" | "none" | "pending"; at: number }>>();
 const bucket = <T,>(m: WeakMap<object, Map<string, T>>, db: object) => { let b = m.get(db); if (!b) { b = new Map(); m.set(db, b); } return b; };
-function dropCache(db: object, provider: string) { bucket(tokenCache, db).delete(provider); bucket(statusCache, db).delete(provider); }
+function dropCache(db: object, provider: string) {
+  forgetSnapshot(provider);
+  if (provider === "google") forgetSnapshot("calendar"); bucket(tokenCache, db).delete(provider); bucket(statusCache, db).delete(provider); }
 
 type ConnDb = Pick<PrismaClient, "connection">;
 

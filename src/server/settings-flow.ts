@@ -1,4 +1,5 @@
 import "server-only";
+import { forgetSnapshot } from "./snapshot-memory";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { settingsPatchSchema, type AppSettings } from "@/lib/settings";
 import { sameOrigin } from "./connect-flow";
@@ -27,6 +28,7 @@ export async function handleSettings(req: SettingsRequest, db: PrismaClient = de
   const settings = await applySettingsPatch(parsed.data, db);
   // Ny väderplats: rensa vädrets cache så att nästa uppdatering hämtar den nya orten direkt.
   if (parsed.data.place !== undefined || parsed.data.reset) {
+    forgetSnapshot("weather");
     await db.snapshot.deleteMany({ where: { provider: "weather" } });
     await db.providerBackoff.deleteMany({ where: { provider: "weather" } });
   }

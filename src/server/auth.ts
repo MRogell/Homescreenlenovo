@@ -14,7 +14,8 @@ export const auth = betterAuth({
   trustedOrigins: (env.AUTH_TRUSTED_ORIGINS ?? "").split(",").map((o) => o.trim()).filter(Boolean),
   database: prismaAdapter(db, { provider: "postgresql" }),
   emailAndPassword: { enabled: true, minPasswordLength: 10, maxPasswordLength: 128, autoSignIn: true },
-  session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24 },
+  // cookieCache: inloggningen kontrolleras mot databasen högst var 5:e minut i stället för vid varje fråga (gratisdatabasen räknar anrop).
+  session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24, cookieCache: { enabled: true, maxAge: 5 * 60 } },
   rateLimit: {
     enabled: true,
     // Databas, inte minne: serverlösa instanser delar inte minne, så en minnesgräns går att runda genom att träffa nya instanser.

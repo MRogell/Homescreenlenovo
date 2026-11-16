@@ -197,3 +197,8 @@ Gratisdatabasen har en månadsgräns för hur länge den får vara igång, och s
 - Spotify frågas var 15:e sekund när inget spelas (4 sekunder bara medan musik spelar).
 - På natten (nattläget om det är på, annars 00:00–05:00) hämtar skärmen hemskärm, Spotify och inköpslista bara var 10:e minut (`src/lib/quiet.ts`). När någon öppnar appen hämtas allt direkt.
 - Servertimern (cron-job.org) bör bara gå när förvärm behövs, t.ex. varje minut 05:00–09:00 och 14:00–19:00, inte hela natten.
+- Hemskärmen hämtas var 2:a minut (inte var 30:e sekund) och inköpslistan var minut. När du öppnar appen eller gör något hämtas det direkt.
+- Sessionen kontrolleras mot databasen högst var 5:e minut (`cookieCache` i `src/server/auth.ts`). Utloggning på en enhet kan alltså dröja upp till 5 minuter på en annan.
+- Färska kortdata hålls i serverinstansens minne (`src/server/snapshot-memory.ts`) så länge tjänstens ttl gäller; rensas när något ändras här.
+- Gratisgränsen hos Prisma Postgres är 200 000 anrop per månad (visas i Prisma Console → Dashboard → Total operations). Följ förbrukningen per dygn; målet är under cirka 6 000.
+- Bygget (`scripts/migrate-on-deploy.mjs`) provar tre gånger och går vidare med en varning om databasen inte går att nå (spärrad eller nere), så koden kan läggas ut ändå. Riktiga migreringsfel stoppar bygget.

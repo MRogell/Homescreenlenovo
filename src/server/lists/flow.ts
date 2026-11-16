@@ -1,4 +1,5 @@
 import "server-only";
+import { forgetSnapshot } from "../snapshot-memory";
 import { z } from "zod";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { ListsState, Op } from "@/lib/shopping";
@@ -48,6 +49,7 @@ export async function handleListsPost(req: ListsRequest, db: PrismaClient = defa
   if (!parsed.success) return { status: 400, json: { error: "Ogiltig begäran" } };
   const lists = await mutateLists(parsed.data.ops as Op[], db);
   // Hemskärmens cache av listorna är nu gammal.
+  forgetSnapshot("lists");
   await db.snapshot.deleteMany({ where: { provider: "lists" } });
   await db.providerBackoff.deleteMany({ where: { provider: "lists" } });
   return { status: 200, json: { lists } };
