@@ -2,10 +2,14 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { HomeStates } from "@/server/snapshots";
-import { resolveCards, type AppSettings } from "@/lib/settings";
+import { type AppSettings, type CardId } from "@/lib/settings";
+import { moveTo, orderedCards, stepCard, type CardSize } from "@/lib/layout";
+import { resetLayout, useLayout, writeLayout } from "@/lib/layout-store";
+import { EditBar } from "./edit-bar";
+import { EditContext } from "./edit-context";
 import type { DepartureView } from "@/lib/departure";
 import { NightVeil } from "./night-veil";
-import { Settings as SettingsIcon } from "lucide-react";
+import { Pencil, Settings as SettingsIcon } from "lucide-react";
 import { ListsCard } from "./lists-card";
 import { attentionLine, attentionTone } from "./attention";
 import type { SonosInfo } from "./spotify-view";
@@ -82,7 +86,19 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
   }, [refresh]);
 
   // Sonos-rummen till Spotify-kortet: knappar och enhetsbyte går via Sonos när musiken spelar där.
-  const visible = resolveCards(settings);
+  const layout = useLayout();
+  const [editing, setEditing] = useState(false);
+  const visible = orderedCards(layout, settings.cards.order, settings.cards.hidden);
+  // Egen ordning sparas för hela listan (även dolda kort), så att ordningen består om ett dolt kort slås på igen.
+  const fullOrder = (): CardId[] => layout.order ?? [...settings.cards.order];
+  const editApi = {
+    editing,
+    order: visible,
+    move: (id: CardId, delta: -1 | 1) => { const vis = stepCard(visible, id, delta); writeLayout({ ...layout, order: [...vis, ...fullOrder().filter((x) => !vis.includes(x))] }); },
+    dropOn: (id: CardId, target: CardId) => { const vis = moveTo(visible, id, target); writeLayout({ ...layout, order: [...vis, ...fullOrder().filter((x) => !vis.includes(x))] }); },
+    setSize: (id: CardId, size: CardSize) => { const sizes = { ...layout.sizes }; if (size === "m") delete sizes[id]; else sizes[id] = size; writeLayout({ ...layout, sizes }); },
+    sizeOf: (id: CardId): CardSize => layout.sizes[id] ?? "m",
+  };
   const sonosState = states.sonos;
   const sonosInfo = sonosState && (sonosState.status === "ok" || sonosState.status === "stale") ? (sonosState.data as SonosInfo) : null;
 
@@ -101,10 +117,11 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
   return (
     <RefreshContext.Provider value={refresh}>
     <SpotifyRefreshContext.Provider value={refreshSpotify}>
-    <div className="wrap home">
+    <EditContext.Provider value={editApi}>
+    <div className={`wrap home${editing ? " editing" : ""}`}>
       <NightVeil night={settings.night} />
       <header className="top-bar">
-        <Clock extras={<>{settings.smart.timer.enabled && <TimerChip timers={timers} onChange={setTimers} />}{settings.show.childWeek && <ChildWeekBadge now={now} awayIds={awayToday(states.calendar)} />}{settings.show.pickup && visible.includes("lists") && <PickupBar api={listsApi} onHide={hidePickup} />}</>} note={attentionLine(states, now)} dinner={dinner} tone={attentionTone(states, now)} trailing={<a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a>} />
+        <Clock extras={<>{settings.smart.timer.enabled && <TimerChip timers={timers} onChange={setTimers} />}{settings.show.childWeek && <ChildWeekBadge now={now} awayIds={awayToday(states.calendar)} />}{settings.show.pickup && visible.includes("lists") && <PickupBar api={listsApi} onHide={hidePickup} />}</>} note={attentionLine(states, now)} dinner={dinner} tone={attentionTone(states, now)} trailing={<span className="trail"><button type="button" className="settings-link" aria-label="Redigera hemskärmen" aria-pressed={editing} onClick={() => setEditing((v) => !v)}><Pencil aria-hidden="true" /></button><a className="settings-link" href="/installningar" aria-label="Inställningar"><SettingsIcon aria-hidden="true" /></a></span>} />
       </header>
       {offline && <p className="err" role="status">Ingen kontakt med servern. Visar senast hämtade data.</p>}
       {visible.length === 0 && <p className="mid empty-note">Alla kort är dolda. Slå på något under Inställningar.</p>}
@@ -122,7 +139,9 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
           }
         })}
       </main>
+      {editing && <EditBar layout={layout} onChange={writeLayout} onReset={resetLayout} onDone={() => setEditing(false)} />}
     </div>
+    </EditContext.Provider>
     </SpotifyRefreshContext.Provider>
     </RefreshContext.Provider>
   );

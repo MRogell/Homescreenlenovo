@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ServiceWorker } from "@/components/service-worker";
+import { EARLY_SCRIPT, LayoutAttrs } from "@/components/home/layout-attrs";
 import { NoZoom } from "@/components/no-zoom";
 
 export const metadata: Metadata = {
@@ -14,8 +15,9 @@ export const viewport: Viewport = { themeColor: "#0f1419", width: "device-width"
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sv">
+    <html lang="sv" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: EARLY_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* App Router: layouten gäller alla sidor, så varningen om _document gäller inte. */}
@@ -26,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <ServiceWorker />
         <NoZoom />
+        <LayoutAttrs />
       </body>
     </html>
   );

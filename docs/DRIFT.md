@@ -181,3 +181,9 @@ Direkt koppling via CalDAV (`src/server/calendar/caldav.ts`, lagring i `icloud-s
 - Familjemedlemmar (vuxen/barn) läggs in under Inställningar → Familjemedlemmar; där ställs också dag och tid för barnens växling (`/api/family`).
 - Till Google/iCloud skickas titel, tid, plats, upprepning (RRULE) och en beskrivning med deltagare och packlista. Deltagare, ansvarig, packlista, bortrest, synlighet och delningsnivå sparas hos oss (`activityMeta`) och visas på hemskärmen; synlighet och delningsnivå sparas men styr inget än (ett gemensamt konto).
 - Trycker man på Barnvecka-märket (eller veckomärket i kalendern) öppnas "Hemma den här veckan": udda veckor alla, jämna bara de vuxna, bortrest idag undantagen, plus nästa växling.
+
+## Anpassa hemskärmen (per enhet)
+- Pennan uppe till höger öppnar redigera-läget: dra korten (eller använd pilarna), välj Liten/Normal/Stor per kort, och under **Utseende** färgtema (Standard, Nordljus, Skog, Solnedgång, Neutral), tät/normal/luftig och textstorlek. **Återställ** går tillbaka till standard.
+- Allt sparas i enheten (`localStorage`, nyckel `hs-layout-v1`, `src/lib/layout-store.ts`), så surfplatta och telefon kan se olika ut. Dolda kort och serverns ordning (Inställningar) är grunden; egen ordning ersätter bara ordningen.
+- "Allt på en skärm" på liggande surfplatta (≥900 px hög) är inställd för standardläget. Egen ordning, egen kortstorlek, luftig täthet eller annan textstorlek sätter `data-free` på `<html>`: då stängs den inpassningen av (alla fit-regler i `globals.css` är prefixade med `html:not([data-free])`) och sidan rullar. Tema och "tät" påverkar inte passformen.
+- Nya CSS-regler för fit-läget måste därför ligga i ett av de fem `@media (min-width: 1001px) and (min-height: 900px) …`-blocken med prefixet `html:not([data-free])`.

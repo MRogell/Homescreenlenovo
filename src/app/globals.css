@@ -572,200 +572,200 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
  * visas i den vanliga vyn (telefon, stående, skrivbord) men inte här. Villkoret finns också i components/lists/use-fit.ts.
  */
 @media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) {
-  .wrap.home { height: calc(100dvh - 40px); min-height: 0; gap: 8px; }
-  header.top-bar { align-items: center; gap: 4px 24px; }
-  h1 { font-size: 30px; }
-  .clock b { font-size: 44px; }
-  .clock span { font-size: 14px; }
-  .sub { margin-top: 0; min-height: 1.2em; font-size: 14px; }
-  .sub[data-tone] { font-size: 17px; padding: 5px 12px; margin-top: 2px; }
-  .settings-link { width: 48px; height: 48px; }
+  html:not([data-free]) .wrap.home { height: calc(100dvh - 40px); min-height: 0; gap: 8px; }
+  html:not([data-free]) header.top-bar { align-items: center; gap: 4px 24px; }
+  html:not([data-free]) h1 { font-size: 30px; }
+  html:not([data-free]) .clock b { font-size: 44px; }
+  html:not([data-free]) .clock span { font-size: 14px; }
+  html:not([data-free]) .sub { margin-top: 0; min-height: 1.2em; font-size: 14px; }
+  html:not([data-free]) .sub[data-tone] { font-size: 17px; padding: 5px 12px; margin-top: 2px; }
+  html:not([data-free]) .settings-link { width: 48px; height: 48px; }
   /* Allt som går att trycka på är minst 44 px högt. */
-  .pk-chip, .tm-chip { min-height: 44px; }
-  .week-badge { min-height: 36px; }
-  .dep-switch { position: relative; }
-  .dep-switch::before { content: ""; position: absolute; inset: -9px -6px; }
+  html:not([data-free]) .pk-chip, html:not([data-free]) .tm-chip { min-height: 44px; }
+  html:not([data-free]) .week-badge { min-height: 36px; }
+  html:not([data-free]) .dep-switch { position: relative; }
+  html:not([data-free]) .dep-switch::before { content: ""; position: absolute; inset: -9px -6px; }
   /* Tre rader: de två översta lite högre än den nedre (AEG och Inomhus behöver minst). */
-  .grid { gap: 14px; grid-auto-rows: minmax(224px, 1fr); grid-template-rows: minmax(196px, 1fr) minmax(236px, 1.15fr) minmax(152px, .72fr); min-height: 0; }
-  .grid > .card { container: card / size; overflow: hidden; padding: 16px 18px; gap: 8px; min-height: 0; border-radius: 18px; }
-  .grid .card-head svg { width: 20px; height: 20px; }
-  .grid .card .foot { display: none; }
-  .grid .card[data-stale] .foot { display: block; }
-  .big { font-size: 40px; }
-  .big.text { font-size: 24px; }
+  html:not([data-free]) .grid { gap: 14px; grid-auto-rows: minmax(224px, 1fr); grid-template-rows: minmax(196px, 1fr) minmax(236px, 1.15fr) minmax(152px, .72fr); min-height: 0; }
+  html:not([data-free]) .grid > .card { container: card / size; overflow: hidden; padding: 16px 18px; gap: 8px; min-height: 0; border-radius: 18px; }
+  html:not([data-free]) .grid .card-head svg { width: 20px; height: 20px; }
+  html:not([data-free]) .grid .card .foot { display: none; }
+  html:not([data-free]) .grid .card[data-stale] .foot { display: block; }
+  html:not([data-free]) .big { font-size: 40px; }
+  html:not([data-free]) .big.text { font-size: 24px; }
 
   /* Väder: högt kort över två rader i första kolumnen, så att allt visas som i den vanliga vyn (nu, timmar, femdagars, sol och vind). Sonos blir en kolumn så att raderna går ihop. */
-  .card.weather { grid-row: span 2; }
-  .wx-days { gap: 10px; }
-  .wx-days li { min-height: 36px; }
-  .wx-hours { padding-top: 12px; margin-top: 6px; }
-  .card.sonos { grid-column: span 1; }
+  html:not([data-free]) .card.weather { grid-row: span 2; }
+  html:not([data-free]) .wx-days { gap: 10px; }
+  html:not([data-free]) .wx-days li { min-height: 36px; }
+  html:not([data-free]) .wx-hours { padding-top: 12px; margin-top: 6px; }
+  html:not([data-free]) .card.sonos { grid-column: span 1; }
 
   /* Kalender: nästa händelse och de två följande. Imorgon visas bara när inget är kvar idag. */
-  .cal { gap: 6px; }
-  .cal-next { padding: 8px 12px; gap: 2px; }
-  .cal-ttl { font-size: 20px; -webkit-line-clamp: 1; line-clamp: 1; }
-  .cal-when { font-size: 14px; }
-  .cal-meta { font-size: 13px; }
-  .cal-extra { display: none; }
-  .cal-grp { margin-top: 0; font-size: 12px; }
-  .cal-ev { min-height: 34px; }
-  .cal-rows .cal-ev:nth-child(n+3), .cal-more, .cal-allday:nth-of-type(n+2) { display: none; }
-  .cal-next ~ .cal-tomorrow { display: none; }
-  .cal-allday { padding: 4px 10px; }
+  html:not([data-free]) .cal { gap: 6px; }
+  html:not([data-free]) .cal-next { padding: 8px 12px; gap: 2px; }
+  html:not([data-free]) .cal-ttl { font-size: 20px; -webkit-line-clamp: 1; line-clamp: 1; }
+  html:not([data-free]) .cal-when { font-size: 14px; }
+  html:not([data-free]) .cal-meta { font-size: 13px; }
+  html:not([data-free]) .cal-extra { display: none; }
+  html:not([data-free]) .cal-grp { margin-top: 0; font-size: 12px; }
+  html:not([data-free]) .cal-ev { min-height: 34px; }
+  html:not([data-free]) .cal-rows .cal-ev:nth-child(n+3), html:not([data-free]) .cal-more, html:not([data-free]) .cal-allday:nth-of-type(n+2) { display: none; }
+  html:not([data-free]) .cal-next ~ .cal-tomorrow { display: none; }
+  html:not([data-free]) .cal-allday { padding: 4px 10px; }
 
   /* Inköp: fält och så många rader som ryms (räknas i lists-panel). */
-  .card.lists { overflow: hidden; }
-  .card.lists > .li { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-  .li { gap: 6px; }
-  .li-tabs button { min-height: 44px; }
-  .li-top .li-tabs { padding: 4px; }
-  .li-expand { display: grid; width: 48px; height: 48px; }
-  .li-form input { min-height: 46px; }
-  .li-plus { width: 46px; height: 46px; }
-  .li-row { min-height: 46px; }
-  .li-x { width: 46px; height: 46px; }
-  .li-cat { display: none; }
-  .li-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-  .li-more { display: none; }
-  .li-done { display: none; }
-  .li-msg { font-size: 12px; }
+  html:not([data-free]) .card.lists { overflow: hidden; }
+  html:not([data-free]) .card.lists > .li { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+  html:not([data-free]) .li { gap: 6px; }
+  html:not([data-free]) .li-tabs button { min-height: 44px; }
+  html:not([data-free]) .li-top .li-tabs { padding: 4px; }
+  html:not([data-free]) .li-expand { display: grid; width: 48px; height: 48px; }
+  html:not([data-free]) .li-form input { min-height: 46px; }
+  html:not([data-free]) .li-plus { width: 46px; height: 46px; }
+  html:not([data-free]) .li-row { min-height: 46px; }
+  html:not([data-free]) .li-x { width: 46px; height: 46px; }
+  html:not([data-free]) .li-cat { display: none; }
+  html:not([data-free]) .li-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  html:not([data-free]) .li-more { display: none; }
+  html:not([data-free]) .li-done { display: none; }
+  html:not([data-free]) .li-msg { font-size: 12px; }
 
   /* Škoda: info till vänster och klimat till höger. Fyra statusrutor på en rad och en liten halvcirkel bredvid knappen. */
-  .skoda-body { gap: 0 12px; }
-  .skoda-info { gap: 6px; }
-  .skoda-checks { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-  .skoda-checks li { flex-direction: column; text-align: center; padding: 6px 4px; gap: 3px; }
-  .skoda-checks li span { align-items: center; }
-  .skoda-place small { display: none; }
-  .skoda-body .dep { margin-top: 10px; }
-  .skoda-info .skoda-checks li { padding-top: 5px; padding-bottom: 5px; }
-  .skoda-body .skoda-place { margin-top: 8px; }
+  html:not([data-free]) .skoda-body { gap: 0 12px; }
+  html:not([data-free]) .skoda-info { gap: 6px; }
+  html:not([data-free]) .skoda-checks { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  html:not([data-free]) .skoda-checks li { flex-direction: column; text-align: center; padding: 6px 4px; gap: 3px; }
+  html:not([data-free]) .skoda-checks li span { align-items: center; }
+  html:not([data-free]) .skoda-place small { display: none; }
+  html:not([data-free]) .skoda-body .dep { margin-top: 10px; }
+  html:not([data-free]) .skoda-info .skoda-checks li { padding-top: 5px; padding-bottom: 5px; }
+  html:not([data-free]) .skoda-body .skoda-place { margin-top: 8px; }
   /* Klimatrutan som vanligt (stor halvcirkel, Starta under). Dialens storlek följer kortets höjd. */
-  .skoda-climate { padding: 14px 12px 12px; }
-  .skoda-dial { max-width: clamp(110px, calc((100cqh - 130px) / .86), 300px); }
+  html:not([data-free]) .skoda-climate { padding: 14px 12px 12px; }
+  html:not([data-free]) .skoda-dial { max-width: clamp(110px, calc((100cqh - 130px) / .86), 300px); }
   /* Mindre dial än på telefon: minus och plus ligger i halvcirkelns öppning, under värdet och centrerade, så att de inte hamnar på bågen. */
-  .skoda-dial-center { top: 57%; gap: 6px; }
-  .skoda-dial-value { display: grid; grid-template-columns: auto auto; justify-content: center; gap: 10px 22px; }
-  .skoda-dial-value output { grid-column: 1 / -1; grid-row: 1; }
-  .skoda-dial-value button { width: 48px; height: 48px; font-size: 28px; grid-row: 2; }
-  .skoda-dial-value .minus { grid-column: 1; } .skoda-dial-value .plus { grid-column: 2; }
+  html:not([data-free]) .skoda-dial-center { top: 57%; gap: 6px; }
+  html:not([data-free]) .skoda-dial-value { display: grid; grid-template-columns: auto auto; justify-content: center; gap: 10px 22px; }
+  html:not([data-free]) .skoda-dial-value output { grid-column: 1 / -1; grid-row: 1; }
+  html:not([data-free]) .skoda-dial-value button { width: 48px; height: 48px; font-size: 28px; grid-row: 2; }
+  html:not([data-free]) .skoda-dial-value .minus { grid-column: 1; } html:not([data-free]) .skoda-dial-value .plus { grid-column: 2; }
     /* Minus och plus ligger i halvcirkelns öppning under temperaturen, så att de inte krockar med bågen. */
 
   /* Spotify: omslag, titel, tid och uppspelningsknappar. Volym och val av enhet finns i vanliga vyn. */
-  .sp-art { width: 64px; height: 64px; }
-  .sp-title { font-size: 18px; -webkit-line-clamp: 1; line-clamp: 1; }
-  .sp-artist { font-size: 14px; }
-  .sp-volume, .sp-device-wrap { display: none; }
-  .card.spotify .controls { gap: 8px; }
-  .card.spotify .ctl.main { min-width: 56px; min-height: 56px; }
+  html:not([data-free]) .sp-art { width: 64px; height: 64px; }
+  html:not([data-free]) .sp-title { font-size: 18px; -webkit-line-clamp: 1; line-clamp: 1; }
+  html:not([data-free]) .sp-artist { font-size: 14px; }
+  html:not([data-free]) .sp-volume, html:not([data-free]) .sp-device-wrap { display: none; }
+  html:not([data-free]) .card.spotify .controls { gap: 8px; }
+  html:not([data-free]) .card.spotify .ctl.main { min-width: 56px; min-height: 56px; }
 
   /* Sonos: titel och knappar; rummen på en rad. */
-  .sn { gap: 6px; }
-  .sn-hero { grid-template-columns: 64px minmax(0, 1fr); gap: 12px; }
-  .sn-art { width: 64px; height: 64px; }
-  .sn-title { font-size: 18px; }
-  .sn-chips { flex-wrap: nowrap; overflow: hidden; }
-  .sn-chip { min-height: 44px; flex: 1 1 0; min-width: 0; justify-content: center; padding: 0 10px; overflow: hidden; white-space: nowrap; }
-  .sn-chip small { display: none; }
-  .sn-ctl .ctl.sn-play { min-width: 52px; min-height: 52px; }
-  .sn-ctl .ctl { min-width: 48px; min-height: 48px; }
+  html:not([data-free]) .sn { gap: 6px; }
+  html:not([data-free]) .sn-hero { grid-template-columns: 64px minmax(0, 1fr); gap: 12px; }
+  html:not([data-free]) .sn-art { width: 64px; height: 64px; }
+  html:not([data-free]) .sn-title { font-size: 18px; }
+  html:not([data-free]) .sn-chips { flex-wrap: nowrap; overflow: hidden; }
+  html:not([data-free]) .sn-chip { min-height: 44px; flex: 1 1 0; min-width: 0; justify-content: center; padding: 0 10px; overflow: hidden; white-space: nowrap; }
+  html:not([data-free]) .sn-chip small { display: none; }
+  html:not([data-free]) .sn-ctl .ctl.sn-play { min-width: 52px; min-height: 52px; }
+  html:not([data-free]) .sn-ctl .ctl { min-width: 48px; min-height: 48px; }
 
   /* AEG och Inomhus: ryms redan, men tätare. */
-  .aeg-controls { gap: 6px; }
-  .aeg-buttons { flex-wrap: nowrap; }
-  .aeg-buttons .btn { min-width: 0; }
-  .card.aeg .mid { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html:not([data-free]) .aeg-controls { gap: 6px; }
+  html:not([data-free]) .aeg-buttons { flex-wrap: nowrap; }
+  html:not([data-free]) .aeg-buttons .btn { min-width: 0; }
+  html:not([data-free]) .card.aeg .mid { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* Alla rum och snittrutan på en enda rad, hur många rum det än är. */
-  .card.tado .ti-dials { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px 8px; }
-  .grid .card.tado .ti-sum { grid-column: auto; flex-direction: column; padding: 8px 4px; gap: 2px; }
-  .grid .card.tado .ti-sum .ti-cap { text-align: center; font-size: 12px; }
-  .ti-dial > svg { max-width: 72px; }
-  .ti-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  html:not([data-free]) .card.tado .ti-dials { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px 8px; }
+  html:not([data-free]) .grid .card.tado .ti-sum { grid-column: auto; flex-direction: column; padding: 8px 4px; gap: 2px; }
+  html:not([data-free]) .grid .card.tado .ti-sum .ti-cap { text-align: center; font-size: 12px; }
+  html:not([data-free]) .ti-dial > svg { max-width: 72px; }
+  html:not([data-free]) .ti-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Lägre kort (skärmar runt 800 px höga): ännu tätare. */
   @container card (max-height: 300px) {
-    .skoda-dial-center .label { display: none; }
-    .skoda-dial-center { top: 49%; gap: 0; }
-    .skoda-climate { padding: 8px 12px 10px; }
-    .skoda-dial { max-width: clamp(110px, calc((100cqh - 110px) / .86), 300px); }
-    .skoda-climate-btn { min-height: 46px; margin-top: 4px; }
-    .skoda-dial-value { gap: 4px 10px; }
-    .skoda-dial-value output { font-size: 28px; }
-    .skoda-dial-value button { width: 44px; height: 44px; }
-    .skoda-body .dep { min-height: 44px; padding: 3px 10px 3px 12px; gap: 10px; margin-top: 6px; }
-    .skoda-body .skoda-place { margin-top: 4px; }
-    .skoda-info .skoda-charge { font-size: 13px; }
-    .skoda-info .skoda-checks li small { display: none; }
-    .skoda-body .dep-text b { white-space: nowrap; text-overflow: ellipsis; display: block; }
-    .skoda-body .dep-main svg { width: 30px; height: 30px; padding: 6px; }
-    .skoda-body .dep-text b { font-size: 14px; }
-    .skoda-body .dep-text small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: 1; line-clamp: 1; }
-    .skoda-info .skoda-checks li { padding-top: 3px; padding-bottom: 3px; }
+    html:not([data-free]) .skoda-dial-center .label { display: none; }
+    html:not([data-free]) .skoda-dial-center { top: 49%; gap: 0; }
+    html:not([data-free]) .skoda-climate { padding: 8px 12px 10px; }
+    html:not([data-free]) .skoda-dial { max-width: clamp(110px, calc((100cqh - 110px) / .86), 300px); }
+    html:not([data-free]) .skoda-climate-btn { min-height: 46px; margin-top: 4px; }
+    html:not([data-free]) .skoda-dial-value { gap: 4px 10px; }
+    html:not([data-free]) .skoda-dial-value output { font-size: 28px; }
+    html:not([data-free]) .skoda-dial-value button { width: 44px; height: 44px; }
+    html:not([data-free]) .skoda-body .dep { min-height: 44px; padding: 3px 10px 3px 12px; gap: 10px; margin-top: 6px; }
+    html:not([data-free]) .skoda-body .skoda-place { margin-top: 4px; }
+    html:not([data-free]) .skoda-info .skoda-charge { font-size: 13px; }
+    html:not([data-free]) .skoda-info .skoda-checks li small { display: none; }
+    html:not([data-free]) .skoda-body .dep-text b { white-space: nowrap; text-overflow: ellipsis; display: block; }
+    html:not([data-free]) .skoda-body .dep-main svg { width: 30px; height: 30px; padding: 6px; }
+    html:not([data-free]) .skoda-body .dep-text b { font-size: 14px; }
+    html:not([data-free]) .skoda-body .dep-text small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: 1; line-clamp: 1; }
+    html:not([data-free]) .skoda-info .skoda-checks li { padding-top: 3px; padding-bottom: 3px; }
   }
   /* Mycket låga kort: bara nästa händelse i kalendern och en kortare Spotify. */
   /* Smal väderkolumn (skärmar runt 1000 px breda): regnkolumnen får ge plats. */
   @container card (max-width: 285px) {
-    .wx-days li { grid-template-columns: 2.6em 20px 2.2em minmax(24px, 1fr) 2.2em; }
-    .wx-days li > :nth-child(6) { display: none; }
+    html:not([data-free]) .wx-days li { grid-template-columns: 2.6em 20px 2.2em minmax(24px, 1fr) 2.2em; }
+    html:not([data-free]) .wx-days li > :nth-child(6) { display: none; }
   }
   @container card (max-height: 215px) {
-    .cal-grp, .cal-rows, .cal-tomorrow, .cal-more { display: none; }
-    .li { gap: 6px; }
-    .sp-progress-times { display: none; }
-    .sp-art { width: 52px; height: 52px; }
+    html:not([data-free]) .cal-grp, html:not([data-free]) .cal-rows, html:not([data-free]) .cal-tomorrow, html:not([data-free]) .cal-more { display: none; }
+    html:not([data-free]) .li { gap: 6px; }
+    html:not([data-free]) .sp-progress-times { display: none; }
+    html:not([data-free]) .sp-art { width: 52px; height: 52px; }
   }
   /* Låga kort: sekundärt innehåll försvinner hellre än att knappar blir små. */
   @container card (max-height: 232px) {
-    .skoda-body .skoda-place { display: none; }
+    html:not([data-free]) .skoda-body .skoda-place { display: none; }
   }
   @container card (max-height: 240px) {
-    .sn-vol { display: none; }
+    html:not([data-free]) .sn-vol { display: none; }
   }
   @container card (max-height: 190px) {
-    .li-group, .li-more, .li-done, .li-msg { display: none; }
+    html:not([data-free]) .li-group, html:not([data-free]) .li-more, html:not([data-free]) .li-done, html:not([data-free]) .li-msg { display: none; }
   }
   @container card (max-height: 185px) {
-    .big { font-size: 28px; }
-    .card.aeg .big { font-size: 28px; }
-    .aeg-controls .btn, .aeg-buttons .btn { min-height: 44px; }
-    .card.aeg .mid { display: none; }
-    .card.aeg { gap: 6px; }
+    html:not([data-free]) .big { font-size: 28px; }
+    html:not([data-free]) .card.aeg .big { font-size: 28px; }
+    html:not([data-free]) .aeg-controls .btn, html:not([data-free]) .aeg-buttons .btn { min-height: 44px; }
+    html:not([data-free]) .card.aeg .mid { display: none; }
+    html:not([data-free]) .card.aeg { gap: 6px; }
   }
   @container card (max-height: 245px) {
-    .big { font-size: 34px; }
-    .skoda-main .big { font-size: 34px; }
-    .skoda-checks li { padding: 4px 4px; }
-    .skoda-info { gap: 4px; }
-    .skoda-checks li strong { font-size: 13px; }
-    .skoda-body { gap: 0 10px; }
-    .sn-hero { grid-template-columns: 52px minmax(0, 1fr); }
-    .sn-art { width: 52px; height: 52px; }
-    .sn-chip { min-height: 44px; }
-    .sn { gap: 4px; }
-    .sn .sn-ctl .ctl.sn-play { min-width: 48px; min-height: 48px; }
-    .sn .sn-ctl .ctl { min-height: 48px; }
-    .sn .sn-ctl { gap: 6px; }
-    .card.spotify .ctl.main { min-width: 48px; min-height: 48px; }
-    .card.spotify .ctl { min-width: 48px; min-height: 48px; }
-    .aeg-controls .btn, .aeg-buttons .btn { min-height: 44px; }
+    html:not([data-free]) .big { font-size: 34px; }
+    html:not([data-free]) .skoda-main .big { font-size: 34px; }
+    html:not([data-free]) .skoda-checks li { padding: 4px 4px; }
+    html:not([data-free]) .skoda-info { gap: 4px; }
+    html:not([data-free]) .skoda-checks li strong { font-size: 13px; }
+    html:not([data-free]) .skoda-body { gap: 0 10px; }
+    html:not([data-free]) .sn-hero { grid-template-columns: 52px minmax(0, 1fr); }
+    html:not([data-free]) .sn-art { width: 52px; height: 52px; }
+    html:not([data-free]) .sn-chip { min-height: 44px; }
+    html:not([data-free]) .sn { gap: 4px; }
+    html:not([data-free]) .sn .sn-ctl .ctl.sn-play { min-width: 48px; min-height: 48px; }
+    html:not([data-free]) .sn .sn-ctl .ctl { min-height: 48px; }
+    html:not([data-free]) .sn .sn-ctl { gap: 6px; }
+    html:not([data-free]) .card.spotify .ctl.main { min-width: 48px; min-height: 48px; }
+    html:not([data-free]) .card.spotify .ctl { min-width: 48px; min-height: 48px; }
+    html:not([data-free]) .aeg-controls .btn, html:not([data-free]) .aeg-buttons .btn { min-height: 44px; }
   }
 
   /* Allra lägst (skärmar under cirka 780 px): sekundär text försvinner. */
   @container card (max-height: 232px) {
-    .skoda-checks li small { display: none; }
-    .skoda-checks li { padding: 3px 4px; }
-    .grid > .card { padding: 14px 16px; }
+    html:not([data-free]) .skoda-checks li small { display: none; }
+    html:not([data-free]) .skoda-checks li { padding: 3px 4px; }
+    html:not([data-free]) .grid > .card { padding: 14px 16px; }
   }
   @container card (max-height: 200px) {
-    .big { font-size: 30px; }
-    .card.aeg .big { font-size: 30px; }
-    .aeg-controls .btn, .aeg-buttons .btn { min-height: 44px; }
-    .ti-dial > svg { max-width: 48px; }
-    .ti-dial text { font-size: 17px; }
-    .ti-name { font-size: 12px; }
-    .ti-sum { padding: 4px; }
-    .ti-avg { font-size: 22px; }
+    html:not([data-free]) .big { font-size: 30px; }
+    html:not([data-free]) .card.aeg .big { font-size: 30px; }
+    html:not([data-free]) .aeg-controls .btn, html:not([data-free]) .aeg-buttons .btn { min-height: 44px; }
+    html:not([data-free]) .ti-dial > svg { max-width: 48px; }
+    html:not([data-free]) .ti-dial text { font-size: 17px; }
+    html:not([data-free]) .ti-name { font-size: 12px; }
+    html:not([data-free]) .ti-sum { padding: 4px; }
+    html:not([data-free]) .ti-avg { font-size: 22px; }
   }
 }
 
@@ -990,10 +990,10 @@ body:has(.wrap.shop) { padding-top: 0; }
 .cal-week { align-self: flex-start; font-size: 12px; font-weight: 600; color: var(--muted); padding: 3px 10px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 7%, transparent); }
 .cal-week.child { color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
 @media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) {
-  .greet-row { flex-wrap: nowrap; gap: 12px; white-space: nowrap; }
-  .pk { flex-wrap: nowrap; }
-  .week-badge { min-height: 36px; }
-  .pk-chip { min-height: 44px; }
+  html:not([data-free]) .greet-row { flex-wrap: nowrap; gap: 12px; white-space: nowrap; }
+  html:not([data-free]) .pk { flex-wrap: nowrap; }
+  html:not([data-free]) .week-badge { min-height: 36px; }
+  html:not([data-free]) .pk-chip { min-height: 44px; }
 }
 .pk-off { align-self: flex-start; border: 0; background: transparent; color: var(--muted); font: 500 14px var(--body); text-decoration: underline; min-height: 44px; cursor: pointer; padding: 0 4px; }
 .pk-off:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
@@ -1020,7 +1020,7 @@ body:has(.wrap.shop) { padding-top: 0; }
 .tm-list li span { display: flex; flex-direction: column; }
 .tm-list li b { font: 600 24px var(--display); font-variant-numeric: tabular-nums; }
 .tm-list li small { color: var(--muted); }
-@media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) { .tm-chip { min-height: 44px; } }
+@media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) { html:not([data-free]) .tm-chip { min-height: 44px; } }
 
 /* Smarta funktioner: stegare och klockslag */
 .ap-smart-row { display: flex; flex-direction: column; gap: 4px; padding: 4px 0 8px 62px; }
@@ -1054,9 +1054,9 @@ body:has(.wrap.shop) { padding-top: 0; }
 }
 @media (max-width: 699px) { .dn-hero { order: 3; width: 100%; } }
 @media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) {
-  .dn-hero { padding: 5px 24px 6px; gap: 0; }
-  .dn-hero-dish { font-size: 21px; }
-  .dn-hero-people { font-size: 12px; }
+  html:not([data-free]) .dn-hero { padding: 5px 24px 6px; gap: 0; }
+  html:not([data-free]) .dn-hero-dish { font-size: 21px; }
+  html:not([data-free]) .dn-hero-people { font-size: 12px; }
 }
 
 /* Textsidor (integritetspolicy) */
@@ -1130,9 +1130,9 @@ h1 { letter-spacing: -.5px; }
 .btn { border-radius: 99px; }
 /* Allt på en skärm (hög skärm utan scroll): mindre ikonbricka så att innehållet ryms. */
 @media (min-width: 1001px) and (min-height: 900px) and (orientation: landscape) {
-  .grid .card-head > svg:first-child { width: 26px; height: 26px; padding: 5px; }
-  .grid .card-head { gap: 10px; }
-  .grid .pill { padding: 3px 10px; }
+  html:not([data-free]) .grid .card-head > svg:first-child { width: 26px; height: 26px; padding: 5px; }
+  html:not([data-free]) .grid .card-head { gap: 10px; }
+  html:not([data-free]) .grid .pill { padding: 3px 10px; }
 }
 
 /* Ny aktivitet i kalenderkortet */
@@ -1177,3 +1177,63 @@ h1 { letter-spacing: -.5px; }
 .fam-handover { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; padding-top: 18px; border-top: 1px solid var(--card-line); }
 .fam-handover p { margin: 0; }
 @media (max-width: 560px) { .fam-add { grid-template-columns: 1fr; } .fam-btn { width: 100%; } }
+
+/* ---------------- Anpassa hemskärmen: tema, täthet, text, kortstorlek och redigera-läge (per enhet) ---------------- */
+.trail { display: inline-flex; gap: 8px; align-self: flex-start; }
+button.settings-link { cursor: pointer; font: inherit; }
+button.settings-link[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+
+/* Färgteman: mörkt först, ljust i prefers-color-scheme: light. Standard ändrar ingenting. */
+:root[data-theme="nordljus"] { --accent: #6fd3c4; --accent-ink: #06201c; --glow-1: #12394a; --glow-2: #1d2f4f; --bg-deep: #07121a; }
+:root[data-theme="skog"] { --accent: #8fd18b; --accent-ink: #0b2310; --glow-1: #153a26; --glow-2: #26331a; --bg-deep: #08130c; }
+:root[data-theme="solnedgang"] { --accent: #ffb27a; --accent-ink: #2a1204; --glow-1: #4a2438; --glow-2: #4a3318; --bg-deep: #140b10; }
+:root[data-theme="neutral"] { --accent: #dfe5ec; --accent-ink: #0f1419; --glow-1: #1b2128; --glow-2: #1b2128; --bg-deep: #0b0e12; }
+@media (prefers-color-scheme: light) {
+  :root[data-theme="nordljus"] { --accent: #0f766e; --accent-ink: #ffffff; --glow-1: #d4efec; --glow-2: #d9e6f5; }
+  :root[data-theme="skog"] { --accent: #2f7d32; --accent-ink: #ffffff; --glow-1: #dcefd8; --glow-2: #e8efd2; }
+  :root[data-theme="solnedgang"] { --accent: #b45309; --accent-ink: #ffffff; --glow-1: #fbe1d1; --glow-2: #f3d9e6; }
+  :root[data-theme="neutral"] { --accent: #374151; --accent-ink: #ffffff; --glow-1: #e3e7ec; --glow-2: #e3e7ec; }
+}
+
+/* Täthet och textstorlek (båda lämnar "allt på en skärm": sidan får rulla). */
+html[data-density="compact"] .wrap.home .grid { gap: 10px; }
+html[data-density="compact"] .wrap.home .grid > .card { padding: 16px; gap: 10px; }
+html[data-density="airy"] .wrap.home .grid { gap: 22px; }
+html[data-density="airy"] .wrap.home .grid > .card { padding: 28px; gap: 18px; }
+html[data-text="s"] .wrap.home { zoom: .9; }
+html[data-text="l"] .wrap.home { zoom: 1.12; }
+
+/* Egen kortstorlek: Liten = en kolumn, Stor = en kolumn bredare än vanligt. */
+.grid > .card[data-size="s"] { grid-column: span 1; grid-row: auto; }
+.grid > .card[data-size="l"] { grid-column: span 2; }
+.grid > .card.skoda[data-size="l"], .grid > .card.sonos[data-size="l"] { grid-column: span 3; }
+@media (max-width: 1000px) { .grid > .card[data-size="l"], .grid > .card.skoda[data-size="l"], .grid > .card.sonos[data-size="l"] { grid-column: span 2; } }
+@media (max-width: 560px) { .grid > .card[data-size] { grid-column: auto !important; } }
+
+/* Redigera-läget */
+.wrap.editing { padding-bottom: 96px; }
+.grid > .card[data-edit] { position: relative; cursor: grab; outline: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: -2px; }
+.grid > .card[data-edit][data-drop] { outline: 3px solid var(--accent); }
+.grid > .card[data-edit] > :not(.edit-ov) { pointer-events: none; opacity: .55; }
+.edit-ov { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; border-radius: inherit; background: color-mix(in srgb, var(--bg, #0f1419) 35%, transparent); z-index: 2; }
+.edit-grip { display: inline-flex; align-items: center; gap: 6px; font: 600 14px var(--body); color: var(--fg); padding: 6px 12px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); }
+.edit-grip svg { width: 18px; height: 18px; }
+.edit-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.edit-btn { width: 48px; height: 48px; display: inline-grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.edit-btn:disabled { opacity: .35; cursor: default; }
+.edit-btn svg { width: 22px; height: 22px; }
+.edit-seg { display: inline-flex; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); padding: 3px; }
+.edit-seg button { min-height: 44px; min-width: 56px; padding: 0 12px; border: 0; border-radius: 99px; background: transparent; color: var(--muted); font: 600 14px var(--body); cursor: pointer; }
+.edit-seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.edit-seg.wide { display: flex; } .edit-seg.wide button { flex: 1; }
+.edit-btn:focus-visible, .edit-seg button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.edit-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px max(12px, env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -10px 30px rgb(0 0 0 / .3); }
+.edit-hint { flex: 1 1 260px; font-size: 14px; color: var(--muted); }
+.ds-group { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.ds-themes { display: flex; flex-wrap: wrap; gap: 8px; }
+.ds-theme { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px 0 10px; border-radius: 99px; border: 1px solid var(--field-line); background: transparent; color: var(--fg); font: 600 15px var(--body); cursor: pointer; }
+.ds-theme[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+.ds-theme i { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--a), var(--b)); }
+.ds-theme[data-t="standard"] { --a: #e0b36a; --b: #1c2d40; } .ds-theme[data-t="nordljus"] { --a: #6fd3c4; --b: #1d2f4f; } .ds-theme[data-t="skog"] { --a: #8fd18b; --b: #153a26; } .ds-theme[data-t="solnedgang"] { --a: #ffb27a; --b: #4a2438; } .ds-theme[data-t="neutral"] { --a: #dfe5ec; --b: #1b2128; }
+.hw-trigger.week-badge { position: relative; }
+.hw-trigger.week-badge::before { content: ""; position: absolute; inset: -9px -4px; }

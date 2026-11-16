@@ -1,6 +1,9 @@
 import { formatAgo } from "@/lib/format";
 import type { CardState } from "@/server/providers/types";
 import { Icon, type IconName } from "./icons";
+import { CARD_IDS, type CardId } from "@/lib/settings";
+import { useLayout } from "@/lib/layout-store";
+import { useCardEdit } from "./edit-overlay";
 
 type Pill = { text: string; tone?: "ok" | "warn" | "bad" };
 
@@ -32,36 +35,45 @@ export function friendlyReason(reason: string | undefined): { text: string; reco
 
 /** Gemensam ram som hanterar alla fyra lägen. Tjänsterna renderar bara sin egen data. */
 export function CardShell<T>({ title, icon, state, now, render, off, noFoot, className = "", style }: Props<T>) {
+  // Kortets id är första klassen (weather, skoda …): används för egen storlek och redigera-läget.
+  const first = className.split(" ")[0] ?? "";
+  const id = (CARD_IDS as readonly string[]).includes(first) ? (first as CardId) : null;
+  const size = useLayout().sizes[id ?? "weather"];
+  const { props: editProps, overlay } = useCardEdit(id);
+  const common = { ...editProps, "data-size": id && size ? size : undefined } as React.HTMLAttributes<HTMLElement>;
   if (!state || state.status === "not_connected") {
     return (
-      <section className={`card off ${className}`} aria-label={title}>
+      <section className={`card off ${className}`} aria-label={title} {...common}>
         <div className="card-head"><Icon name={icon} /><span className="name">{title}</span><span className="pill">Ej ansluten</span></div>
         <div className="big">{off?.big ?? "Anslut"}</div>
         <div className="mid">{off?.text ?? `Visa ${title} här.`}</div>
         <a className="btn" href="/installningar">{off?.cta ?? `Anslut ${title}`}</a>
+        {overlay}
       </section>
     );
   }
   if (state.status === "unavailable") {
     return (
-      <section className={`card off ${className}`} aria-label={title}>
+      <section className={`card off ${className}`} aria-label={title} {...common}>
         <div className="card-head"><Icon name={icon} /><span className="name">{title}</span><span className="pill bad">Ej tillgänglig</span></div>
         <div className="mid">{friendlyReason(state.reason).text}</div>
         {friendlyReason(state.reason).reconnect && <a className="btn" href="/installningar">Anslut igen</a>}
         {/* Den tekniska orsaken (ofta på engelska) visas inte; den finns kvar som tooltip och i diagnosen. */}
         <div className="foot" title={state.reason}>Försöker igen om en stund.</div>
+        {overlay}
       </section>
     );
   }
   const { pill, body } = render(state.data);
   return (
-    <section className={`card ${className}`} aria-label={title} data-stale={state.status === "stale" ? "" : undefined} style={style?.(state.data)}>
+    <section {...common} className={`card ${className}`} aria-label={title} data-stale={state.status === "stale" ? "" : undefined} style={style?.(state.data)}>
       <div className="card-head">
         <Icon name={icon} /><span className="name">{title}</span>
         {state.status === "stale" ? <span className="pill warn">Gammal data</span> : pill && <span className={`pill ${pill.tone ?? ""}`}>{pill.text}</span>}
       </div>
       {body}
       {!(noFoot && state.status === "ok") && <div className="foot">{state.status === "stale" ? `Visar senast kända data (${formatAgo(state.fetchedAt, now)})` : `Uppdaterad ${formatAgo(state.fetchedAt, now)}`}</div>}
+      {overlay}
     </section>
   );
 }

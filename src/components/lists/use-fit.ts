@@ -1,4 +1,6 @@
 "use client";
+import { isFree } from "@/lib/layout";
+import { useLayout } from "@/lib/layout-store";
 import { useEffect, useState, useSyncExternalStore, type RefObject } from "react";
 
 /** Samma villkor som i CSS (globals.css, "Allt på en skärm"): bred, liggande surfplatta eller dator. */
@@ -10,7 +12,12 @@ const subscribe = (cb: () => void) => {
   return () => m.removeEventListener("change", cb);
 };
 /** Sant när hemskärmen ligger i läget "allt på en skärm" (korten får en bestämd höjd). */
-export const useFitMode = () => useSyncExternalStore(subscribe, () => window.matchMedia(FIT_QUERY).matches, () => false);
+export const useFitMode = () => {
+  const media = useSyncExternalStore(subscribe, () => window.matchMedia(FIT_QUERY).matches, () => false);
+  // Har du flyttat om korten, ändrat storlek eller text rullar sidan i stället (CSS: html[data-free]).
+  const free = isFree(useLayout());
+  return media && !free;
+};
 
 /** Höjden på kortet som innehållet ligger i (0 tills den är mätt). Används för att välja hur många rader som får plats. */
 export function useCardHeight(ref: RefObject<HTMLElement | null>, enabled: boolean): number {
