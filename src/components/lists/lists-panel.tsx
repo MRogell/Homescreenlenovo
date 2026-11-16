@@ -243,7 +243,7 @@ export function ListsPanel({ api, mode, handlaHref = "/handla" }: { api: ListsAp
         <>
           <div className="li-top">
             <div className="li-tabs" role="tablist" aria-label="Inköp, lappar eller middag">
-              <button role="tab" type="button" aria-selected={tab === "shop"} onClick={() => setTab("shop")}>Inköp{open > 0 ? <b>{open}</b> : null}</button>
+              <button role="tab" type="button" aria-selected={tab === "shop"} onClick={() => setTab("shop")}>Inköp</button>
               <button role="tab" type="button" aria-selected={tab === "notes"} onClick={() => setTab("notes")}>Lappar{state.notes.length > 0 ? <b>{state.notes.length}</b> : null}</button>
               <button role="tab" type="button" aria-selected={tab === "dinner"} onClick={() => setTab("dinner")}>Middag</button>
             </div>
@@ -263,7 +263,7 @@ export function ListsPanel({ api, mode, handlaHref = "/handla" }: { api: ListsAp
                   </ul>
                 </section>
               ))}
-              {compact && hidden > 0 && <Link className="li-more" href={handlaHref}>+{hidden} till · öppna butiksläget</Link>}
+              {compact && open > 0 && <Link className="li-more" href={handlaHref}>{hidden > 0 ? `+${hidden} till · öppna butiksläget` : "Öppna butiksläget"}</Link>}
               {open > 0 && big && <Chips api={api} limit={8} />}
               {done.length > 0 && (
                 <section className="li-group li-done" aria-label="Avbockade">

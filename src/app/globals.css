@@ -491,16 +491,17 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 @media (max-width: 230px) { .wx-days li { grid-template-columns: 2.6em 20px 2.2em 2.2em; } .wx-days li > :nth-child(4) { display: none; } }
 
 /* Inköpslista och lappar (kortet "Inköp" och handlaläget /handla) */
-.li { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.li { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .li-top { display: flex; gap: 8px; align-items: center; }
 .li-top .li-tabs { flex: 1; min-width: 0; }
-.li-expand { width: 48px; height: 48px; flex: none; display: grid; place-items: center; border-radius: 14px; background: var(--surface-2); color: var(--fg); text-decoration: none; }
+.li-expand { width: 48px; height: 48px; flex: none; display: none; place-items: center; border-radius: 14px; background: var(--surface-2); color: var(--fg); text-decoration: none; }
 .li-expand svg { width: 20px; height: 20px; }
 .li-expand:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 .li-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
-.li-tabs button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: 600 14px var(--body); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.li-tabs button { position: relative; min-height: 48px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: 600 14px var(--body); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .li-tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 0 0 1px var(--line); }
 .li-tabs b, .li-toggle b { font-size: 12px; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 12%, transparent); font-weight: 600; }
+.li-tabs b { position: absolute; top: 3px; right: 3px; min-width: 18px; padding: 0 5px; font-size: 11px; line-height: 18px; text-align: center; }
 .li-tabs button:focus-visible, .li-toggle:focus-visible, .li-clear:focus-visible, .li-chip:focus-visible, .li-x:focus-visible, .li-plus:focus-visible, .li-copy:focus-visible, .li-open:focus-visible, .li-more:focus-visible, .li-row:has(input:focus-visible) { outline: 3px solid var(--fg); outline-offset: 2px; }
 .li-add { display: flex; flex-direction: column; gap: 4px; position: relative; }
 .li-form { display: flex; gap: 8px; }
@@ -519,7 +520,8 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .li-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 4px; padding: 0 14px 0 10px; border-radius: 99px; border: 1px dashed var(--field-line); background: transparent; color: var(--fg); font: 500 15px var(--body); cursor: pointer; }
 .li-chip svg { width: 16px; height: 16px; color: var(--muted); }
 .li-group { display: flex; flex-direction: column; gap: 2px; }
-.li-cat { margin: 4px 0 0; font: 600 12px var(--display); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.li-group:first-of-type .li-cat { margin-top: 12px; }
+.li-cat { margin: 18px 0 4px; font: 600 12px var(--display); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .li-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .li-item { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
 .li-item:last-child { border-bottom: 0; }
@@ -537,7 +539,8 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .li-item.done .li-qty { opacity: .7; }
 .li-x { width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
 .li-x svg { width: 18px; height: 18px; }
-.li-more { color: var(--muted); font-size: 14px; font-weight: 600; text-decoration: none; padding: 8px 0 8px 40px; min-height: 44px; display: flex; align-items: center; }
+.li-more { color: var(--fg); font-size: 14px; font-weight: 600; text-decoration: none; padding: 0 14px; min-height: 48px; margin-top: 8px; border-radius: 14px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; text-align: center; }
+.li-more:hover { background: color-mix(in srgb, var(--fg) 10%, var(--surface-2)); }
 .li-donehead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
 .li-toggle { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--muted); font: 600 13px var(--display); letter-spacing: .07em; text-transform: uppercase; cursor: pointer; padding: 0; }
 .li-toggle:disabled { cursor: default; }
@@ -614,7 +617,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .li { gap: 6px; }
   .li-tabs button { min-height: 44px; }
   .li-top .li-tabs { padding: 4px; }
-  .li-expand { width: 48px; height: 48px; }
+  .li-expand { display: grid; width: 48px; height: 48px; }
   .li-form input { min-height: 46px; }
   .li-plus { width: 46px; height: 46px; }
   .li-row { min-height: 46px; }
