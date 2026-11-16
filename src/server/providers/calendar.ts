@@ -2,7 +2,7 @@ import { fetchIcs, type Lookup } from "../calendar/fetch";
 import { parseEvents, type CalEvent } from "../calendar/ics";
 import { metaKey, type ActivityMeta, type FamilyMember } from "@/lib/activity";
 import { discoverCalendars, listCaldavEvents, type CaldavCredentials } from "../calendar/caldav";
-import { listGoogleCalendars, listGoogleEvents } from "../calendar/google";
+import { googleHint, listGoogleCalendars, listGoogleEvents } from "../calendar/google";
 import { dayWindow } from "../calendar/time";
 import { calendarSchema, type CalendarData } from "./schemas";
 import type { Provider } from "./types";
@@ -59,6 +59,7 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
         }),
       );
       const failedNames: string[] = calendars.filter((_, i) => results[i]!.status === "rejected").map((c) => c.name);
+      const failedHints: string[] = [];
       let failed = failedNames.length;
       let total = calendars.length;
       const all = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
@@ -74,11 +75,12 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
               return (await listGoogleEvents(token, g.id, w.todayStart, w.end, deps.google?.fetchFn)).map((e): Tagged => ({ ...e, calendarId: id }));
             }),
           );
-          failedNames.push(...gcals.filter((_, i) => gres[i]!.status === "rejected").map((g) => g.name));
+          gres.forEach((r, i) => { if (r.status === "rejected") { failedNames.push(gcals[i]!.name); failedHints.push(googleHint(r.reason)); } });
           failed += gres.filter((r) => r.status === "rejected").length;
           all.push(...gres.flatMap((r) => (r.status === "fulfilled" ? r.value : [])));
-        } catch {
+        } catch (e) {
           failedNames.push("Google Kalender");
+          failedHints.push(googleHint(e));
           failed += 1;
           total += 1;
         }
@@ -123,6 +125,7 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
         calendars: meta,
         failed,
         failedNames: failedNames.slice(0, 6),
+        failedHints: [...new Set(failedHints)].slice(0, 2),
       };
     },
   };

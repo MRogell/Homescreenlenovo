@@ -16,6 +16,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { AppearanceSettings } from "@/components/appearance-settings";
 import { getSettings } from "@/server/settings";
 import { NotificationSettings } from "@/components/notification-settings";
+import { GoogleTest } from "@/components/google-test";
 import { FamilySettings } from "@/components/family-settings";
 import { loadFamilyAll } from "@/server/calendar/family-store";
 import { IcloudSettings } from "@/components/icloud-settings";
@@ -129,6 +130,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
                 <span>{!g?.configured && status !== "ok" ? "Saknar konfiguration" : status === "ok" ? "Ansluten" : status === "reauth" ? "Anslut igen" : "Ej ansluten"}</span>
                 {status === "ok" ? <DisconnectButton provider="google" label="Google Kalender" /> : g?.configured ? <a className="btn" href={`/api/connect/${"google"}`}>{status === "reauth" ? "Anslut igen" : "Anslut Google"}</a> : null}
               </div>
+              {status === "ok" && <GoogleTest />}
             </>
           );
         })()}

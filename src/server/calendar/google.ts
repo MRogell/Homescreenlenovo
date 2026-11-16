@@ -9,17 +9,36 @@ export interface GoogleCalendar { id: string; name: string; writable: boolean }
 export type GoogleEvent = CalEvent & { eventId: string };
 
 export class GoogleError extends Error {
-  constructor(public status: number, message = `Google Kalender svarade ${status}`) {
+  /** Googles orsakskod (t.ex. accessNotConfigured), aldrig token eller hela svaret. */
+  constructor(public status: number, public reason?: string, message = `Google Kalender svarade ${status}`) {
     super(message);
     this.name = "GoogleError";
   }
+}
+
+/** Kort, begriplig orsak på svenska och vad man ska göra. */
+export function googleHint(e: unknown): string {
+  if (!(e instanceof GoogleError)) return "Det gick inte att nå Google. Försöker igen.";
+  const r = (e.reason ?? "").toLowerCase();
+  if (e.status === 401) return "Google nekade inloggningen. Anslut Google igen i Inställningar.";
+  if (r.includes("accessnotconfigured") || r.includes("service_disabled")) return "Google Calendar API är inte aktiverat i Google Cloud-projektet.";
+  if (r.includes("insufficient") || r.includes("scope")) return "Behörigheten saknas. Anslut Google igen och kryssa i alla rutor.";
+  if (r.includes("ratelimit") || r.includes("quota") || e.status === 429) return "Google begränsar anropen just nu. Försöker igen.";
+  if (e.status === 403) return `Google nekade åtkomst (${e.reason ?? "403"}). Anslut Google igen.`;
+  if (e.status === 404) return "Kalendern hittades inte hos Google.";
+  if (e.status >= 500) return "Google har ett tillfälligt fel. Försöker igen.";
+  return `Google svarade ${e.status}${e.reason ? ` (${e.reason})` : ""}.`;
 }
 
 async function call(token: string, path: string, init: RequestInit & { fetchFn?: typeof fetch } = {}): Promise<unknown> {
   const { fetchFn = fetch, ...rest } = init;
   const res = await fetchFn(`${API}${path}`, { ...rest, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(rest.headers ?? {}) } });
   if (res.status === 204) return null;
-  if (!res.ok) throw new GoogleError(res.status);
+  if (!res.ok) {
+    const j = (await res.json().catch(() => null)) as { error?: { status?: string; errors?: { reason?: string }[]; details?: { reason?: string }[] } } | null;
+    const reason = j?.error?.errors?.[0]?.reason ?? j?.error?.details?.[0]?.reason ?? j?.error?.status;
+    throw new GoogleError(res.status, typeof reason === "string" ? reason.slice(0, 60) : undefined);
+  }
   return res.json();
 }
 

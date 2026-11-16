@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createCalendarProvider } from "../providers/calendar";
 import { handleCreateEvent, handleDeleteEvent } from "./events-flow";
-import { createGoogleEvent, listGoogleCalendars, listGoogleEvents } from "./google";
+import { createGoogleEvent, GoogleError, googleHint, listGoogleCalendars, listGoogleEvents } from "./google";
 
 type Call = { url: string; method: string; body: unknown };
 function fake(routes: Record<string, unknown>) {
@@ -53,6 +53,26 @@ describe("google kalender", () => {
     const d = await p.getSummary();
     expect(d.calendars).toEqual([expect.objectContaining({ id: "g:a@x.se", writable: true }), expect.objectContaining({ id: "g:fam", writable: false })]);
     expect(d.today.events.map((e) => [e.title, e.calendarId])).toContainEqual(["Simskola", "g:a@x.se"]);
+  });
+});
+
+describe("Google-fel i klartext", () => {
+  const err = (status: number, reason?: string) => new GoogleError(status, reason);
+  it("förklarar de vanliga orsakerna", () => {
+    expect(googleHint(err(401))).toContain("Anslut Google igen");
+    expect(googleHint(err(403, "accessNotConfigured"))).toContain("inte aktiverat");
+    expect(googleHint(err(403, "insufficientPermissions"))).toContain("kryssa i alla rutor");
+    expect(googleHint(err(429))).toContain("begränsar");
+    expect(googleHint(err(503))).toContain("tillfälligt");
+  });
+  it("läser Googles felkod ur svaret och visar den i kalenderkortet", async () => {
+    const fetchFn = (async () => new Response(JSON.stringify({ error: { code: 403, errors: [{ reason: "accessNotConfigured" }] } }), { status: 403 })) as unknown as typeof fetch;
+    await expect(listGoogleCalendars("t", fetchFn)).rejects.toMatchObject({ status: 403, reason: "accessNotConfigured" });
+    const ics = (async () => new Response("BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR")) as unknown as typeof fetch;
+    const p = createCalendarProvider({ loadCalendars: async () => [{ id: "i", name: "Hem", color: "blue", url: "https://x.example.com/a.ics" }], fetchFn: ics, lookup: async () => [{ address: "142.250.74.14", family: 4 }], google: { getToken: async () => "t", fetchFn }, nowMs: () => Date.parse("2026-11-08T11:05:00Z") });
+    const d = await p.getSummary();
+    expect(d.failedNames).toEqual(["Google Kalender"]);
+    expect(d.failedHints?.[0]).toContain("inte aktiverat");
   });
 });
 

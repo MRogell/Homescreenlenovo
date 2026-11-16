@@ -121,6 +121,8 @@ export const calendarSchema = z.object({
   failed: z.number(),
   /** Namnen på kalendrarna som inte svarade. */
   failedNames: z.array(z.string()).optional(),
+  /** Orsak och åtgärd (t.ex. Googles felkod i klartext). */
+  failedHints: z.array(z.string()).optional(),
 });
 export type CalendarData = z.infer<typeof calendarSchema>;
 
