@@ -184,6 +184,12 @@ export function parseDinner(input: string, today: string): ParsedDinner | null {
   return { dish: cap(dish), date, habit };
 }
 
+/** Dagens middag som delar att visa: rätt och antal personer. Null när inget är planerat. */
+export function dinnerToday(dinners: Record<string, { dish: string }>, people: number, today: string): { dish: string; people: string } | null {
+  const x = dinners[today];
+  return x ? { dish: x.dish, people: `${people} ${people === 1 ? "person" : "personer"}` } : null;
+}
+
 /** Raden på hemskärmen: "Middag idag: Tacos · 4 personer". Null när inget är planerat. */
 export function dinnerTodayLine(dinners: Record<string, { dish: string }>, people: number, today: string): string | null {
   const x = dinners[today];

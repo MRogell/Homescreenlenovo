@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, BUILTIN_RECIPES, dinnerTodayLine, isChildWeek, weekChip, dishNames, ingredientsForDays, isoWeek, peopleFor, findRecipe, ingredientLines, nextDays, parseDinner, parseIngredientText, recipeKey, scaleQty, weekdayOf } from "./dinner";
+import { addDays, BUILTIN_RECIPES, dinnerToday, dinnerTodayLine, isChildWeek, weekChip, dishNames, ingredientsForDays, isoWeek, peopleFor, findRecipe, ingredientLines, nextDays, parseDinner, parseIngredientText, recipeKey, scaleQty, weekdayOf } from "./dinner";
 
 const TODAY = "2026-11-09"; // måndag
 
@@ -130,5 +130,13 @@ describe("barnvecka", () => {
     expect(weekChip("2026-11-16")).toEqual({ text: "Barnvecka · v47", child: true });
     expect(weekChip("2026-11-10")).toEqual({ text: "Vecka 46", child: false });
     expect(weekChip("2026-11-15").text).toBe("Vecka 46 · barnvecka från imorgon"); // söndag v46
+  });
+});
+
+describe("dinnerToday", () => {
+  it("rätt och personer som delar, null utan plan", () => {
+    expect(dinnerToday({ "2026-11-16": { dish: "Kyckling med ris" } }, 6, "2026-11-16")).toEqual({ dish: "Kyckling med ris", people: "6 personer" });
+    expect(dinnerToday({ "2026-11-16": { dish: "Soppa" } }, 1, "2026-11-16")?.people).toBe("1 person");
+    expect(dinnerToday({}, 4, "2026-11-16")).toBeNull();
   });
 });

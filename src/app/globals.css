@@ -935,7 +935,8 @@ body:has(.wrap.shop) { padding-top: 0; }
 .cal-week { align-self: flex-start; font-size: 12px; font-weight: 600; color: var(--muted); padding: 3px 10px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 7%, transparent); }
 .cal-week.child { color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
 @media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) {
-  .greet-row { flex-wrap: nowrap; gap: 12px; }
+  .greet-row { flex-wrap: nowrap; gap: 12px; white-space: nowrap; }
+  .pk { flex-wrap: nowrap; }
   .week-badge { min-height: 28px; }
   .pk-chip { min-height: 34px; }
 }
@@ -982,4 +983,23 @@ body:has(.wrap.shop) { padding-top: 0; }
 /* iPhone som hemskärmsapp: iOS lägger en mjuk suddighet under statusfältet. Utan extra luft hamnar rubriken i den och ser suddig ut. */
 @media (max-width: 560px) {
   body { padding-top: calc(env(safe-area-inset-top, 0px) + 26px); }
+}
+
+/* Dagens middag i mitten av översta raden */
+.dn-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; padding: 8px 26px 9px; border-radius: 18px; border: 1px solid var(--line); background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), var(--surface)); box-shadow: 0 6px 22px rgb(0 0 0 / .18); }
+.dn-hero-label { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font: 700 11px var(--body); letter-spacing: .12em; text-transform: uppercase; }
+.dn-hero-label svg { width: 13px; height: 13px; }
+.dn-hero-dish { font: 600 clamp(19px, 2vw, 25px)/1.15 var(--display); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dn-hero-people { color: var(--muted); font-size: 13px; font-weight: 500; }
+@media (min-width: 700px) {
+  header.top-bar:has(.dn-hero) { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; }
+  header.top-bar:has(.dn-hero) > .dn-hero { justify-self: center; }
+  header.top-bar:has(.dn-hero) > .top-right { justify-self: end; }
+  header.top-bar:has(.dn-hero) > .dn-hero { max-width: min(46vw, 560px); }
+}
+@media (max-width: 699px) { .dn-hero { order: 3; width: 100%; } }
+@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) {
+  .dn-hero { padding: 5px 24px 6px; gap: 0; }
+  .dn-hero-dish { font-size: 21px; }
+  .dn-hero-people { font-size: 12px; }
 }
