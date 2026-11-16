@@ -24,7 +24,7 @@
   "appVersionCode": 1,
   "fallbackType": "customtabs",
   "shortcuts": [],
-  "minSdkVersion": 21,
+  "minSdkVersion": 24,
   "enableSiteSettingsShortcut": false,
   "isChromeOSOnly": false,
   "isMetaQuest": false,

@@ -29,6 +29,7 @@ Svara så här när den frågar (resten kan du lämna som förslaget):
 - **Display mode:** standalone
 - **Orientation:** default
 - **Status bar / Splash color:** `#0f1419`
+- **Minsta Android-version (minSdkVersion):** 24 (Android 7.0). Byggbiblioteket kräver minst 24. Bubblewrap föreslår 21: om bygget fallerar med "minSdkVersion 21 cannot be smaller than version 24", ändra till 24 i `twa-manifest.json`, kör `bubblewrap update` och bygg igen.
 - **Signing key:** välj att skapa en ny. Du får välja ett lösenord (två: nyckelbehållare och nyckel).
 
 Sedan:
