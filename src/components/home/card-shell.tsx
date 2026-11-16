@@ -24,7 +24,7 @@ interface Props<T> {
 /** Orsak i klartext på svenska. Okända (ofta engelska) fel visas inte, bara den vanliga texten. */
 export function friendlyReason(reason: string | undefined): { text: string; reconnect: boolean } {
   const r = (reason ?? "").toLowerCase();
-  if (r.includes("anslut igen") || r.includes("återkallad") || r.includes("nekade åtkomst")) return { text: "Anslutningen behöver göras om.", reconnect: true };
+  if (r.includes("anslut igen") || r.includes("återkallat") || r.includes("nekade åtkomst")) return { text: "Anslutningen behöver göras om.", reconnect: true };
   if (r.includes("begränsar")) return { text: "Tjänsten begränsar anropen just nu. Försöker igen automatiskt.", reconnect: false };
   if (r.includes("i tid")) return { text: "Tjänsten svarade inte i tid. Försöker igen.", reconnect: false };
   return { text: "Tjänsten svarar inte just nu.", reconnect: false };
