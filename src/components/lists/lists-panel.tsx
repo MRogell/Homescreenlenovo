@@ -112,8 +112,8 @@ function Notes({ api }: { api: ListsApi }) {
 
 const CARD_MAX = 5;
 /** I läget "allt på en skärm": kortets fasta höjd minus det som alltid tar plats (rubrik, flikar, fält), delat på en rad. */
-const FIT_FIXED = 152;
-const FIT_ROW = 41;
+const FIT_FIXED = 176;
+const FIT_ROW = 50;
 
 /** Butiksläget: en enda lista att bocka av, i butikens ordning (frukt först, hushåll sist), utan rubriker. */
 function Shop({ api }: { api: ListsApi }) {

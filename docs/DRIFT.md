@@ -147,3 +147,6 @@ Se `android/ANDROID.md`. Appen är en Trusted Web Activity runt hemskärmen (pak
 
 ## P12 med många rum och lägre skärm
 Inomhus lägger alla rum och snittrutan på en enda rad (`grid-auto-flow: column`), hur många rum det än är. Radernas minimihöjder är 176/250/164 px, så allt ryms utan scroll ned till cirka 1280×740. Under 215 px kortets höjd visas bara nästa händelse i kalendern och Spotify blir kortare. Sonos-chipsen delar på bredden. En smal väderkolumn tappar regnkolumnen (container-fråga, inte skärmbredd).
+
+## Luftig P12 (en skärm, utan scroll)
+På liggande surfplatta har alla kort mer luft (marginal 16×18 px, 14 px mellan korten) och allt som går att trycka på är minst 44 px högt (knappar, flikar, fält, chips, Starta, plus och minus, volymreglaget; reglaget för Förvärm har större träffyta än reglaget syns). I stället för att krympa knapparna försvinner sekundärt innehåll på låga kort: adressen i Škoda (under cirka 232 px), Sonos volym (under 240 px), Inköps varurader (under 190 px, antalet visas i rubriken) och AEG:s textrad.

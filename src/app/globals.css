@@ -381,7 +381,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 .sn-ctl .ctl.sn-play { background: var(--fg); color: var(--bg); min-width: 60px; min-height: 60px; }
 .sn-vol { flex: 1 1 140px; display: flex; align-items: center; gap: 10px; color: var(--muted); min-width: 0; }
 .sn-vol svg { width: 20px; height: 20px; flex: none; }
-.sn-vol input { flex: 1; min-width: 0; height: 4px; -webkit-appearance: none; appearance: none; border-radius: 4px; background: linear-gradient(90deg, var(--fg) var(--v, 30%), color-mix(in srgb, var(--fg) 18%, transparent) var(--v, 30%)); }
+.sn-vol input { flex: 1; min-width: 0; height: 36px; -webkit-appearance: none; appearance: none; background: linear-gradient(90deg, var(--fg) var(--v, 30%), color-mix(in srgb, var(--fg) 18%, transparent) var(--v, 30%)) center / 100% 4px no-repeat; }
 .sn-vol input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
 .sn-vol input::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
 .sn-vol input:focus-visible { outline: 3px solid var(--fg); outline-offset: 6px; }
@@ -576,10 +576,15 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .clock span { font-size: 14px; }
   .sub { margin-top: 0; min-height: 1.2em; font-size: 14px; }
   .sub[data-tone] { font-size: 17px; padding: 5px 12px; margin-top: 2px; }
-  .settings-link { width: 44px; height: 44px; }
+  .settings-link { width: 48px; height: 48px; }
+  /* Allt som går att trycka på är minst 44 px högt. */
+  .pk-chip, .tm-chip { min-height: 44px; }
+  .week-badge { min-height: 36px; }
+  .dep-switch { position: relative; }
+  .dep-switch::before { content: ""; position: absolute; inset: -9px -6px; }
   /* Tre rader: de två översta lite högre än den nedre (AEG och Inomhus behöver minst). */
-  .grid { gap: 12px; grid-auto-rows: minmax(224px, 1fr); grid-template-rows: minmax(176px, 1fr) minmax(250px, 1.4fr) minmax(164px, .66fr); min-height: 0; }
-  .grid > .card { container: card / size; overflow: hidden; padding: 12px 14px; gap: 6px; min-height: 0; border-radius: 18px; }
+  .grid { gap: 14px; grid-auto-rows: minmax(224px, 1fr); grid-template-rows: minmax(196px, 1fr) minmax(236px, 1.15fr) minmax(152px, .72fr); min-height: 0; }
+  .grid > .card { container: card / size; overflow: hidden; padding: 16px 18px; gap: 8px; min-height: 0; border-radius: 18px; }
   .grid .card-head svg { width: 20px; height: 20px; }
   .grid .card .foot { display: none; }
   .grid .card[data-stale] .foot { display: block; }
@@ -588,6 +593,9 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
   /* Väder: högt kort över två rader i första kolumnen, så att allt visas som i den vanliga vyn (nu, timmar, femdagars, sol och vind). Sonos blir en kolumn så att raderna går ihop. */
   .card.weather { grid-row: span 2; }
+  .wx-days { gap: 10px; }
+  .wx-days li { min-height: 36px; }
+  .wx-hours { padding-top: 12px; margin-top: 6px; }
   .card.sonos { grid-column: span 1; }
 
   /* Kalender: nästa händelse och de två följande. Imorgon visas bara när inget är kvar idag. */
@@ -604,13 +612,13 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
 
   /* Inköp: fält och så många rader som ryms (räknas i lists-panel). */
   .li { gap: 6px; }
-  .li-tabs button { min-height: 34px; }
-  .li-top .li-tabs { padding: 3px; }
-  .li-expand { width: 40px; height: 40px; }
-  .li-form input { min-height: 42px; }
-  .li-plus { width: 42px; height: 42px; }
-  .li-row { min-height: 40px; }
-  .li-x { width: 40px; height: 40px; }
+  .li-tabs button { min-height: 44px; }
+  .li-top .li-tabs { padding: 4px; }
+  .li-expand { width: 48px; height: 48px; }
+  .li-form input { min-height: 46px; }
+  .li-plus { width: 46px; height: 46px; }
+  .li-row { min-height: 46px; }
+  .li-x { width: 46px; height: 46px; }
   .li-cat { display: none; }
   .li-more { display: none; }
   .li-done { display: none; }
@@ -642,7 +650,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .sp-title { font-size: 18px; -webkit-line-clamp: 1; line-clamp: 1; }
   .sp-artist { font-size: 14px; }
   .sp-volume, .sp-device-wrap { display: none; }
-  .card.spotify .controls { gap: 4px; }
+  .card.spotify .controls { gap: 8px; }
   .card.spotify .ctl.main { min-width: 56px; min-height: 56px; }
 
   /* Sonos: titel och knappar; rummen på en rad. */
@@ -654,6 +662,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .sn-chip { min-height: 44px; flex: 1 1 0; min-width: 0; justify-content: center; padding: 0 10px; overflow: hidden; white-space: nowrap; }
   .sn-chip small { display: none; }
   .sn-ctl .ctl.sn-play { min-width: 52px; min-height: 52px; }
+  .sn-ctl .ctl { min-width: 48px; min-height: 48px; }
 
   /* AEG och Inomhus: ryms redan, men tätare. */
   .aeg-controls { gap: 6px; }
@@ -671,10 +680,10 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
     .skoda-dial-center { top: 49%; gap: 0; }
     .skoda-climate { padding: 8px 12px 10px; }
     .skoda-dial { max-width: clamp(110px, calc((100cqh - 98px) / .86), 300px); }
-    .skoda-climate-btn { min-height: 40px; margin-top: 4px; }
+    .skoda-climate-btn { min-height: 46px; margin-top: 4px; }
     .skoda-dial-value { gap: 4px 10px; }
     .skoda-dial-value output { font-size: 28px; }
-    .skoda-dial-value button { width: 40px; height: 40px; }
+    .skoda-dial-value button { width: 44px; height: 44px; }
     .skoda-body .dep { min-height: 44px; padding: 3px 10px 3px 12px; gap: 10px; margin-top: 6px; }
     .skoda-body .skoda-place { margin-top: 4px; }
     .skoda-info .skoda-charge { font-size: 13px; }
@@ -693,18 +702,26 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   }
   @container card (max-height: 215px) {
     .cal-grp, .cal-rows, .cal-tomorrow, .cal-more { display: none; }
-    .li-tabs button { min-height: 30px; }
-    .li-form input { min-height: 38px; }
-    .li-plus { width: 38px; height: 38px; }
-    .li { gap: 4px; }
+    .li { gap: 6px; }
     .sp-progress-times { display: none; }
     .sp-art { width: 52px; height: 52px; }
+  }
+  /* Låga kort: sekundärt innehåll försvinner hellre än att knappar blir små. */
+  @container card (max-height: 232px) {
+    .skoda-body .skoda-place { display: none; }
+  }
+  @container card (max-height: 240px) {
+    .sn-vol { display: none; }
+  }
+  @container card (max-height: 190px) {
+    .li-group, .li-more, .li-done, .li-msg { display: none; }
   }
   @container card (max-height: 185px) {
     .big { font-size: 28px; }
     .card.aeg .big { font-size: 28px; }
-    .aeg-controls .btn, .aeg-buttons .btn { min-height: 38px; }
-    .card.aeg { gap: 4px; }
+    .aeg-controls .btn, .aeg-buttons .btn { min-height: 44px; }
+    .card.aeg .mid { display: none; }
+    .card.aeg { gap: 6px; }
   }
   @container card (max-height: 245px) {
     .big { font-size: 34px; }
@@ -715,13 +732,13 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
     .skoda-body { gap: 0 10px; }
     .sn-hero { grid-template-columns: 52px minmax(0, 1fr); }
     .sn-art { width: 52px; height: 52px; }
-    .sn-chip { min-height: 38px; }
+    .sn-chip { min-height: 44px; }
     .sn { gap: 4px; }
     .sn .sn-ctl .ctl.sn-play { min-width: 48px; min-height: 48px; }
-    .sn .sn-ctl .ctl { min-height: 40px; }
+    .sn .sn-ctl .ctl { min-height: 48px; }
     .sn .sn-ctl { gap: 6px; }
     .card.spotify .ctl.main { min-width: 48px; min-height: 48px; }
-    .card.spotify .ctl { min-width: 40px; min-height: 40px; }
+    .card.spotify .ctl { min-width: 48px; min-height: 48px; }
     .aeg-controls .btn, .aeg-buttons .btn { min-height: 44px; }
   }
 
@@ -729,12 +746,12 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   @container card (max-height: 232px) {
     .skoda-checks li small { display: none; }
     .skoda-checks li { padding: 3px 4px; }
-    .grid > .card { padding: 10px 12px; }
+    .grid > .card { padding: 14px 16px; }
   }
   @container card (max-height: 200px) {
     .big { font-size: 30px; }
     .card.aeg .big { font-size: 30px; }
-    .aeg-controls .btn, .aeg-buttons .btn { min-height: 40px; }
+    .aeg-controls .btn, .aeg-buttons .btn { min-height: 44px; }
     .ti-dial > svg { max-width: 48px; }
     .ti-dial text { font-size: 17px; }
     .ti-name { font-size: 12px; }
@@ -966,8 +983,8 @@ body:has(.wrap.shop) { padding-top: 0; }
 @media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) {
   .greet-row { flex-wrap: nowrap; gap: 12px; white-space: nowrap; }
   .pk { flex-wrap: nowrap; }
-  .week-badge { min-height: 28px; }
-  .pk-chip { min-height: 34px; }
+  .week-badge { min-height: 36px; }
+  .pk-chip { min-height: 44px; }
 }
 .pk-off { align-self: flex-start; border: 0; background: transparent; color: var(--muted); font: 500 14px var(--body); text-decoration: underline; min-height: 44px; cursor: pointer; padding: 0 4px; }
 .pk-off:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
@@ -994,7 +1011,7 @@ body:has(.wrap.shop) { padding-top: 0; }
 .tm-list li span { display: flex; flex-direction: column; }
 .tm-list li b { font: 600 24px var(--display); font-variant-numeric: tabular-nums; }
 .tm-list li small { color: var(--muted); }
-@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) { .tm-chip { min-height: 34px; } }
+@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) { .tm-chip { min-height: 44px; } }
 
 /* Smarta funktioner: stegare och klockslag */
 .ap-smart-row { display: flex; flex-direction: column; gap: 4px; padding: 4px 0 8px 62px; }
