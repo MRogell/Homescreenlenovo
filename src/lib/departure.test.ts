@@ -91,7 +91,7 @@ describe("departureView", () => {
     expect(departureView(on, at("07:20", "2026-11-08"), cold).sub).toBe("Ingen avresa idag");
     expect(departureView({ ...on, last: { date: "2026-11-09", slot: 0, status: "started", attempts: 1, at: 1, tempC: -4 } }, at("07:20"), cold)).toMatchObject({ sub: "Klimatet startade · 21 °C klart 07:30", tone: "ok" });
     expect(departureView({ ...on, last: { date: "2026-11-09", slot: 0, status: "skipped_warm", attempts: 1, at: 1, tempC: 9 } }, at("07:20"), { tempC: 9, climateOn: false })).toMatchObject({ sub: "Hoppade över idag: 9° är varmare än gränsen 5°", tone: "warn" });
-    expect(departureView(on, at("09:00"), cold)).toMatchObject({ tone: "bad" });
+    expect(departureView(on, at("08:00"), cold)).toMatchObject({ tone: "bad" });
     expect(departureView({ ...on, skipDate: "2026-11-09" }, at("07:00"), cold)).toMatchObject({ sub: "Du hoppade över idag", settings: { skippedToday: true } });
     expect(departureView({ ...on, last: { date: "2026-11-09", slot: 0, status: "failed", attempts: 3, at: 1, tempC: -4 } }, at("07:20"), cold).tone).toBe("bad");
   });
@@ -184,5 +184,32 @@ describe("förvärm längre när det är kallt", () => {
   it("kortet förklarar den längre förvärmen", () => {
     const v = departureView(on, at("06:00"), { tempC: -12, climateOn: false, coldLead: cl });
     expect(v.sub).toBe("Startar 07:05 (25 min före, −12° ute) om det är 5° eller kallare (nu −12°)");
+  });
+});
+
+describe("efter dagens sista avresa", () => {
+  const three = only({ "1": ["07:30", "11:45", "15:30"], "2": ["07:30"] });
+  const started = (slot: number) => ({ ...three, last: { date: "2026-11-09", slot, status: "started" as const, attempts: 1, at: 1, tempC: -4 } });
+  it("visar nästa avresa (imorgon) när den sista passerat, inte 'klimatet startade'", () => {
+    const v = departureView(started(2), at("15:40"), cold);
+    expect(v.line).toBe("Nästa avresa imorgon 07:30");
+    expect(v.sub).toBe("Startar 07:15 om det är 5° eller kallare");
+    expect(v.tone).toBe("idle");
+  });
+  it("före sista avresan står startmeddelandet kvar", () => {
+    expect(departureView(started(2), at("15:20"), cold).sub).toContain("Klimatet startade");
+  });
+  it("hoppar över dagar utan avresa och nämner veckodagen", () => {
+    const fri = only({ "5": ["07:30"], "1": ["08:00"] });
+    const v = departureView({ ...fri, last: null }, new Date("2026-11-13T09:00:00+01:00"), cold); // fredag, en timme efter 07:30
+    expect(v.line).toBe("Nästa avresa mån 08:00");
+  });
+  it("fel och missade står kvar en timme efter avresan", () => {
+    const failed = { ...three, last: { date: "2026-11-09", slot: 2, status: "failed" as const, attempts: 3, at: 1, tempC: -4 } };
+    expect(departureView(failed, at("16:00"), cold).tone).toBe("bad");
+    expect(departureView(failed, at("16:45"), cold).line).toBe("Nästa avresa imorgon 07:30");
+  });
+  it("ingen annan dag: inga fler avresor", () => {
+    expect(departureView(only({ "1": ["07:30"] }), at("09:00"), cold).line).toBe("Nästa avresa mån 07:30");
   });
 });

@@ -185,6 +185,25 @@ function lineOf(s: DepartureSettings, weekday: number): string {
   return `Nästa avresa ${DAYS[next]} ${text(next)}`;
 }
 
+/** Nästa dag (från imorgon) som har en avresa: antal dygn framåt, veckodag och tiderna. */
+export function nextDeparture(s: DepartureSettings, weekday: number): { offset: number; weekday: number; times: string[] } | null {
+  for (let off = 1; off <= 7; off++) {
+    const wd = ((weekday - 1 + off) % 7) + 1;
+    const times = s.times[String(wd)];
+    if (times && times.length > 0) return { offset: off, weekday: wd, times };
+  }
+  return null;
+}
+
+/** Visas när dagens sista avresa har passerat: nästa avresa i stället för det som hände i dag. */
+function nextView(s: DepartureSettings, weekday: number, base: Omit<DepartureView, "line" | "sub" | "tone">): DepartureView {
+  const nd = nextDeparture(s, weekday);
+  if (!nd) return { ...base, line: "Inga fler avresor", sub: null, tone: "idle" };
+  const when = nd.offset === 1 ? "imorgon" : DAYS[nd.weekday]!;
+  const startsAt = hhmm(Math.max(0, minutesOf(nd.times[0]!) - s.leadMin));
+  return { ...base, line: `Nästa avresa ${when} ${nd.times.join(", ")}`, sub: `Startar ${startsAt} om det är ${s.belowC}° eller kallare`, tone: "idle" };
+}
+
 /** Texterna som visas på kortet. */
 export function departureView(s: DepartureSettings, now: Date, ctx: DepartureCtx): DepartureView {
   const c = localClock(now);
@@ -192,7 +211,14 @@ export function departureView(s: DepartureSettings, now: Date, ctx: DepartureCtx
   if (!s.enabled) return { ...base, line: "Förvärm till avresa", sub: "Av", tone: "idle" };
   const line = lineOf(s, c.weekday);
   const { decision: d, slot, lead } = currentSlot(s, now, ctx);
-  const today = s.times[String(c.weekday)]?.[slot] ?? "";
+  const todayTimes = s.times[String(c.weekday)] ?? [];
+  const today = todayTimes[slot] ?? "";
+  // Dagens sista avresa har passerat: visa nästa i stället för "klimatet startade" (fel och missade får stå kvar en timme).
+  if (todayTimes.length > 0) {
+    const last = minutesOf(todayTimes[todayTimes.length - 1]!);
+    const problem = (d.kind === "done" && d.run.status === "failed") || d.kind === "missed";
+    if (c.minutes > last + (problem ? 60 : 0)) return nextView(s, c.weekday, base);
+  }
   switch (d.kind) {
     case "idle": return { ...base, line, sub: "Ingen avresa idag", tone: "idle" };
     case "wait": return { ...base, line, sub: `Startar ${d.startsAt}${lead.extra > 0 ? ` (${lead.minutes} min före, ${fmtTemp(lead.tempC)} ute)` : ""} om det är ${s.belowC}° eller kallare (nu ${fmtTemp(ctx.tempC)})`, tone: "wait" };
