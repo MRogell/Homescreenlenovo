@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { decryptToken } from "@/lib/crypto";
 import type { OAuthConfig, TokenSet } from "@/lib/oauth";
 import { createPrisma } from "./db";
-import { ReauthRequired, deleteConnection, getAccessToken, getConnectionStatus, saveTokens } from "./connections";
+import { ReauthRequired, deleteConnection, getAccessToken, getConnectionStatus, saveTokens, setConnectionCache } from "./connections";
 
 const db = createPrisma(process.env.DATABASE_URL);
 const SECRET = process.env.BETTER_AUTH_SECRET!;
@@ -131,5 +131,24 @@ describe("tado tokens", () => {
     await db.connection.create({ data: { userId: "u1", provider: "tado", tokenEnc: "x", status: "pending" } });
     expect(await getConnectionStatus("tado", db)).toBe("pending");
     await expect(getAccessToken("tado", { db, nowMs: NOW })).rejects.toBeInstanceOf(ReauthRequired);
+  });
+
+  it("minnescachen sparar databasfrågor men rensas när anslutningen ändras", async () => {
+    setConnectionCache(true);
+    try {
+      await saveTokens("u1", "spotify", tokens(), db);
+      let reads = 0;
+      const spy = new Proxy(db, { get: (t, k, r) => (k === "connection" ? new Proxy(t.connection, { get: (c, m, rr) => (m === "findFirst" ? (...a: unknown[]) => { reads++; return (c.findFirst as (...x: unknown[]) => unknown)(...a); } : Reflect.get(c, m, rr)) }) : Reflect.get(t, k, r)) });
+      expect(await getAccessToken("spotify", { db: spy, nowMs: NOW })).toBe("ACC");
+      expect(await getAccessToken("spotify", { db: spy, nowMs: NOW })).toBe("ACC");
+      expect(await getConnectionStatus("spotify", spy)).toBe("ok");
+      expect(await getConnectionStatus("spotify", spy)).toBe("ok");
+      expect(reads).toBe(2); // en för token, en för status; resten från minnet
+      await deleteConnection("spotify", spy);
+      expect(await getConnectionStatus("spotify", spy)).toBe("none");
+      await expect(getAccessToken("spotify", { db: spy, nowMs: NOW })).rejects.toBeInstanceOf(ReauthRequired);
+    } finally {
+      setConnectionCache(false);
+    }
   });
 });

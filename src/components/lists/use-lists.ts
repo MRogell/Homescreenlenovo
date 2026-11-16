@@ -42,6 +42,8 @@ export interface AddResult { added: string[]; existing: string[] }
  */
 export interface ListsOptions {
   pollMs?: number;
+  /** Sant när det är natt: då hämtas listan bara var 10:e minut. */
+  quiet?: () => boolean;
   /** Adressen listorna hämtas från och sparas till. Familjemedlemmar har en egen (med sin länk i). */
   endpoint?: string;
   /** Nyckeln i telefonen där köade ändringar och senast kända läge ligger. */
@@ -50,6 +52,8 @@ export interface ListsOptions {
 
 export function useLists(initial: ListsState | null, opts: ListsOptions = {}) {
   const { pollMs = 20_000, endpoint = "/api/lists", storeKey = DEFAULT_STORE_KEY } = opts;
+  const quietRef = useRef(opts.quiet);
+  useEffect(() => { quietRef.current = opts.quiet; });
   const [server, setServer] = useState<ListsState>(initial ?? EMPTY_LISTS);
   const [pending, setPending] = useState<Op[]>([]);
   const [loaded, setLoaded] = useState(initial !== null);
@@ -142,8 +146,11 @@ export function useLists(initial: ListsState | null, opts: ListsOptions = {}) {
 
   // Hämta regelbundet medan fliken syns, och direkt när den blir synlig eller nätet kommer tillbaka.
   useEffect(() => {
-    const tick = () => { if (document.visibilityState === "visible") { void flush(); void pull(); } };
-    const t = setInterval(tick, pollMs);
+    let last = Date.now();
+    const run = () => { last = Date.now(); void flush(); void pull(); };
+    const tick = () => { if (document.visibilityState === "visible") run(); };
+    // Egna ändringar skickas alltid direkt (flush i enqueue); här gäller bara den regelbundna hämtningen.
+    const t = setInterval(() => { if (document.visibilityState === "visible" && !(quietRef.current?.() && Date.now() - last < 10 * 60_000)) run(); }, pollMs);
     const on = () => { setOnline(true); void flush(); void pull(); };
     const off = () => setOnline(false);
     document.addEventListener("visibilitychange", tick);

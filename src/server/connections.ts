@@ -30,6 +30,17 @@ export interface ConnDeps {
 
 const SKEW_MS = 60_000;
 
+// Skärmen frågar Spotify var 4:e sekund och varje fråga behöver en token och en statuskontroll. Utan minnescache blir det en databasfråga
+// var gång, och databasen får aldrig vila. Cachen gäller per serverinstans och per databas, och rensas när anslutningen ändras.
+const STATUS_TTL_MS = 60_000;
+// Avstängd i testkörning (testerna ändrar databasen direkt); ett eget test slår på den.
+let cacheOn = !process.env.VITEST;
+export const setConnectionCache = (on: boolean) => { cacheOn = on; };
+const tokenCache = new WeakMap<object, Map<string, { token: string; expiresAt: number }>>();
+const statusCache = new WeakMap<object, Map<string, { v: "ok" | "reauth" | "none" | "pending"; at: number }>>();
+const bucket = <T,>(m: WeakMap<object, Map<string, T>>, db: object) => { let b = m.get(db); if (!b) { b = new Map(); m.set(db, b); } return b; };
+function dropCache(db: object, provider: string) { bucket(tokenCache, db).delete(provider); bucket(statusCache, db).delete(provider); }
+
 type ConnDb = Pick<PrismaClient, "connection">;
 
 export async function saveTokens(userId: string, provider: TokenProviderId, tokens: TokenSet, db: ConnDb = defaultDb): Promise<void> {
@@ -39,24 +50,31 @@ export async function saveTokens(userId: string, provider: TokenProviderId, toke
     create: { userId, provider, tokenEnc, status: "ok", lastSyncAt: new Date() },
     update: { tokenEnc, status: "ok", lastError: null, lastSyncAt: new Date() },
   });
+  dropCache(db, provider);
   // Google Kalender ingår i kalenderkortet: dess cache ska inte visa gamla läget efter ny anslutning.
   if (provider === "google" && "snapshot" in db) await (db as PrismaClient).snapshot.deleteMany({ where: { provider: "calendar" } });
 }
 
 export async function getConnectionStatus(provider: TokenProviderId, db: PrismaClient = defaultDb): Promise<"ok" | "reauth" | "none" | "pending"> {
+  const hit = cacheOn ? bucket(statusCache, db).get(provider) : undefined;
+  if (hit && Date.now() - hit.at < STATUS_TTL_MS) return hit.v;
   const row = await db.connection.findFirst({ where: { provider }, select: { status: true } });
-  if (!row) return "none";
-  if (row.status === "pending") return "pending"; // inloggning påbörjad men inte godkänd
-  return row.status === "ok" ? "ok" : "reauth";
+  const v = !row ? "none" : row.status === "pending" ? "pending" /* inloggning påbörjad men inte godkänd */ : row.status === "ok" ? "ok" : "reauth";
+  if (cacheOn) bucket(statusCache, db).set(provider, { v, at: Date.now() });
+  return v;
 }
 
 async function markReauth(db: PrismaClient, id: string, reason: string) {
   await db.connection.update({ where: { id }, data: { status: "reauth", lastError: reason } });
+  tokenCache.delete(db);
+  statusCache.delete(db);
 }
 
 export async function getAccessToken(provider: TokenProviderId, deps: ConnDeps = {}): Promise<string> {
   const db = deps.db ?? defaultDb;
   const now = deps.nowMs ?? Date.now();
+  const cached = cacheOn ? bucket(tokenCache, db).get(provider) : undefined;
+  if (cached && cached.expiresAt - now > SKEW_MS) return cached.token;
   const row = await db.connection.findFirst({ where: { provider } });
   if (!row || row.status !== "ok") throw new ReauthRequired();
 
@@ -67,7 +85,7 @@ export async function getAccessToken(provider: TokenProviderId, deps: ConnDeps =
     await markReauth(db, row.id, "Tokens går inte att läsa (hemligheten har ändrats?)");
     throw new ReauthRequired();
   }
-  if (tokens.expiresAt - now > SKEW_MS) return tokens.accessToken;
+  if (tokens.expiresAt - now > SKEW_MS) { if (cacheOn) bucket(tokenCache, db).set(provider, { token: tokens.accessToken, expiresAt: tokens.expiresAt }); return tokens.accessToken; }
 
   let refresh = deps.refresh;
   if (!refresh) {
@@ -116,6 +134,7 @@ async function refreshLocked(db: PrismaClient, provider: TokenProviderId, refres
 
 /** Kopplar från och raderar tjänstens cachade data. */
 export async function deleteConnection(provider: TokenProviderId, db: PrismaClient = defaultDb): Promise<void> {
+  dropCache(db, provider);
   await db.connection.deleteMany({ where: { provider } });
   await db.snapshot.deleteMany({ where: { provider } });
   if (provider === "google") await db.snapshot.deleteMany({ where: { provider: "calendar" } });

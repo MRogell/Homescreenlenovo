@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { HomeStates } from "@/server/snapshots";
 import { type AppSettings, type CardId } from "@/lib/settings";
+import { isQuietHours, QUIET_POLL_MS } from "@/lib/quiet";
 import { isFree, moveTo, orderedCards, stepCard, type CardSize } from "@/lib/layout";
 import { useFirstRowFit } from "./first-row-fit";
 import { resetLayout, useLayout, writeLayout } from "@/lib/layout-store";
@@ -34,6 +35,8 @@ function ChildWeekBadge({ now, awayIds }: { now: Date; awayIds: string[] }) {
 const POLL_MS = 30_000;
 /** Spotify uppdateras oftare (direkt från Spotify) så att kortet följer vad som spelas utan märkbar fördröjning. */
 const SPOTIFY_POLL_MS = 4_000;
+/** När inget spelas räcker det att fråga Spotify var 15:e sekund. */
+const SPOTIFY_IDLE_MS = 15_000;
 
 export function HomeScreen({ initial, initialNow, initialSettings, initialDeparture, initialTimers = [] }: { initial: HomeStates; initialNow: string; initialSettings: AppSettings; initialDeparture: DepartureView; initialTimers?: TimerItem[] }) {
   const [states, setStates] = useState(initial);
@@ -73,17 +76,39 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
     }
   }, []);
 
+  // Hämtningarna är glesare när det inte behövs: Spotify var 15:e sekund när inget spelas, och på natten sällan alls (se lib/quiet.ts).
+  const nightRef = useRef(settings.night);
+  const playingRef = useRef(false);
+  useEffect(() => { nightRef.current = settings.night; }, [settings.night]);
+  const sp = states.spotify;
+  useEffect(() => { playingRef.current = !!sp && (sp.status === "ok" || sp.status === "stale") && (sp.data as { playing?: boolean } | undefined)?.playing === true; }, [sp]);
+
   useEffect(() => {
     if (!spotifyConnected) return;
-    const t = setInterval(() => { if (document.visibilityState === "visible") void refreshSpotify(); }, SPOTIFY_POLL_MS);
+    let last = 0;
+    const t = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      const wait = isQuietHours(new Date(), nightRef.current) ? QUIET_POLL_MS : playingRef.current ? 0 : SPOTIFY_IDLE_MS;
+      if (Date.now() - last < wait) return;
+      last = Date.now();
+      void refreshSpotify();
+    }, SPOTIFY_POLL_MS);
     return () => clearInterval(t);
   }, [spotifyConnected, refreshSpotify]);
 
   useEffect(() => {
-    const tick = () => { if (document.visibilityState === "visible") void refresh(); };
+    let last = Date.now();
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      if (isQuietHours(new Date(), nightRef.current) && Date.now() - last < QUIET_POLL_MS) return;
+      last = Date.now();
+      void refresh();
+    };
     const t = setInterval(tick, POLL_MS);
-    document.addEventListener("visibilitychange", tick);
-    return () => { clearInterval(t); document.removeEventListener("visibilitychange", tick); };
+    // När någon öppnar appen igen hämtas direkt, även på natten.
+    const onShow = () => { if (document.visibilityState === "visible") { last = Date.now(); void refresh(); } };
+    document.addEventListener("visibilitychange", onShow);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", onShow); };
   }, [refresh]);
 
   // Sonos-rummen till Spotify-kortet: knappar och enhetsbyte går via Sonos när musiken spelar där.
@@ -107,7 +132,7 @@ export function HomeScreen({ initial, initialNow, initialSettings, initialDepart
 
   const listsParsed = states.lists && (states.lists.status === "ok" || states.lists.status === "stale") ? listsSchema.safeParse(states.lists.data) : null;
   // En enda uppsättning av listorna för hela skärmen: inköpskortet och "Vem hämtar?" delar den.
-  const listsApi = useLists(listsParsed?.success ? listsParsed.data : null);
+  const listsApi = useLists(listsParsed?.success ? listsParsed.data : null, { quiet: () => isQuietHours(new Date(), nightRef.current) });
   const hidePickup = useCallback(async () => {
     try {
       await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ show: { ...settings.show, pickup: false } }) });

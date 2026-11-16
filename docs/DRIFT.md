@@ -190,3 +190,10 @@ Direkt koppling via CalDAV (`src/server/calendar/caldav.ts`, lagring i `icloud-s
 
 ## Första raden utan scroll
 På liggande surfplatta som är lägre än 900 px (P12) eller med egen layout rullar sidan, men korten i första raden krymps automatiskt (`src/components/home/first-row-fit.ts`, CSS `zoom`, lägst 0,7) tills de ryms på skärmen. Resten av korten ligger under och rullar. Standardläget på höga skärmar (≥900 px) använder fortfarande "allt på en skärm".
+
+## Färre databasanrop (gratiskvoten)
+Gratisdatabasen har en månadsgräns för hur länge den får vara igång, och skärmen höll den igång dygnet runt. Därför:
+- Spotify-token och anslutningsstatus ligger i minnet per serverinstans (`src/server/connections.ts`), så att frågan var 4:e sekund inte slår i databasen. Cachen rensas när anslutningen ändras.
+- Spotify frågas var 15:e sekund när inget spelas (4 sekunder bara medan musik spelar).
+- På natten (nattläget om det är på, annars 00:00–05:00) hämtar skärmen hemskärm, Spotify och inköpslista bara var 10:e minut (`src/lib/quiet.ts`). När någon öppnar appen hämtas allt direkt.
+- Servertimern (cron-job.org) bör bara gå när förvärm behövs, t.ex. varje minut 05:00–09:00 och 14:00–19:00, inte hela natten.
