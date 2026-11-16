@@ -199,7 +199,8 @@ export function ListsPanel({ api, mode, handlaHref = "/handla" }: { api: ListsAp
   const rootRef = useRef<HTMLDivElement>(null);
   const fit = useFitMode() && compact;
   const height = useCardHeight(rootRef, fit);
-  const cardMax = fit && height > 0 ? Math.max(1, Math.min(CARD_MAX, Math.floor((height - FIT_FIXED) / FIT_ROW))) : CARD_MAX;
+  // Liggande surfplatta: alla varor, listan rullar i kortet när den blir för lång.
+  const cardMax = fit ? Infinity : CARD_MAX;
   const dinnerRows = fit && height > 0 ? Math.max(2, Math.min(7, Math.floor((height - 218) / 40))) : 4;
   const [tab, setTab] = useState<"shop" | "notes" | "dinner">("shop");
   const [showDone, setShowDone] = useState(false);
@@ -255,6 +256,7 @@ export function ListsPanel({ api, mode, handlaHref = "/handla" }: { api: ListsAp
               <AddBar api={api} big={big} />
               {open === 0 && done.length === 0 && <Chips api={api} limit={big ? 10 : 6} />}
               {open === 0 && done.length === 0 && <p className="mid small">Listan är tom. Skriv en vara, eller välj en av de vanliga.</p>}
+              <div className="li-scroll">
               {cardGroups.map((g) => (
                 <section key={g.id} className="li-group" aria-label={g.label}>
                   <h3 className="li-cat">{g.label}</h3>
@@ -263,6 +265,7 @@ export function ListsPanel({ api, mode, handlaHref = "/handla" }: { api: ListsAp
                   </ul>
                 </section>
               ))}
+              </div>
               {compact && open > 0 && <Link className="li-more" href={handlaHref}>{hidden > 0 ? `+${hidden} till · öppna butiksläget` : "Öppna butiksläget"}</Link>}
               {open > 0 && big && <Chips api={api} limit={8} />}
               {done.length > 0 && (

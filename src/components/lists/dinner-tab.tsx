@@ -42,6 +42,8 @@ function DayEditor({ api, date, today, onClose }: { api: ListsApi; date: string;
       ingredients = extra;
       if (saveOwn) api.saveRecipe(d, extra);
     }
+    // Utan ingredienser läggs själva rätten på listan, så att knappen alltid gör något.
+    if (addToList && ingredients.length === 0) ingredients = [d];
     if (addToList && ingredients.length > 0) {
       const r = api.addIngredients(ingredients, [date]);
       setMsg(`${r.added.length} ${r.added.length === 1 ? "vara" : "varor"} lades på listan${r.existing.length ? `, ${r.existing.length} fanns redan` : ""}.`);
@@ -90,7 +92,7 @@ function DayEditor({ api, date, today, onClose }: { api: ListsApi; date: string;
       {msg && <p className="mid small" role="status">{msg}</p>}
       <div className="dep-actions">
         <button type="button" className="sm-btn primary" disabled={!dish.trim()} onClick={() => persist(false)}>Spara</button>
-        <button type="button" className="sm-btn" disabled={!dish.trim() || (found ? chosen.length === 0 : parseIngredientText(own).length === 0)} onClick={() => persist(true)}>Spara och lägg på listan</button>
+        <button type="button" className="sm-btn" disabled={!dish.trim() || (!!found && chosen.length === 0)} onClick={() => persist(true)}>Spara och lägg på listan</button>
         {existing && <button type="button" className="sm-btn danger-text" onClick={() => { api.setDinner(date, ""); onClose(); }}><Trash2 aria-hidden="true" />Ta bort</button>}
       </div>
     </div>

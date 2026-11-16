@@ -157,3 +157,8 @@ På liggande surfplatta har alla kort mer luft (marginal 16×18 px, 14 px mellan
 
 ## Förvärm längre när det är kallt
 Inställningar → Smarta funktioner → "Förvärm längre när det är kallt" (`smart.coldLead`). Förvärmtiden (grunden, 10–30 min) får ett tillägg efter temperaturen: −5° till −10° +5 min, −10° till −20° +10 min, kallare än −20° +15 min (justerbart 0–30). Temperaturen är timprognosen för avresetimmen om den finns, annars nuvarande. Taket är 45 minuter. Gränsen "bara om det är X° eller kallare" och övriga regler är oförändrade. Kortet visar till exempel "Startar 06:55 (25 min före, −14° ute)". Servertimerns förkoll utgår från den längsta möjliga förvärmtiden, så att en kall morgon inte missas, och bedömningen görs sedan med verklig temperatur.
+
+## Ny stil, rullande Inköp, middag på listan
+- Ny visuell stil (kort med toning, runda färgade ikonchips, piller) i `globals.css`; Škoda-kortet trimmat så inget klipps i fit-läge.
+- Inköp-kortet (liggande surfplatta ≥900px högt) visar alla varor och rullar inuti kortet (`.li-scroll`).
+- "Spara och lägg på listan" lägger rättens namn på listan om inga ingredienser finns.
