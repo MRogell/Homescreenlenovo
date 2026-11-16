@@ -144,3 +144,6 @@ Inställningar → Smarta funktioner (`smart` i inställningarna). Notiserna sl�
 
 ## Android-app
 Se `android/ANDROID.md`. Appen är en Trusted Web Activity runt hemskärmen (paketnamn `lenovohomescreen.app`). Webbplatsen serverar `/.well-known/assetlinks.json` (miljövariabeln `ANDROID_SHA256_FINGERPRINTS`, kommaseparerade SHA-256-avtryck från Play Console) och en publik `/integritet`. Manifestet tillåter alla riktningar.
+
+## P12 med många rum och lägre skärm
+Inomhus lägger alla rum och snittrutan på en enda rad (`grid-auto-flow: column`), hur många rum det än är. Radernas minimihöjder är 176/250/164 px, så allt ryms utan scroll ned till cirka 1280×740. Under 215 px kortets höjd visas bara nästa händelse i kalendern och Spotify blir kortare. Sonos-chipsen delar på bredden. En smal väderkolumn tappar regnkolumnen (container-fråga, inte skärmbredd).

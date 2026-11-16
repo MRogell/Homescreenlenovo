@@ -578,7 +578,7 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .sub[data-tone] { font-size: 17px; padding: 5px 12px; margin-top: 2px; }
   .settings-link { width: 44px; height: 44px; }
   /* Tre rader: de två översta lite högre än den nedre (AEG och Inomhus behöver minst). */
-  .grid { gap: 12px; grid-auto-rows: minmax(224px, 1fr); grid-template-rows: minmax(190px, 1fr) minmax(280px, 1.4fr) minmax(182px, .7fr); min-height: 0; }
+  .grid { gap: 12px; grid-auto-rows: minmax(224px, 1fr); grid-template-rows: minmax(176px, 1fr) minmax(250px, 1.4fr) minmax(164px, .66fr); min-height: 0; }
   .card { container: card / size; overflow: hidden; padding: 12px 14px; gap: 6px; min-height: 0; border-radius: 18px; }
   .card-head svg { width: 20px; height: 20px; }
   .card .foot { display: none; }
@@ -651,31 +651,59 @@ h1 { font: 600 clamp(26px, 3.2vw, 40px)/1.1 var(--display); margin: 0; text-wrap
   .sn-art { width: 64px; height: 64px; }
   .sn-title { font-size: 18px; }
   .sn-chips { flex-wrap: nowrap; overflow: hidden; }
-  .sn-chip { min-height: 44px; flex: none; }
+  .sn-chip { min-height: 44px; flex: 1 1 0; min-width: 0; justify-content: center; padding: 0 10px; overflow: hidden; white-space: nowrap; }
+  .sn-chip small { display: none; }
   .sn-ctl .ctl.sn-play { min-width: 52px; min-height: 52px; }
 
   /* AEG och Inomhus: ryms redan, men tätare. */
   .aeg-controls { gap: 6px; }
+  .aeg-buttons { flex-wrap: nowrap; }
+  .aeg-buttons .btn { min-width: 0; }
   .card.aeg .mid { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ti-dials { gap: 6px 8px; }
+  /* Alla rum och snittrutan på en enda rad, hur många rum det än är. */
+  .card.tado .ti-dials { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px 8px; }
   .ti-dial > svg { max-width: 72px; }
+  .ti-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Lägre kort (skärmar runt 800 px höga): ännu tätare. */
   @container card (max-height: 300px) {
     .skoda-dial-center .label { display: none; }
-    .skoda-dial-center { top: 54%; gap: 0; }
+    .skoda-dial-center { top: 49%; gap: 0; }
     .skoda-dial { max-width: clamp(110px, calc((100cqh - 146px) / .86), 300px); }
     .skoda-climate-btn { min-height: 44px; margin-top: 8px; }
     .skoda-dial-value { gap: 4px 10px; }
     .skoda-dial-value output { font-size: 28px; }
-    .skoda-dial-value button { width: 42px; height: 42px; }
-    .skoda-body .dep { min-height: 48px; padding: 4px 10px 4px 12px; gap: 10px; }
+    .skoda-dial-value button { width: 40px; height: 40px; }
+    .skoda-body .dep { min-height: 44px; padding: 3px 10px 3px 12px; gap: 10px; margin-top: 6px; }
+    .skoda-body .skoda-place { margin-top: 4px; }
+    .skoda-info .skoda-charge { font-size: 13px; }
     .skoda-info .skoda-checks li small { display: none; }
     .skoda-body .dep-text b { white-space: nowrap; text-overflow: ellipsis; display: block; }
     .skoda-body .dep-main svg { width: 30px; height: 30px; padding: 6px; }
     .skoda-body .dep-text b { font-size: 14px; }
     .skoda-body .dep-text small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: 1; line-clamp: 1; }
     .skoda-info .skoda-checks li { padding-top: 3px; padding-bottom: 3px; }
+  }
+  /* Mycket låga kort: bara nästa händelse i kalendern och en kortare Spotify. */
+  /* Smal väderkolumn (skärmar runt 1000 px breda): regnkolumnen får ge plats. */
+  @container card (max-width: 285px) {
+    .wx-days li { grid-template-columns: 2.6em 20px 2.2em minmax(24px, 1fr) 2.2em; }
+    .wx-days li > :nth-child(6) { display: none; }
+  }
+  @container card (max-height: 215px) {
+    .cal-grp, .cal-rows, .cal-tomorrow, .cal-more { display: none; }
+    .li-tabs button { min-height: 30px; }
+    .li-form input { min-height: 38px; }
+    .li-plus { width: 38px; height: 38px; }
+    .li { gap: 4px; }
+    .sp-progress-times { display: none; }
+    .sp-art { width: 52px; height: 52px; }
+  }
+  @container card (max-height: 185px) {
+    .big { font-size: 28px; }
+    .card.aeg .big { font-size: 28px; }
+    .aeg-controls .btn, .aeg-buttons .btn { min-height: 38px; }
+    .card.aeg { gap: 4px; }
   }
   @container card (max-height: 245px) {
     .big { font-size: 34px; }
@@ -1010,3 +1038,11 @@ body:has(.wrap.shop) { padding-top: 0; }
 .prose p, .prose ul { margin: 0 0 10px; }
 .prose ul { padding-left: 20px; }
 .prose li { margin-bottom: 6px; }
+
+/* Låga skärmar: Middag idag på en rad så att översta raden blir lägre. */
+@media (min-width: 1001px) and (min-height: 540px) and (orientation: landscape) and (max-height: 820px) {
+  .dn-hero { flex-direction: row; align-items: baseline; gap: 10px; padding: 7px 20px; }
+  .dn-hero-dish { font-size: 19px; }
+  .dn-hero-people { font-size: 12px; }
+  .dn-hero-label { letter-spacing: .08em; }
+}
