@@ -141,3 +141,6 @@ Inställningar → Smarta funktioner (`smart` i inställningarna). Notiserna sl�
 - **Laddpåminnelse:** En gång per dygn efter ett klockslag (grund 19:00, inom tre timmar) om bilen är ett elbilsbatteri på eller under en gräns (grund 40 %) och inte laddar. Okänt värde ger ingen påminnelse och markerar inte dagen, så nästa hämtning försöker igen. Körs av servertimern (och av hemskärmens hämtning). Notisnyckel per dygn, så den skickas högst en gång.
 - **Timer:** Högst tre timers, delade mellan skärmarna (tabell `app_setting` "timers", lås 727004). Knappen sitter bredvid hälsningen. Servern skickar en notis när en timer gått av (via servertimern, högst en minut sen), och en öppen skärm pipar och visar "Klart!" tills den stängs av. Ljud kan blockeras av webbläsaren om sidan inte fått någon tryckning.
 - Timers och laddkontrollen läggs på servertimern (`/api/cron/preheat`) utan ny konfiguration. Utanför fönster görs inga anrop till bilen eller vädret.
+
+## Android-app
+Se `android/ANDROID.md`. Appen är en Trusted Web Activity runt hemskärmen (paketnamn `lenovohomescreen.app`). Webbplatsen serverar `/.well-known/assetlinks.json` (miljövariabeln `ANDROID_SHA256_FINGERPRINTS`, kommaseparerade SHA-256-avtryck från Play Console) och en publik `/integritet`. Manifestet tillåter alla riktningar.

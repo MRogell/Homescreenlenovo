@@ -1003,3 +1003,10 @@ body:has(.wrap.shop) { padding-top: 0; }
   .dn-hero-dish { font-size: 21px; }
   .dn-hero-people { font-size: 12px; }
 }
+
+/* Textsidor (integritetspolicy) */
+.prose { display: block; max-width: 680px; margin: 0 auto; line-height: 1.6; }
+.prose h2 { font: 600 20px var(--display); margin: 22px 0 6px; }
+.prose p, .prose ul { margin: 0 0 10px; }
+.prose ul { padding-left: 20px; }
+.prose li { margin-bottom: 6px; }
