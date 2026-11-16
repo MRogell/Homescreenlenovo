@@ -135,8 +135,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           );
         })()}
       </section>
-      <FamilySettings {...(await loadFamilyAll().then((f) => ({ initial: f.members, initialHandover: f.handover })))} />
-      <IcloudSettings connected={!!(await loadIcloud(getEnv().BETTER_AUTH_SECRET))} />
+      <FamilySettings {...(await loadFamilyAll().then((f) => ({ initial: f.members, initialHandover: f.handover }), () => ({ initial: [], initialHandover: { weekday: 7, time: "16:30" } })))} />
+      <IcloudSettings connected={!!(await loadIcloud(getEnv().BETTER_AUTH_SECRET).catch(() => null))} />
       <CalendarSettings initial={calendars} />
       <ShareSettings initial={shares} origin={env.BETTER_AUTH_URL.replace(/\/$/, "")} />
       {oauth.get("spotify")?.status === "ok" && (
