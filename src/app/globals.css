@@ -1237,3 +1237,6 @@ html[data-text="l"] .wrap.home { zoom: 1.12; }
 .ds-theme[data-t="standard"] { --a: #e0b36a; --b: #1c2d40; } .ds-theme[data-t="nordljus"] { --a: #6fd3c4; --b: #1d2f4f; } .ds-theme[data-t="skog"] { --a: #8fd18b; --b: #153a26; } .ds-theme[data-t="solnedgang"] { --a: #ffb27a; --b: #4a2438; } .ds-theme[data-t="neutral"] { --a: #dfe5ec; --b: #1b2128; }
 .hw-trigger.week-badge { position: relative; }
 .hw-trigger.week-badge::before { content: ""; position: absolute; inset: -9px -4px; }
+
+/* Egen ordning gäller alla kort. Utan den här regeln ligger Škoda alltid först på låga liggande skärmar (order: -1). */
+html[data-order] .grid > .card { order: 0; }

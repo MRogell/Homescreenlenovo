@@ -75,5 +75,5 @@ export function stepCard(order: readonly CardId[], id: CardId, delta: -1 | 1): C
 
 /** Attributen på <html> som CSS använder. */
 export function htmlAttrs(l: Layout): Record<string, string | undefined> {
-  return { "data-theme": l.theme === "standard" ? undefined : l.theme, "data-density": l.density === "normal" ? undefined : l.density, "data-text": l.text === "m" ? undefined : l.text, "data-free": isFree(l) ? "" : undefined };
+  return { "data-theme": l.theme === "standard" ? undefined : l.theme, "data-density": l.density === "normal" ? undefined : l.density, "data-text": l.text === "m" ? undefined : l.text, "data-free": isFree(l) ? "" : undefined, "data-order": l.order !== null ? "" : undefined };
 }

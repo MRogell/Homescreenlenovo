@@ -37,6 +37,6 @@ describe("layout", () => {
     expect(isFree({ ...DEFAULT_LAYOUT, text: "s" })).toBe(true);
     expect(isFree({ ...DEFAULT_LAYOUT, sizes: { skoda: "s" } })).toBe(true);
     expect(isFree({ ...DEFAULT_LAYOUT, order: ["tado"] as never })).toBe(true);
-    expect(htmlAttrs({ ...DEFAULT_LAYOUT, theme: "skog", text: "l" })).toEqual({ "data-theme": "skog", "data-density": undefined, "data-text": "l", "data-free": "" });
+    expect(htmlAttrs({ ...DEFAULT_LAYOUT, theme: "skog", text: "l" })).toEqual({ "data-theme": "skog", "data-density": undefined, "data-text": "l", "data-free": "", "data-order": undefined });
   });
 });
