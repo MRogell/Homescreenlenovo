@@ -33,6 +33,8 @@ function onDay(events: Tagged[], date: string, from: Date, to: Date): Tagged[] {
   return events
     .filter((e) => (e.allDay ? e.start <= date && e.end > date : new Date(e.start) < to && (new Date(e.end) > from || (e.start === e.end && new Date(e.start) >= from))))
     .sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start.localeCompare(b.start))
+    // Samma händelse i två kalendrar (t.ex. Google och en iCal-länk) visas en gång.
+    .filter((e, i, all) => all.findIndex((x) => x.allDay === e.allDay && x.title === e.title && x.start === e.start && x.end === e.end) === i)
     .slice(0, MAX_PER_DAY);
 }
 
@@ -56,7 +58,8 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
           return parseEvents(text, { from: w.todayStart, to: w.end }).map((e): Tagged => ({ ...e, calendarId: c.id }));
         }),
       );
-      let failed = results.filter((r) => r.status === "rejected").length;
+      const failedNames: string[] = calendars.filter((_, i) => results[i]!.status === "rejected").map((c) => c.name);
+      let failed = failedNames.length;
       let total = calendars.length;
       const all = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
       const meta: { id: string; name: string; color: CalendarSource["color"]; writable?: boolean }[] = calendars.map(({ id, name, color }) => ({ id, name, color }));
@@ -71,9 +74,11 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
               return (await listGoogleEvents(token, g.id, w.todayStart, w.end, deps.google?.fetchFn)).map((e): Tagged => ({ ...e, calendarId: id }));
             }),
           );
+          failedNames.push(...gcals.filter((_, i) => gres[i]!.status === "rejected").map((g) => g.name));
           failed += gres.filter((r) => r.status === "rejected").length;
           all.push(...gres.flatMap((r) => (r.status === "fulfilled" ? r.value : [])));
         } catch {
+          failedNames.push("Google Kalender");
           failed += 1;
           total += 1;
         }
@@ -89,9 +94,11 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
               return (await listCaldavEvents(icloud, c.href, w.todayStart, w.end, deps.icloud?.fetchFn)).map((e): Tagged => ({ ...e, calendarId: id, ...(e.uid ? { eventId: e.uid } : {}) }));
             }),
           );
+          failedNames.push(...ical.filter((_, i) => ires[i]!.status === "rejected").map((c) => c.name));
           failed += ires.filter((r) => r.status === "rejected").length;
           all.push(...ires.flatMap((r) => (r.status === "fulfilled" ? r.value : [])));
         } catch {
+          failedNames.push("iCloud");
           failed += 1;
           total += 1;
         }
@@ -115,6 +122,7 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
         tomorrow: { date: w.tomorrow, events: onDay(all, w.tomorrow, w.tomorrowStart, w.end) },
         calendars: meta,
         failed,
+        failedNames: failedNames.slice(0, 6),
       };
     },
   };

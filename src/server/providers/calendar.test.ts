@@ -75,4 +75,16 @@ describe("calendar provider", () => {
     expect(calendarSchema.safeParse({}).success).toBe(false);
     expect(calendarSchema.safeParse(null).success).toBe(false);
   });
+
+  it("namnger kalendern som inte svarade och visar samma händelse bara en gång", async () => {
+    const t = make([cal("a", "Familj"), cal("b", "Jobb"), cal("c", "Trasig")], {
+      a: ics(day("1", "20261108", "20261109", "Pappa vecka")),
+      b: ics(day("2", "20261108", "20261109", "Pappa vecka")),
+      c: 500,
+    });
+    const d = await t.p.getSummary();
+    expect(d.failed).toBe(1);
+    expect(d.failedNames).toEqual(["Trasig"]);
+    expect(d.today.events.filter((e) => e.title === "Pappa vecka")).toHaveLength(1);
+  });
 });

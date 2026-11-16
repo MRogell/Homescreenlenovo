@@ -119,6 +119,8 @@ export const calendarSchema = z.object({
   calendars: z.array(z.object({ id: z.string(), name: z.string(), color: z.enum(["blue", "green", "yellow", "red", "purple"]), /** Google-kalender där man kan lägga till händelser härifrån. */ writable: z.boolean().optional() })),
   /** Hur många kalendrar som inte svarade den här gången. */
   failed: z.number(),
+  /** Namnen på kalendrarna som inte svarade. */
+  failedNames: z.array(z.string()).optional(),
 });
 export type CalendarData = z.infer<typeof calendarSchema>;
 

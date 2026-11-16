@@ -85,7 +85,7 @@ export function calendarView(d: CalendarData, now: Date): CalendarView {
       events: rest.map(row),
       more: Math.max(0, tomorrowAllDay.length - MAX_TOMORROW_ALL_DAY) + Math.max(0, tomorrowTimed.filter((e) => e !== heroTomorrow).length - rest.length),
     },
-    note: d.failed > 0 ? `${d.failed} ${d.failed === 1 ? "kalender svarade" : "kalendrar svarade"} inte` : null,
+    note: d.failed > 0 ? (d.failedNames?.length ? `${d.failedNames.join(", ")} svarade inte` : `${d.failed} ${d.failed === 1 ? "kalender svarade" : "kalendrar svarade"} inte`) : null,
   };
 }
 
