@@ -14,6 +14,7 @@ import { createCalendarProvider } from "./calendar";
 import { createListsProvider } from "./lists";
 import { loadLists } from "../lists/store";
 import { listCalendars } from "../calendar/store";
+import { loadIcloud } from "../calendar/icloud-store";
 import type { Provider, ProviderId } from "./types";
 
 const sonos = createSonosProvider({ getToken: () => getAccessToken("sonos"), isConnected: async () => (await getConnectionStatus("sonos")) === "ok" });
@@ -72,6 +73,7 @@ const aeg = createAegProvider({
 // Kalendrarnas hemliga adresser ligger krypterade i databasen och dekrypteras här, bara på servern.
 const calendar = createCalendarProvider({
   loadCalendars: async () => (await listCalendars(db, getEnv().BETTER_AUTH_SECRET)).map(({ id, name, color, url }) => ({ id, name, color, url })),
+  icloud: { load: () => loadIcloud(getEnv().BETTER_AUTH_SECRET, db) },
   google: { getToken: async () => ((await getConnectionStatus("google")) === "ok" ? getAccessToken("google") : null) },
 });
 

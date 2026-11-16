@@ -172,3 +172,6 @@ Engångsinställning:
 4. Lägg `GOOGLE_CLIENT_ID` och `GOOGLE_CLIENT_SECRET` i Vercel (Production) och gör en ny deploy.
 5. Inställningar → Google Kalender → Anslut Google (godkänn att se och ändra kalendrar).
 Skapa händelse: `POST /api/calendar/events` (`src/server/calendar/events-flow.ts`), läsning i `src/server/providers/calendar.ts` och `src/server/calendar/google.ts`. Återkallar Google åtkomsten visas "Anslut igen".
+
+## iCloud-kalender (iPhone)
+Direkt koppling via CalDAV (`src/server/calendar/caldav.ts`, lagring i `icloud-store.ts`, anslutning i Inställningar → iCloud-kalender). Kräver Apple-ID och ett **appspecifikt lösenord** (appleid.apple.com → Logga in och säkerhet → Applösenord; kräver tvåfaktorsinloggning). Uppgifterna sparas krypterade. Kalenderkortet visar iCloud-kalendrarna och "Ny aktivitet" kan skriva till dem. Skrivet efter CalDAV-standarden men bara testat mot falska svar, inte mot ett riktigt iCloud-konto.

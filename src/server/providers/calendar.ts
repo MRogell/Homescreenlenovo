@@ -1,5 +1,6 @@
 import { fetchIcs, type Lookup } from "../calendar/fetch";
 import { parseEvents, type CalEvent } from "../calendar/ics";
+import { discoverCalendars, listCaldavEvents, type CaldavCredentials } from "../calendar/caldav";
 import { listGoogleCalendars, listGoogleEvents } from "../calendar/google";
 import { dayWindow } from "../calendar/time";
 import { calendarSchema, type CalendarData } from "./schemas";
@@ -16,6 +17,8 @@ export interface CalendarDeps {
   lookup?: Lookup;
   nowMs?: () => number;
   /** Google Kalender: null när kontot inte är anslutet. Kastar om token inte går att få. */
+  /** iCloud (CalDAV): null när ingen är kopplad. */
+  icloud?: { load: () => Promise<CaldavCredentials | null>; fetchFn?: typeof fetch };
   google?: { getToken: () => Promise<string | null>; fetchFn?: typeof fetch };
 }
 
@@ -37,11 +40,12 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
     ttlSeconds: 120,
     timeoutMs: 20_000,
     schema: calendarSchema,
-    isConnected: async () => (await deps.loadCalendars()).length > 0 || !!(await deps.google?.getToken().catch(() => null)),
+    isConnected: async () => (await deps.loadCalendars()).length > 0 || !!(await deps.google?.getToken().catch(() => null)) || !!(await deps.icloud?.load().catch(() => null)),
     async getSummary() {
       const calendars = await deps.loadCalendars();
       const token = deps.google ? await deps.google.getToken().catch(() => null) : null;
-      if (calendars.length === 0 && !token) throw new Error("Ingen kalender är kopplad");
+      const icloud = deps.icloud ? await deps.icloud.load().catch(() => null) : null;
+      if (calendars.length === 0 && !token && !icloud) throw new Error("Ingen kalender är kopplad");
       const w = dayWindow(new Date(now()));
       const results = await Promise.allSettled(
         calendars.map(async (c) => {
@@ -66,6 +70,24 @@ export function createCalendarProvider(deps: CalendarDeps): Provider<CalendarDat
           );
           failed += gres.filter((r) => r.status === "rejected").length;
           all.push(...gres.flatMap((r) => (r.status === "fulfilled" ? r.value : [])));
+        } catch {
+          failed += 1;
+          total += 1;
+        }
+      }
+      if (icloud) {
+        try {
+          const ical = await discoverCalendars(icloud, deps.icloud?.fetchFn);
+          total += ical.length;
+          const ires = await Promise.allSettled(
+            ical.map(async (c, i) => {
+              const id = `i:${c.href}`;
+              meta.push({ id, name: c.name, color: GOOGLE_COLORS[(i + 2) % GOOGLE_COLORS.length]!, writable: c.writable });
+              return (await listCaldavEvents(icloud, c.href, w.todayStart, w.end, deps.icloud?.fetchFn)).map((e): Tagged => ({ ...e, calendarId: id }));
+            }),
+          );
+          failed += ires.filter((r) => r.status === "rejected").length;
+          all.push(...ires.flatMap((r) => (r.status === "fulfilled" ? r.value : [])));
         } catch {
           failed += 1;
           total += 1;

@@ -54,7 +54,7 @@ describe("skapa och ta bort händelse", () => {
   it("kräver inloggning, samma ursprung och ansluten Google", async () => {
     expect((await handleCreateEvent({ ...base, userId: null, body: {} }, ok)).status).toBe(401);
     expect((await handleCreateEvent({ ...base, origin: "https://ond.se", body: {} }, ok)).status).toBe(403);
-    expect((await handleCreateEvent({ ...base, body: {} }, { ...ok, connected: async () => false })).status).toBe(409);
+    expect((await handleCreateEvent({ ...base, body: { title: "X", date: "2026-11-17", start: "10:00" } }, { ...ok, connected: async () => false })).status).toBe(409);
   });
 
   it("skapar en vanlig händelse i huvudkalendern med svensk tid", async () => {

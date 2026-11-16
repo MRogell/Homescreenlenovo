@@ -16,6 +16,8 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { AppearanceSettings } from "@/components/appearance-settings";
 import { getSettings } from "@/server/settings";
 import { NotificationSettings } from "@/components/notification-settings";
+import { IcloudSettings } from "@/components/icloud-settings";
+import { loadIcloud } from "@/server/calendar/icloud-store";
 import { CalendarSettings } from "@/components/calendar-settings";
 import { ShareSettings } from "@/components/share-settings";
 import { ScreenInfo } from "@/components/screen-info";
@@ -129,6 +131,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           );
         })()}
       </section>
+      <IcloudSettings connected={!!(await loadIcloud(getEnv().BETTER_AUTH_SECRET))} />
       <CalendarSettings initial={calendars} />
       <ShareSettings initial={shares} origin={env.BETTER_AUTH_URL.replace(/\/$/, "")} />
       {oauth.get("spotify")?.status === "ok" && (
